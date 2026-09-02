@@ -64,6 +64,12 @@ export function NewSaleForm({
   const [rows, setRows] = useState<Row[]>([emptyRow()]);
   const [productOptions, setProductOptions] = useState<ProductOption[]>(products);
   const [customerOptions, setCustomerOptions] = useState<CustomerOption[]>(customers);
+  const [customerSearch, setCustomerSearch] = useState("");
+  const filteredCustomers = (() => {
+    const kw = customerSearch.trim();
+    const matched = kw ? customerOptions.filter((c) => c.name.includes(kw)) : customerOptions;
+    return matched.slice(0, 50);
+  })();
   const [showCreateProduct, setShowCreateProduct] = useState(false);
   const [newProduct, setNewProduct] = useState({
     name: "",
@@ -227,6 +233,13 @@ export function NewSaleForm({
           <label htmlFor="customerId" className="block text-xs font-medium text-gray-600">
             客户 *
           </label>
+          <input
+            type="text"
+            placeholder="搜索客户名称…"
+            value={customerSearch}
+            onChange={(e) => setCustomerSearch(e.target.value)}
+            className={`mt-1 ${inputCls}`}
+          />
           <div className="mt-1 flex items-center gap-2">
             <select
               id="customerId"
@@ -237,7 +250,7 @@ export function NewSaleForm({
               className={inputCls}
             >
               <option value="">请选择客户</option>
-              {customerOptions.map((c) => (
+              {filteredCustomers.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
                 </option>
@@ -256,6 +269,11 @@ export function NewSaleForm({
               </button>
             )}
           </div>
+          {customerSearch && (
+            <p className="mt-1 text-xs text-gray-400">
+              匹配 {customerOptions.filter((c) => c.name.includes(customerSearch)).length} 个（最多显示前 50 个）
+            </p>
+          )}
           {showCreateCustomer && (
             <div className="mt-2 rounded-lg border border-blue-200 bg-blue-50/50 p-3 space-y-2">
               <input
