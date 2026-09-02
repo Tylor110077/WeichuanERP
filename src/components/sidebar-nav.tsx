@@ -55,6 +55,13 @@ export function SidebarNav({ groups }: { groups: NavGroup[] }) {
         const key = group.label ?? "__top";
         const isCollapsed = collapsed[key];
         const showToggle = group.label !== null && group.items.length > 0;
+        // 路径前缀竞争处理：/sale-orders/new 会同时命中 /sale-orders 与 /sale-orders/new，
+        // 取本组内匹配项中"最长"的作为高亮（精确/更深路径优先）
+        const activeHref = group.items
+          .map((i) => i.href)
+          .filter((h) => isActive(h))
+          .sort((a, b) => b.length - a.length)[0];
+
         return (
           <div key={gi}>
             {showToggle ? (
@@ -83,7 +90,7 @@ export function SidebarNav({ groups }: { groups: NavGroup[] }) {
                     key={item.href}
                     href={item.href}
                     className={`block rounded-md px-3 py-2 text-sm ${
-                      isActive(item.href)
+                      item.href === activeHref
                         ? "bg-blue-50 font-medium text-blue-700"
                         : "text-gray-700 hover:bg-gray-100"
                     }`}
