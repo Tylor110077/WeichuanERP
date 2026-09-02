@@ -24,6 +24,10 @@ interface SupplierOption {
 interface ProductOption {
   id: number;
   label: string;
+  code: string;
+  name: string;
+  spec: string;
+  manufacturer: string;
   unitName: string;
   stockQty: number;
   refSalePrice: number;
@@ -33,6 +37,8 @@ interface ProductOption {
 
 interface Row {
   productId: string;
+  productLabel: string; // 选中商品的回填文本（编码 + 名称）
+  productQuery: string; // 输入框当前文本（搜索用）
   unitName: string;
   stockQty: number;
   quantity: string;
@@ -138,6 +144,8 @@ export function NewSaleForm({
   function emptyRow(): Row {
     return {
       productId: "",
+      productLabel: "",
+      productQuery: "",
       unitName: "",
       stockQty: 0,
       quantity: "",
@@ -148,24 +156,69 @@ export function NewSaleForm({
     };
   }
 
-  function onProductChange(index: number, productId: string) {
-    const p = products.find((x) => String(x.id) === productId);
+  // 商品候选弹层（fixed 定位，避免被表格 overflow 裁剪）
+  const [productPanel, setProductPanel] = useState<{ index: number; top: number; left: number; width: number } | null>(null);
+
+  function searchProducts(query: string): ProductOption[] {
+    const kw = query.trim().toLowerCase();
+    if (!kw) return [];
+    return productOptions
+      .filter(
+        (p) =>
+          p.name.toLowerCase().includes(kw) ||
+          p.code.toLowerCase().includes(kw) ||
+          p.manufacturer.toLowerCase().includes(kw) ||
+          p.spec.toLowerCase().includes(kw)
+      )
+      .slice(0, 30);
+  }
+
+  function openProductPanel(e: React.FocusEvent<HTMLInputElement>, index: number) {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setProductPanel({ index, top: rect.bottom + 4, left: rect.left, width: rect.width });
+  }
+
+  function onProductQueryChange(index: number, value: string) {
+    setRows((prev) =>
+      prev.map((row, i) =>
+        i === index
+          ? {
+              // 输入与选中商品回填文本不一致 = 重新搜索，清空该行选中
+              ...row,
+              productId: value === row.productLabel && row.productLabel ? row.productId : "",
+              productQuery: value,
+              unitName: value === row.productLabel && row.productLabel ? row.unitName : "",
+              stockQty: value === row.productLabel && row.productLabel ? row.stockQty : 0,
+              unitPrice: value === row.productLabel && row.productLabel ? row.unitPrice : "",
+              supplierId: value === row.productLabel && row.productLabel ? row.supplierId : "",
+              supplyPrice: value === row.productLabel && row.productLabel ? row.supplyPrice : "",
+              hasLastSupplier: value === row.productLabel && row.productLabel ? row.hasLastSupplier : false,
+            }
+          : row
+      )
+    );
+  }
+
+  function chooseProduct(index: number, p: ProductOption) {
     setRows((prev) =>
       prev.map((row, i) =>
         i === index
           ? {
               ...row,
-              productId,
-              unitName: p ? p.unitName : "",
-              stockQty: p ? p.stockQty : 0,
-              unitPrice: p ? String(p.refSalePrice) : "",
-              supplierId: p?.lastSupplierId != null ? String(p.lastSupplierId) : "",
-              supplyPrice: p ? String(p.lastSupplyPrice) : "",
-              hasLastSupplier: p?.lastSupplierId != null,
+              productId: String(p.id),
+              productLabel: `${p.code} ${p.name}`,
+              productQuery: `${p.code} ${p.name}`,
+              unitName: p.unitName,
+              stockQty: p.stockQty,
+              unitPrice: String(p.refSalePrice),
+              supplierId: p.lastSupplierId != null ? String(p.lastSupplierId) : "",
+              supplyPrice: String(p.lastSupplyPrice),
+              hasLastSupplier: p.lastSupplierId != null,
             }
           : row
       )
     );
+    setProductPanel(null);
   }
 
   function shortfall(row: Row): number {
@@ -211,6 +264,10 @@ export function NewSaleForm({
       const opt: ProductOption = {
         id: result.id,
         label: `${result.code} ${result.name}（${result.manufacturer}）`,
+        code: result.code,
+        name: result.name,
+        spec: "",
+        manufacturer: result.manufacturer,
         unitName: result.unitName,
         stockQty: 0,
         refSalePrice: result.refSalePrice,
@@ -223,6 +280,8 @@ export function NewSaleForm({
         ...prev,
         {
           productId: String(result.id),
+          productLabel: `${result.code} ${result.name}`,
+          productQuery: `${result.code} ${result.name}`,
           unitName: result.unitName,
           stockQty: 0,
           quantity: "",
@@ -512,20 +571,17 @@ export function NewSaleForm({
               return (
                 <tr key={i}>
                   <td className="px-4 py-2">
-                    <select
-                      name={`item_${i}_productId`}
-                      required
-                      value={row.productId}
-                      onChange={(e) => onProductChange(i, e.target.value)}
+                    <input
+                      name={`item_${i}_productQuery`}
+                      type="text"
+                      autoComplete="off"
+                      placeholder="搜索名称/型号/厂商/编码…"
+                      value={row.productQuery}
+                      onChange={(e) => onProductQueryChange(i, e.target.value)}
+                      onFocus={(e) => openProductPanel(e, i)}
                       className={inputCls}
-                    >
-                      <option value="">请选择商品</option>
-                      {productOptions.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.label}
-                        </option>
-                      ))}
-                    </select>
+                    />
+                    <input type="hidden" name={`item_${i}_productId`} value={row.productId} />
                   </td>
                   <td className="px-4 py-2 text-gray-600">{row.unitName ? row.stockQty.toFixed(3) : "—"}</td>
                   <td className="px-4 py-2">
@@ -631,6 +687,39 @@ export function NewSaleForm({
           </button>
         </div>
       </div>
+
+      {productPanel && (() => {
+        const row = rows[productPanel.index];
+        const hits = row ? searchProducts(row.productQuery) : [];
+        return (
+          <div
+            style={{ position: "fixed", top: productPanel.top, left: productPanel.left, width: productPanel.width }}
+            className="z-50 max-h-64 overflow-auto rounded-md border border-gray-200 bg-white shadow-lg"
+          >
+            {hits.length === 0 && (
+              <div className="px-3 py-2 text-xs text-gray-400">
+                无匹配商品（试试厂商、型号、名称、编码）{row && row.productQuery ? "" : "，或点击「+ 新建商品」"}
+              </div>
+            )}
+            {hits.map((p) => (
+              <button
+                type="button"
+                key={p.id}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => chooseProduct(productPanel.index, p)}
+                className="block w-full px-3 py-2 text-left text-sm text-gray-900 hover:bg-blue-50"
+              >
+                <span className="font-medium">{p.code} {p.name}</span>
+                <span className="ml-2 text-xs text-gray-500">
+                  {p.manufacturer}
+                  {p.spec ? ` ｜ ${p.spec}` : ""}
+                  ｜ 库存 {p.stockQty.toFixed(3)}
+                </span>
+              </button>
+            ))}
+          </div>
+        );
+      })()}
 
       <div className="flex items-center gap-3">
         <button
