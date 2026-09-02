@@ -18,7 +18,7 @@ const BIZ_TYPE_LABELS: Record<string, { label: string; cls: string }> = {
 export default async function StockMovementsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; productId?: string; bizType?: string }>;
+  searchParams: Promise<{ page?: string; productId?: string; bizType?: string; from?: string; to?: string }>;
 }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
@@ -32,12 +32,14 @@ export default async function StockMovementsPage({
 
   const params = await searchParams;
   const page = Math.max(1, Number(params.page) || 1);
+  const { gte, lte } = dateRange(params.from, params.to);
   const productId = params.productId ? Number(params.productId) : undefined;
   const bizType = params.bizType || undefined;
 
   const where = {
     ...(productId ? { productId } : {}),
     ...(bizType ? { bizType: bizType as "purchase_in" | "sale_out" | "purchase_return_out" | "sale_return_in" | "void_reverse" } : {}),
+    createdAt: { gte, lte },
   };
 
   const [total, movements, products] = await Promise.all([
@@ -76,6 +78,8 @@ export default async function StockMovementsPage({
             </option>
           ))}
         </select>
+        <input type="date" name="from" defaultValue={params.from} className="rounded-md border border-gray-300 px-2 py-1.5 text-sm" />
+        <input type="date" name="to" defaultValue={params.to} className="rounded-md border border-gray-300 px-2 py-1.5 text-sm" />
         <select name="bizType" defaultValue={bizType ?? ""} className="rounded-md border border-gray-300 px-2 py-1.5 text-sm">
           <option value="">全部类型</option>
           {Object.entries(BIZ_TYPE_LABELS).map(([k, v]) => (
@@ -163,7 +167,21 @@ export default async function StockMovementsPage({
     const sp = new URLSearchParams();
     if (productId) sp.set("productId", String(productId));
     if (bizType) sp.set("bizType", bizType);
+    if (params.from) sp.set("from", params.from);
+    if (params.to) sp.set("to", params.to);
     sp.set("page", String(p));
     return `/stock-movements?${sp.toString()}`;
   }
+}
+
+
+function dateRange(from?: string, to?: string): { gte: Date; lte: Date } {
+  const now = new Date();
+  const gte = from && /^\d{4}-\d{2}-\d{2}$/.test(from)
+    ? new Date(`${from}T00:00:00`)
+    : new Date(now.getFullYear(), now.getMonth(), 1);
+  const toDate = to && /^\d{4}-\d{2}-\d{2}$/.test(to) ? new Date(`${to}T00:00:00`) : now;
+  const lte = new Date(toDate.getTime());
+  lte.setHours(23, 59, 59, 999);
+  return { gte, lte };
 }

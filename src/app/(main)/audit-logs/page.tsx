@@ -26,7 +26,7 @@ function jsonText(value: unknown): string | null {
 export default async function AuditLogsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; from?: string; to?: string }>;
 }) {
   const current = await getCurrentUser();
   if (!current) redirect("/login");
@@ -38,13 +38,18 @@ export default async function AuditLogsPage({
     );
   }
 
-  const { page: pageParam } = await searchParams;
-  const page = Math.max(1, Number(pageParam) || 1);
+  const params = await searchParams;
+  const page = Math.max(1, Number(params.page) || 1);
   const skip = (page - 1) * PAGE_SIZE;
+  const { gte, lte } = dateRange(params.from, params.to);
+  const where = {
+    createdAt: { gte, lte },
+  };
 
   const [total, logs] = await Promise.all([
-    prisma.auditLog.count(),
+    prisma.auditLog.count({ where }),
     prisma.auditLog.findMany({
+      where,
       orderBy: { createdAt: "desc" },
       skip,
       take: PAGE_SIZE,
@@ -60,6 +65,23 @@ export default async function AuditLogsPage({
         <h1 className="text-lg font-semibold text-gray-900">审计日志</h1>
         <span className="text-xs text-gray-500">共 {total} 条</span>
       </div>
+
+      <form className="flex flex-wrap items-end gap-3 rounded-xl border border-gray-200 bg-white p-4">
+        <div>
+          <label htmlFor="from" className="block text-xs font-medium text-gray-600">开始日期</label>
+          <input id="from" type="date" name="from" defaultValue={params.from} className="mt-1 rounded-md border border-gray-300 px-2 py-1.5 text-sm" />
+        </div>
+        <div>
+          <label htmlFor="to" className="block text-xs font-medium text-gray-600">结束日期</label>
+          <input id="to" type="date" name="to" defaultValue={params.to} className="mt-1 rounded-md border border-gray-300 px-2 py-1.5 text-sm" />
+        </div>
+        <button type="submit" className="rounded-md bg-gray-100 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-200">
+          查询
+        </button>
+        {(params.from || params.to) && (
+          <a href="/audit-logs" className="text-xs text-blue-600 hover:underline">清除日期</a>
+        )}
+      </form>
 
       <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
         <table className="min-w-full divide-y divide-gray-200 text-sm">
@@ -133,7 +155,7 @@ export default async function AuditLogsPage({
       {totalPages > 1 && (
         <div className="flex items-center gap-3 text-sm">
           {page > 1 ? (
-            <Link href={`/audit-logs?page=${page - 1}`} className="text-blue-600 hover:underline">
+            <Link href={`/audit-logs?page=${page - 1}&${paramsStr(params)}`} className="text-blue-600 hover:underline">
               上一页
             </Link>
           ) : (
@@ -143,7 +165,7 @@ export default async function AuditLogsPage({
             第 {page} / {totalPages} 页
           </span>
           {page < totalPages ? (
-            <Link href={`/audit-logs?page=${page + 1}`} className="text-blue-600 hover:underline">
+            <Link href={`/audit-logs?page=${page + 1}&${paramsStr(params)}`} className="text-blue-600 hover:underline">
               下一页
             </Link>
           ) : (
@@ -153,4 +175,23 @@ export default async function AuditLogsPage({
       )}
     </div>
   );
+}
+
+
+function dateRange(from?: string, to?: string): { gte: Date; lte: Date } {
+  const now = new Date();
+  const gte = from && /^\d{4}-\d{2}-\d{2}$/.test(from)
+    ? new Date(`${from}T00:00:00`)
+    : new Date(now.getFullYear(), now.getMonth(), 1);
+  const toDate = to && /^\d{4}-\d{2}-\d{2}$/.test(to) ? new Date(`${to}T00:00:00`) : now;
+  const lte = new Date(toDate.getTime());
+  lte.setHours(23, 59, 59, 999);
+  return { gte, lte };
+}
+
+function paramsStr(p: { from?: string; to?: string }): string {
+  const sp = new URLSearchParams();
+  if (p.from) sp.set("from", p.from);
+  if (p.to) sp.set("to", p.to);
+  return sp.toString();
 }

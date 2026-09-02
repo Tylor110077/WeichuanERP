@@ -64,6 +64,7 @@ const NAV_GROUPS: {
     items: [
       { href: "/users", label: "用户管理", roles: ["admin"] },
       { href: "/audit-logs", label: "审计日志", roles: ["admin"] },
+      { href: "/login-logs", label: "登录日志", roles: ["admin"] },
       { href: "/profile", label: "个人中心", roles: ALL_ROLES },
     ],
   },
