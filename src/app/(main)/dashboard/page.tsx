@@ -1,19 +1,62 @@
 import { getCurrentUser } from "@/lib/auth/session";
+import { prisma } from "@/lib/prisma";
 
 /**
- * 工作台（文档 4#2）：今日销售额、待收货补货单、负库存预警、库存预警、应收应付概览。
- * M1 仅占位，数据指标在 M4/M5 实现后接入。
+ * 工作台（文档 4#2）：今日销售额、待收货进货单、负库存预警、库存预警、应收应付概览。
+ * 数据均为实时统计；成本/毛利项不在此页（矩阵：业务员不可见成本毛利）。
  */
 export default async function DashboardPage() {
   const user = await getCurrentUser();
 
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  const [todaySales, pendingPurchases, negativeCount, warningCount] = await Promise.all([
+    prisma.saleOrder.aggregate({
+      where: { status: "confirmed", createdAt: { gte: todayStart } },
+      _sum: { totalAmount: true },
+    }),
+    prisma.purchaseOrder.findMany({
+      where: { status: "pending" },
+      select: { totalAmount: true },
+    }),
+    prisma.product.count({ where: { stockQty: { lt: 0 } } }),
+    prisma.product.count({
+      where: { status: 1, minStock: { gt: 0 }, stockQty: { lt: prisma.product.fields.minStock } },
+    }),
+  ]);
+
+  // 应收/应付合计（与应收应付页同口径：单额 − 已收付 − 未作废退货冲减）
+  const [receivableRows, payableRows] = await Promise.all([
+    prisma.$queryRaw<{ total: number | null }[]>`
+      SELECT COALESCE(SUM(so.total_amount - so.received_amount - COALESCE(sr.total, 0)), 0) AS total
+      FROM sale_orders so
+      LEFT JOIN (
+        SELECT sale_order_id, SUM(total_amount) AS total
+        FROM sale_returns WHERE status = 'confirmed' GROUP BY sale_order_id
+      ) sr ON sr.sale_order_id = so.id
+      WHERE so.status = 'confirmed'`,
+    prisma.$queryRaw<{ total: number | null }[]>`
+      SELECT COALESCE(SUM(po.total_amount - po.paid_amount - COALESCE(pr.total, 0)), 0) AS total
+      FROM purchase_orders po
+      LEFT JOIN (
+        SELECT purchase_order_id, SUM(total_amount) AS total
+        FROM purchase_returns WHERE status = 'confirmed' GROUP BY purchase_order_id
+      ) pr ON pr.purchase_order_id = po.id
+      WHERE po.status IN ('pending', 'received')`,
+  ]);
+
+  const receivableTotal = Number(receivableRows[0]?.total ?? 0);
+  const payableTotal = Number(payableRows[0]?.total ?? 0);
+  const pendingTotal = pendingPurchases.reduce((s, o) => s + Number(o.totalAmount), 0);
+
   const statCards = [
-    { label: "今日销售额", value: "—", note: "M4 接入" },
-    { label: "待收货补货单", value: "—", note: "M4 接入" },
-    { label: "负库存商品", value: "—", note: "M5 接入" },
-    { label: "库存预警", value: "—", note: "M5 接入" },
-    { label: "应收余额", value: "—", note: "M5 接入" },
-    { label: "应付余额", value: "—", note: "M5 接入" },
+    { label: "今日销售额", value: `¥${Number(todaySales._sum.totalAmount ?? 0).toFixed(2)}`, note: "今日已开售卖单（未作废）" },
+    { label: "待收货进货单", value: `${pendingPurchases.length} 张`, note: `合计 ¥${pendingTotal.toFixed(2)}（手动进货单）` },
+    { label: "负库存商品", value: `${negativeCount} 个`, note: negativeCount > 0 ? "异常，请核查库存流水" : "正常（缺货自动补货，生意模式下不会出现）" },
+    { label: "库存预警", value: `${warningCount} 个`, note: "低于预警线的启用商品" },
+    { label: "应收余额", value: `¥${receivableTotal.toFixed(2)}`, note: "客户未收合计（含已开单未收）" },
+    { label: "应付余额", value: `¥${payableTotal.toFixed(2)}`, note: "供应商未付合计" },
   ];
 
   return (

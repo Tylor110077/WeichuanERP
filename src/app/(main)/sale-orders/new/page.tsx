@@ -89,6 +89,7 @@ export default async function NewSaleOrderPage() {
         customers={customers.map((c) => ({ id: c.id, name: c.name }))}
         suppliers={suppliers.map((s) => ({ id: s.id, name: s.name }))}
         products={productOptions}
+        canCreateCustomer={user.role === "admin"}
       />
     </div>
   );

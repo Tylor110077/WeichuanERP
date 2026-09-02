@@ -1,7 +1,8 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, useTransition } from "react";
 import { createSaleOrderAction, type FormState } from "../actions";
+import { createQuickCustomerAction, type QuickCustomerResult } from "../../customers/actions";
 
 interface CustomerOption {
   id: number;
@@ -38,17 +39,51 @@ export function NewSaleForm({
   customers,
   suppliers,
   products,
+  canCreateCustomer,
 }: {
   customers: CustomerOption[];
   suppliers: SupplierOption[];
   products: ProductOption[];
+  canCreateCustomer: boolean;
 }) {
   const [rows, setRows] = useState<Row[]>([emptyRow()]);
+  const [customerOptions, setCustomerOptions] = useState<CustomerOption[]>(customers);
   const [customerId, setCustomerId] = useState("");
+  const [showCreateCustomer, setShowCreateCustomer] = useState(false);
+  const [createCustomerMsg, setCreateCustomerMsg] = useState<{ ok?: string; error?: string } | null>(null);
+  const [createPending, startCreateTransition] = useTransition();
   const [state, formAction, pending] = useActionState<FormState, FormData>(
     createSaleOrderAction,
     null
   );
+
+  const [newCustomer, setNewCustomer] = useState({ name: "", contact: "", phone: "" });
+
+  function onCreateCustomer() {
+    if (!newCustomer.name.trim()) {
+      setCreateCustomerMsg({ error: "请填写客户名称" });
+      return;
+    }
+    startCreateTransition(async () => {
+      const result: QuickCustomerResult = await createQuickCustomerAction({
+        name: newCustomer.name,
+        contact: newCustomer.contact,
+        phone: newCustomer.phone,
+      });
+      if ("error" in result) {
+        setCreateCustomerMsg({ error: result.error });
+        return;
+      }
+      setCustomerOptions((prev) =>
+        prev.some((c) => c.id === result.id) ? prev : [...prev, result]
+      );
+      setCustomerId(String(result.id));
+      setShowCreateCustomer(false);
+      setNewCustomer({ name: "", contact: "", phone: "" });
+      setCreateCustomerMsg({ ok: `客户「${result.name}」已创建并选中` });
+      setTimeout(() => setCreateCustomerMsg(null), 4000);
+    });
+  }
 
   function emptyRow(): Row {
     return {
@@ -104,21 +139,77 @@ export function NewSaleForm({
           <label htmlFor="customerId" className="block text-xs font-medium text-gray-600">
             客户 *
           </label>
-          <select
-            id="customerId"
-            name="customerId"
-            required
-            value={customerId}
-            onChange={(e) => setCustomerId(e.target.value)}
-            className={`mt-1 ${inputCls}`}
-          >
-            <option value="">请选择客户</option>
-            {customers.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+          <div className="mt-1 flex items-center gap-2">
+            <select
+              id="customerId"
+              name="customerId"
+              required
+              value={customerId}
+              onChange={(e) => setCustomerId(e.target.value)}
+              className={inputCls}
+            >
+              <option value="">请选择客户</option>
+              {customerOptions.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+            {canCreateCustomer && (
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCreateCustomer((v) => !v);
+                  setCreateCustomerMsg(null);
+                }}
+                className="shrink-0 rounded-md border border-blue-300 px-2.5 py-1.5 text-xs text-blue-600 hover:bg-blue-50"
+              >
+                {showCreateCustomer ? "取消" : "+ 新建客户"}
+              </button>
+            )}
+          </div>
+          {showCreateCustomer && (
+            <div className="mt-2 rounded-lg border border-blue-200 bg-blue-50/50 p-3 space-y-2">
+              <input
+                type="text"
+                maxLength={100}
+                placeholder="客户名称（必填）"
+                value={newCustomer.name}
+                onChange={(e) => setNewCustomer((p) => ({ ...p, name: e.target.value }))}
+                className="block w-full rounded-md border border-blue-200 px-2 py-1.5 text-sm text-gray-900"
+              />
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  maxLength={50}
+                  placeholder="联系人"
+                  value={newCustomer.contact}
+                  onChange={(e) => setNewCustomer((p) => ({ ...p, contact: e.target.value }))}
+                  className="block w-full rounded-md border border-blue-200 px-2 py-1.5 text-sm text-gray-900"
+                />
+                <input
+                  type="text"
+                  maxLength={30}
+                  placeholder="电话"
+                  value={newCustomer.phone}
+                  onChange={(e) => setNewCustomer((p) => ({ ...p, phone: e.target.value }))}
+                  className="block w-full rounded-md border border-blue-200 px-2 py-1.5 text-sm text-gray-900"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={onCreateCustomer}
+                  disabled={createPending}
+                  className="rounded-md bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {createPending ? "创建中…" : "创建并选用"}
+                </button>
+                {createCustomerMsg?.ok && <span className="text-xs text-green-600">{createCustomerMsg.ok}</span>}
+                {createCustomerMsg?.error && <span className="text-xs text-red-600">{createCustomerMsg.error}</span>}
+              </div>
+            </div>
+          )}
         </div>
         <div className="min-w-56 flex-1">
           <label htmlFor="sale-remark" className="block text-xs font-medium text-gray-600">

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireMasterDataWrite } from "@/lib/auth/guards";
+import { requireAdmin, requireMasterDataWrite } from "@/lib/auth/guards";
 import { writeAudit } from "@/lib/audit";
 
 const customerSchema = z.object({
@@ -78,4 +78,51 @@ export async function toggleCustomerStatusAction(_prev: FormState, formData: For
   });
   revalidatePath("/customers");
   return { ok: next === 1 ? "已启用" : "已停用" };
+}
+
+const quickCustomerSchema = z.object({
+  name: z.string().trim().min(1, "请填写客户名称").max(100),
+  contact: z.string().trim().max(50),
+  phone: z.string().trim().max(30),
+});
+
+export type QuickCustomerResult = { id: number; name: string } | { error: string };
+
+/** 销售开单页内直接新建客户（仅管理员，符合权限矩阵：客户维护仅管理员）。 */
+export async function createQuickCustomerAction(data: {
+  name: string;
+  contact?: string;
+  phone?: string;
+}): Promise<QuickCustomerResult> {
+  const admin = await requireAdmin().catch(() => null);
+  if (!admin) return { error: "仅管理员可在开单页新建客户" };
+
+  const parsed = quickCustomerSchema.safeParse({
+    name: data.name ?? "",
+    contact: data.contact ?? "",
+    phone: data.phone ?? "",
+  });
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "输入有误" };
+
+  const customer = await prisma.customer.create({
+    data: {
+      name: parsed.data.name,
+      contact: parsed.data.contact || null,
+      phone: parsed.data.phone || null,
+    },
+    select: { id: true, name: true },
+  });
+  await writeAudit({
+    userId: admin.id,
+    action: "create",
+    entityType: "customer",
+    entityId: customer.id,
+    after: {
+      name: customer.name,
+      contact: parsed.data.contact || null,
+      phone: parsed.data.phone || null,
+    },
+  });
+  revalidatePath("/customers");
+  return { id: customer.id, name: customer.name };
 }
