@@ -100,3 +100,26 @@ export async function deleteUnitAction(_prev: FormState, formData: FormData): Pr
   revalidatePath("/units");
   return { ok: "已删除" };
 }
+
+
+export type QuickUnitResult = { id: number; name: string } | { error: string };
+
+/** 开单页内快速新建单位（仅管理员）。 */
+export async function createQuickUnitAction(data: { name: string }): Promise<QuickUnitResult> {
+  const admin = await requireMasterDataWrite().catch(() => null);
+  if (!admin) return { error: "仅管理员可新建单位" };
+  const name = data.name?.trim() ?? "";
+  if (!name || name.length > 20) return { error: "单位名称不能为空（≤20 字）" };
+  const dup = await prisma.unit.findUnique({ where: { name } });
+  if (dup) return { error: "单位已存在" };
+  const unit = await prisma.unit.create({ data: { name }, select: { id: true, name: true } });
+  await writeAudit({
+    userId: admin.id,
+    action: "create",
+    entityType: "unit",
+    entityId: unit.id,
+    after: { name: unit.name },
+  });
+  revalidatePath("/units");
+  return { id: unit.id, name: unit.name };
+}

@@ -98,3 +98,26 @@ export async function deleteCategoryAction(_prev: FormState, formData: FormData)
   revalidatePath("/categories");
   return { ok: "已删除" };
 }
+
+
+export type QuickCategoryResult = { id: number; name: string } | { error: string };
+
+/** 开单页内快速新建分类（仅管理员）。 */
+export async function createQuickCategoryAction(data: { name: string }): Promise<QuickCategoryResult> {
+  const admin = await requireMasterDataWrite().catch(() => null);
+  if (!admin) return { error: "仅管理员可新建分类" };
+  const name = data.name?.trim() ?? "";
+  if (!name || name.length > 50) return { error: "分类名称不能为空（≤50 字）" };
+  const dup = await prisma.productCategory.findFirst({ where: { name } });
+  if (dup) return { error: "分类已存在" };
+  const cat = await prisma.productCategory.create({ data: { name }, select: { id: true, name: true } });
+  await writeAudit({
+    userId: admin.id,
+    action: "create",
+    entityType: "product_category",
+    entityId: cat.id,
+    after: { name: cat.name },
+  });
+  revalidatePath("/categories");
+  return { id: cat.id, name: cat.name };
+}

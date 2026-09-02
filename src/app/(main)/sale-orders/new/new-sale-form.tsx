@@ -10,6 +10,8 @@ import {
   type QuickResult,
 } from "../../customers/actions";
 import { createQuickProductAction, type QuickProductResult } from "../../products/actions";
+import { createQuickCategoryAction, type QuickCategoryResult } from "../../categories/actions";
+import { createQuickUnitAction, type QuickUnitResult } from "../../units/actions";
 
 interface CustomerOption {
   id: number;
@@ -124,6 +126,11 @@ export function NewSaleForm({
   );
 
   const [newCustomer, setNewCustomer] = useState({ name: "", contact: "", phone: "" });
+  const [categoryOptions, setCategoryOptions] = useState(categories);
+  const [unitOptions, setUnitOptions] = useState(units);
+  const [showQuickCategory, setShowQuickCategory] = useState(false);
+  const [showQuickUnit, setShowQuickUnit] = useState(false);
+  const [quickOptionName, setQuickOptionName] = useState("");
   const [quickGroupOptions, setQuickGroupOptions] = useState(customerGroups);
   const [quickTagOptions, setQuickTagOptions] = useState(customerTags);
   const [newCustomerGroupId, setNewCustomerGroupId] = useState("");
@@ -160,6 +167,41 @@ export function NewSaleForm({
       setNewCustomerTagIds([]);
       setCreateCustomerMsg({ ok: `客户「${result.name}」已创建并选中` });
       setTimeout(() => setCreateCustomerMsg(null), 4000);
+    });
+  }
+
+  function quickCreateCategory() {
+    const name = quickOptionName.trim();
+    if (!name) return;
+    startProductTransition(async () => {
+      const r: QuickCategoryResult = await createQuickCategoryAction({ name });
+      if ("error" in r) {
+        setProductMsg({ error: r.error });
+        return;
+      }
+      setCategoryOptions((prev) => (prev.some((c) => c.id === r.id) ? prev : [...prev, { id: r.id, name: r.name }]));
+      setNewProduct((p) => ({ ...p, categoryId: String(r.id) }));
+      setShowQuickCategory(false);
+      setQuickOptionName("");
+      setQuickOrgMsg(null);
+      setQuickOrgMsg({});
+    });
+  }
+
+  function quickCreateUnit() {
+    const name = quickOptionName.trim();
+    if (!name) return;
+    startProductTransition(async () => {
+      const r: QuickUnitResult = await createQuickUnitAction({ name });
+      if ("error" in r) {
+        setProductMsg({ error: r.error });
+        return;
+      }
+      setUnitOptions((prev) => (prev.some((u) => u.id === r.id) ? prev : [...prev, { id: r.id, name: r.name }]));
+      setNewProduct((p) => ({ ...p, unitId: String(r.id) }));
+      setShowQuickUnit(false);
+      setQuickOptionName("");
+      setQuickOrgMsg({});
     });
   }
 
@@ -608,31 +650,79 @@ export function NewSaleForm({
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600">分类</label>
-                <select
-                  name="quickCategory"
-                  value={newProduct.categoryId}
-                  onChange={(e) => setNewProduct((p) => ({ ...p, categoryId: e.target.value }))}
-                  className="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm text-gray-900"
-                >
-                  <option value="">未分类</option>
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
+                <div className="mt-1 flex items-center gap-1">
+                  <select
+                    name="quickCategory"
+                    value={newProduct.categoryId}
+                    onChange={(e) => setNewProduct((p) => ({ ...p, categoryId: e.target.value }))}
+                    className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm text-gray-900"
+                  >
+                    <option value="">未分类</option>
+                    {categoryOptions.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => { setShowQuickCategory((v) => !v); setShowQuickUnit(false); setQuickOptionName(""); }}
+                    className="shrink-0 rounded-md border border-blue-300 px-2 py-1.5 text-xs text-blue-600 hover:bg-blue-50"
+                  >
+                    {showQuickCategory ? "取消" : "+ 分类"}
+                  </button>
+                </div>
+                {showQuickCategory && (
+                  <div className="mt-1 flex items-center gap-1">
+                    <input
+                      placeholder="新分类名称"
+                      maxLength={50}
+                      value={quickOptionName}
+                      onChange={(e) => setQuickOptionName(e.target.value)}
+                      className="w-full rounded-md border border-blue-200 px-2 py-1.5 text-sm text-gray-900"
+                    />
+                    <button type="button" onClick={quickCreateCategory} disabled={productPending}
+                      className="shrink-0 rounded-md bg-blue-600 px-2 py-1 text-xs text-white disabled:opacity-50">
+                      {productPending ? "…" : "创建"}
+                    </button>
+                  </div>
+                )}
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600">单位 *</label>
-                <select
-                  name="quickUnit"
-                  value={newProduct.unitId}
-                  onChange={(e) => setNewProduct((p) => ({ ...p, unitId: e.target.value }))}
-                  className="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm text-gray-900"
-                >
-                  <option value="">请选择</option>
-                  {units.map((u) => (
-                    <option key={u.id} value={u.id}>{u.name}</option>
-                  ))}
-                </select>
+                <div className="mt-1 flex items-center gap-1">
+                  <select
+                    name="quickUnit"
+                    value={newProduct.unitId}
+                    onChange={(e) => setNewProduct((p) => ({ ...p, unitId: e.target.value }))}
+                    className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm text-gray-900"
+                  >
+                    <option value="">请选择</option>
+                    {unitOptions.map((u) => (
+                      <option key={u.id} value={u.id}>{u.name}</option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => { setShowQuickUnit((v) => !v); setShowQuickCategory(false); setQuickOptionName(""); }}
+                    className="shrink-0 rounded-md border border-blue-300 px-2 py-1.5 text-xs text-blue-600 hover:bg-blue-50"
+                  >
+                    {showQuickUnit ? "取消" : "+ 单位"}
+                  </button>
+                </div>
+                {showQuickUnit && (
+                  <div className="mt-1 flex items-center gap-1">
+                    <input
+                      placeholder="新单位名称"
+                      maxLength={20}
+                      value={quickOptionName}
+                      onChange={(e) => setQuickOptionName(e.target.value)}
+                      className="w-full rounded-md border border-blue-200 px-2 py-1.5 text-sm text-gray-900"
+                    />
+                    <button type="button" onClick={quickCreateUnit} disabled={productPending}
+                      className="shrink-0 rounded-md bg-blue-600 px-2 py-1 text-xs text-white disabled:opacity-50">
+                      {productPending ? "…" : "创建"}
+                    </button>
+                  </div>
+                )}
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600">参考进价</label>
