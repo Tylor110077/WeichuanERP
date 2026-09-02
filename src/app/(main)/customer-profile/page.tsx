@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
+import { DateShortcuts } from "@/components/date-shortcuts";
 
 export const metadata = { title: "客户画像 - 玮川进销存" };
 
@@ -113,6 +114,8 @@ export default async function CustomerProfilePage({
           </button>
         </form>
       </div>
+
+      <DateShortcuts basePath="/customer-profile" />
 
       {selected !== undefined && (
         <div className="rounded-xl border border-gray-200 bg-white p-5">

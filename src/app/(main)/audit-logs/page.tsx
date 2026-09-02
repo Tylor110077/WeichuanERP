@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
+import { DateShortcuts } from "@/components/date-shortcuts";
 
 export const metadata = { title: "审计日志 - 玮川进销存" };
 
@@ -65,6 +66,8 @@ export default async function AuditLogsPage({
         <h1 className="text-lg font-semibold text-gray-900">审计日志</h1>
         <span className="text-xs text-gray-500">共 {total} 条</span>
       </div>
+
+      <DateShortcuts basePath="/audit-logs" />
 
       <form className="flex flex-wrap items-end gap-3 rounded-xl border border-gray-200 bg-white p-4">
         <div>

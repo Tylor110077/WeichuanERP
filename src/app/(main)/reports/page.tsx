@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { buildReport, REPORT_TABS, type ReportTabKey } from "@/lib/reports";
+import { DateShortcuts } from "@/components/date-shortcuts";
 
 export const metadata = { title: "报表中心 - 玮川进销存" };
 
@@ -55,6 +56,8 @@ export default async function ReportsPage({
           </Link>
         ))}
       </div>
+
+      <DateShortcuts basePath="/reports" extraQuery={{ tab }} />
 
       <form className="flex flex-wrap items-end gap-3 rounded-xl border border-gray-200 bg-white p-4">
         <div>

@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
+import { DateShortcuts } from "@/components/date-shortcuts";
 
 export const metadata = { title: "库存流水 - 玮川进销存" };
 
@@ -68,6 +69,8 @@ export default async function StockMovementsPage({
   return (
     <div className="space-y-6">
       <h1 className="text-lg font-semibold text-gray-900">库存流水</h1>
+
+      <DateShortcuts basePath="/stock-movements" extraQuery={{ productId: productId ? String(productId) : "", bizType: bizType ?? "" }} />
 
       <form className="flex flex-wrap items-center gap-3 rounded-xl border border-gray-200 bg-white p-4">
         <select name="productId" defaultValue={productId ?? ""} className="rounded-md border border-gray-300 px-2 py-1.5 text-sm">

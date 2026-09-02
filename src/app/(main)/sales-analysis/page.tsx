@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
+import { DateShortcuts } from "@/components/date-shortcuts";
 
 export const metadata = { title: "销售分析 - 玮川进销存" };
 
@@ -78,27 +79,12 @@ export default async function SalesAnalysisPage({
     .map(([date, v]) => ({ date, ...v, profit: v.sales - v.cost }))
     .sort((a, b) => (a.date < b.date ? -1 : 1));
 
-  const quickOptions = [
-    { value: "today", label: "今天" },
-    { value: "week", label: "本周" },
-    { value: "month", label: "本月" },
-    { value: "all", label: "全部" },
-  ];
-
   return (
     <div className="space-y-6">
       <h1 className="text-lg font-semibold text-gray-900">销售分析</h1>
 
+      <DateShortcuts basePath="/sales-analysis" />
       <form className="flex flex-wrap items-end gap-3 rounded-xl border border-gray-200 bg-white p-4">
-        {quickOptions.map((q) => (
-          <a
-            key={q.value}
-            href={`/sales-analysis?quick=${q.value}`}
-            className={`rounded-md px-3 py-1.5 text-sm ${quick === q.value ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
-          >
-            {q.label}
-          </a>
-        ))}
         <div>
           <label htmlFor="from" className="block text-xs font-medium text-gray-600">自定义开始</label>
           <input id="from" type="date" name="from" defaultValue={params.from} className="mt-1 rounded-md border border-gray-300 px-2 py-1.5 text-sm" />

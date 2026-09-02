@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
+import { DateShortcuts } from "@/components/date-shortcuts";
 
 export const metadata = { title: "供应商对账 - 玮川进销存" };
 
@@ -104,6 +105,8 @@ export default async function SupplierStatementPage({
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold text-gray-900">供应商对账</h1>
       </div>
+
+      <DateShortcuts basePath="/supplier-statement" extraQuery={{ supplierId: String(effectiveSupplierId), status: status ?? "" }} />
 
       <form className="flex flex-wrap items-end gap-3 rounded-xl border border-gray-200 bg-white p-4">
         <div>
