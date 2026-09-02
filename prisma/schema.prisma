@@ -449,6 +449,7 @@ model SaleReturnItem {
 
 model Payment {
   id         Int              @id @default(autoincrement())
+  orderNo    String           @unique @map("order_no") @db.VarChar(30) // PAY/POF + 日期 + 序号（文档 7.3）
   direction  PaymentDirection
   orderType  PaymentOrderType @map("order_type")
   orderId    Int              @map("order_id") // 关联单据（区分单据类型见 orderType）

@@ -45,6 +45,7 @@ export default async function PurchaseOrderDetailPage({
 
   const canReceive = user.role !== "boss" && (user.role === "admin" || order.operatorId === user.id);
   const canVoid = user.role === "admin" || user.role === "boss";
+  const canReturn = user.role !== "boss" && order.status === "received";
 
   return (
     <div className="space-y-6">
@@ -120,7 +121,7 @@ export default async function PurchaseOrderDetailPage({
         </table>
       </div>
 
-      {order.status !== "voided" && (canReceive || canVoid) && (
+      {order.status !== "voided" && (canReceive || canVoid || canReturn) && (
         <div className="rounded-xl border border-gray-200 bg-white p-5">
           <h2 className="mb-3 text-sm font-semibold text-gray-900">单据操作</h2>
           <DetailActions
@@ -129,6 +130,14 @@ export default async function PurchaseOrderDetailPage({
             canReceive={canReceive}
             canVoid={canVoid}
           />
+          {canReturn && (
+            <Link
+              href={`/purchase-returns/new?orderId=${order.id}`}
+              className="mt-3 inline-block rounded-md bg-orange-500 px-4 py-1.5 text-sm font-medium text-white hover:bg-orange-600"
+            >
+              退货（按原单部分退货）
+            </Link>
+          )}
         </div>
       )}
 

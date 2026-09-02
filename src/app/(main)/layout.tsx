@@ -19,6 +19,7 @@ const NAV_GROUPS: {
     items: [
       { href: "/purchase-orders", label: "进货单", roles: ALL_ROLES },
       { href: "/purchase-orders/new", label: "进货开单", roles: ["admin", "sales"] },
+      { href: "/purchase-returns", label: "进货退货", roles: ALL_ROLES },
     ],
   },
   {
@@ -26,7 +27,19 @@ const NAV_GROUPS: {
     items: [
       { href: "/sale-orders", label: "售卖单", roles: ALL_ROLES },
       { href: "/sale-orders/new", label: "销售开单", roles: ["admin", "sales"] },
+      { href: "/sale-returns", label: "销售退货", roles: ALL_ROLES },
     ],
+  },
+  {
+    label: "库存",
+    items: [
+      { href: "/inventory", label: "库存查询", roles: ALL_ROLES },
+      { href: "/stock-movements", label: "库存流水", roles: ["admin", "boss"] },
+    ],
+  },
+  {
+    label: "财务",
+    items: [{ href: "/receivables-payables", label: "应收应付", roles: ["admin", "boss"] }],
   },
   {
     label: "基础资料",
