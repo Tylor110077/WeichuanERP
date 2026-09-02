@@ -64,6 +64,7 @@ export function NewSaleForm({
   const [rows, setRows] = useState<Row[]>([emptyRow()]);
   const [productOptions, setProductOptions] = useState<ProductOption[]>(products);
   const [customerOptions, setCustomerOptions] = useState<CustomerOption[]>(customers);
+  const [customerId, setCustomerId] = useState("");
   const [customerQuery, setCustomerQuery] = useState("");
   const [showCandidates, setShowCandidates] = useState(false);
 
@@ -98,7 +99,6 @@ export function NewSaleForm({
   });
   const [productMsg, setProductMsg] = useState<{ ok?: string; error?: string } | null>(null);
   const [productPending, startProductTransition] = useTransition();
-  const [customerId, setCustomerId] = useState("");
   const [showCreateCustomer, setShowCreateCustomer] = useState(false);
   const [createCustomerMsg, setCreateCustomerMsg] = useState<{ ok?: string; error?: string } | null>(null);
   const [createPending, startCreateTransition] = useTransition();
