@@ -64,12 +64,27 @@ export function NewSaleForm({
   const [rows, setRows] = useState<Row[]>([emptyRow()]);
   const [productOptions, setProductOptions] = useState<ProductOption[]>(products);
   const [customerOptions, setCustomerOptions] = useState<CustomerOption[]>(customers);
-  const [customerSearch, setCustomerSearch] = useState("");
-  const filteredCustomers = (() => {
-    const kw = customerSearch.trim();
-    const matched = kw ? customerOptions.filter((c) => c.name.includes(kw)) : customerOptions;
-    return matched.slice(0, 50);
+  const [customerQuery, setCustomerQuery] = useState("");
+  const [showCandidates, setShowCandidates] = useState(false);
+
+  const selectedCustomer = customerOptions.find((c) => String(c.id) === customerId);
+  const candidates = (() => {
+    const kw = customerQuery.trim();
+    return (kw ? customerOptions.filter((c) => c.name.includes(kw)) : customerOptions).slice(0, 30);
   })();
+
+  function onCustomerQueryChange(value: string) {
+    setCustomerQuery(value);
+    // 输入与当前选中名不一致即视为重新搜索，清空选中
+    if (value !== selectedCustomer?.name) setCustomerId("");
+    setShowCandidates(true);
+  }
+
+  function chooseCustomer(c: CustomerOption) {
+    setCustomerId(String(c.id));
+    setCustomerQuery(c.name);
+    setShowCandidates(false);
+  }
   const [showCreateProduct, setShowCreateProduct] = useState(false);
   const [newProduct, setNewProduct] = useState({
     name: "",
@@ -112,7 +127,7 @@ export function NewSaleForm({
       setCustomerOptions((prev) =>
         prev.some((c) => c.id === result.id) ? prev : [...prev, result]
       );
-      setCustomerId(String(result.id));
+      chooseCustomer(result);
       setShowCreateCustomer(false);
       setNewCustomer({ name: "", contact: "", phone: "" });
       setCreateCustomerMsg({ ok: `客户「${result.name}」已创建并选中` });
@@ -229,33 +244,40 @@ export function NewSaleForm({
   return (
     <form action={formAction} className="space-y-4">
       <div className="flex flex-wrap items-end gap-4 rounded-xl border border-gray-200 bg-white p-5">
-        <div className="min-w-56">
-          <label htmlFor="customerId" className="block text-xs font-medium text-gray-600">
+        <div className="relative min-w-56">
+          <label htmlFor="customerQuery" className="block text-xs font-medium text-gray-600">
             客户 *
           </label>
           <input
+            id="customerQuery"
             type="text"
-            placeholder="搜索客户名称…"
-            value={customerSearch}
-            onChange={(e) => setCustomerSearch(e.target.value)}
+            autoComplete="off"
+            placeholder="输入客户名称，边输入边弹出候选…"
+            value={customerQuery}
+            onChange={(e) => onCustomerQueryChange(e.target.value)}
+            onFocus={() => setShowCandidates(true)}
             className={`mt-1 ${inputCls}`}
           />
-          <div className="mt-1 flex items-center gap-2">
-            <select
-              id="customerId"
-              name="customerId"
-              required
-              value={customerId}
-              onChange={(e) => setCustomerId(e.target.value)}
-              className={inputCls}
-            >
-              <option value="">请选择客户</option>
-              {filteredCustomers.map((c) => (
-                <option key={c.id} value={c.id}>
+          <input type="hidden" name="customerId" value={customerId} />
+          {showCandidates && customerQuery && (
+            <div className="absolute z-20 mt-1 max-h-64 w-full overflow-auto rounded-md border border-gray-200 bg-white shadow-lg">
+              {candidates.length === 0 && (
+                <div className="px-3 py-2 text-xs text-gray-400">无匹配客户</div>
+              )}
+              {candidates.map((c) => (
+                <button
+                  type="button"
+                  key={c.id}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => chooseCustomer(c)}
+                  className="block w-full px-3 py-2 text-left text-sm text-gray-900 hover:bg-blue-50"
+                >
                   {c.name}
-                </option>
+                </button>
               ))}
-            </select>
+            </div>
+          )}
+          <div className="mt-1">
             {canCreateCustomer && (
               <button
                 type="button"
@@ -269,11 +291,6 @@ export function NewSaleForm({
               </button>
             )}
           </div>
-          {customerSearch && (
-            <p className="mt-1 text-xs text-gray-400">
-              匹配 {customerOptions.filter((c) => c.name.includes(customerSearch)).length} 个（最多显示前 50 个）
-            </p>
-          )}
           {showCreateCustomer && (
             <div className="mt-2 rounded-lg border border-blue-200 bg-blue-50/50 p-3 space-y-2">
               <input
