@@ -1,7 +1,16 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
+import { MasterDataManager } from "@/components/master-data-manager";
 import { CustomerManager } from "./customer-manager";
+import {
+  deleteCustomerGroupAction,
+  deleteCustomerTagAction,
+  saveCustomerGroupAction,
+  saveCustomerTagAction,
+  toggleCustomerGroupStatusAction,
+  toggleCustomerTagStatusAction,
+} from "./actions";
 
 export const metadata = { title: "客户管理 - 玮川进销存" };
 
@@ -29,8 +38,14 @@ export default async function CustomersPage({
         tagLinks: { include: { tag: { select: { id: true, name: true } } } },
       },
     }),
-    prisma.customerGroup.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, status: true } }),
-    prisma.customerTag.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, status: true } }),
+    prisma.customerGroup.findMany({
+      orderBy: { name: "asc" },
+      select: { id: true, name: true, status: true, _count: { select: { customers: true } } },
+    }),
+    prisma.customerTag.findMany({
+      orderBy: { name: "asc" },
+      select: { id: true, name: true, status: true, _count: { select: { links: true } } },
+    }),
   ]);
 
   const customersData = customers.map((c) => ({
@@ -69,6 +84,64 @@ export default async function CustomersPage({
           </button>
         </form>
       </div>
+
+      <details className="rounded-xl border border-gray-200 bg-white">
+        <summary className="cursor-pointer px-5 py-3 text-sm font-medium text-gray-900">
+          客户组织管理（{groups.length} 个）
+          <span className="ml-2 text-xs font-normal text-gray-400">点击展开/收起 · 客户归属组织可移动，未被引用可删除</span>
+        </summary>
+        <div className="border-t border-gray-100 p-5">
+          <MasterDataManager
+            entityLabel="组织"
+            columns={[
+              { key: "name", label: "组织名称" },
+              { key: "customerCount", label: "客户数" },
+            ]}
+            fields={[
+              { name: "name", label: "组织名称", required: true, maxLength: 50 },
+            ]}
+            rows={groups.map((g) => ({
+              id: g.id,
+              status: g.status,
+              cells: { name: g.name, customerCount: `${g._count.customers} 个` },
+              formValues: { name: g.name },
+            }))}
+            isAdmin={user.role === "admin"}
+            saveAction={saveCustomerGroupAction}
+            toggleAction={toggleCustomerGroupStatusAction}
+            deleteAction={deleteCustomerGroupAction}
+          />
+        </div>
+      </details>
+
+      <details className="rounded-xl border border-gray-200 bg-white">
+        <summary className="cursor-pointer px-5 py-3 text-sm font-medium text-gray-900">
+          客户标签管理（{tags.length} 个）
+          <span className="ml-2 text-xs font-normal text-gray-400">点击展开/收起 · 一个客户可挂多个标签，未被引用可删除</span>
+        </summary>
+        <div className="border-t border-gray-100 p-5">
+          <MasterDataManager
+            entityLabel="标签"
+            columns={[
+              { key: "name", label: "标签名称" },
+              { key: "customerCount", label: "客户数" },
+            ]}
+            fields={[
+              { name: "name", label: "标签名称", required: true, maxLength: 30 },
+            ]}
+            rows={tags.map((t) => ({
+              id: t.id,
+              status: t.status,
+              cells: { name: t.name, customerCount: `${t._count.links} 个` },
+              formValues: { name: t.name },
+            }))}
+            isAdmin={user.role === "admin"}
+            saveAction={saveCustomerTagAction}
+            toggleAction={toggleCustomerTagStatusAction}
+            deleteAction={deleteCustomerTagAction}
+          />
+        </div>
+      </details>
 
       <CustomerManager
         customers={customersData}

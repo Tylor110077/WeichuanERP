@@ -54,8 +54,6 @@ const NAV_GROUPS: {
       { href: "/units", label: "单位字典", roles: ALL_ROLES },
       { href: "/suppliers", label: "供应商管理", roles: ALL_ROLES },
       { href: "/customers", label: "客户管理", roles: ALL_ROLES },
-      { href: "/customer-groups", label: "客户组织", roles: ALL_ROLES },
-      { href: "/customer-tags", label: "客户标签", roles: ALL_ROLES },
     ],
   },
   {
