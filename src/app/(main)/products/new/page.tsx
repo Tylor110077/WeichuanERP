@@ -32,10 +32,10 @@ export default async function NewProductPage() {
           { name: "spec", label: "规格/型号", maxLength: 100 },
           {
             name: "manufacturer",
-            label: "厂商（生产厂家）*，与供应商档案同名将自动作为补货来源",
+            label: "厂商（生产厂家）*",
             required: true,
             maxLength: 100,
-            placeholder: "如：远东电缆、正泰电器",
+            placeholder: "与供应商档案同名将自动作为补货来源，如：远东电缆",
           },
           { name: "categoryId", label: "分类", type: "select", options: [{ value: "", label: "未分类" }, ...categories.map((c) => ({ value: String(c.id), label: c.name }))] },
           { name: "unitId", label: "单位 *", required: true, type: "select", options: units.map((u) => ({ value: String(u.id), label: u.name })) },

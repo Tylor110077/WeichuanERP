@@ -596,11 +596,11 @@ export function NewSaleForm({
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600">厂商（生产厂家）*，与供应商档案同名将自动作为补货来源</label>
+                <label className="block text-xs font-medium text-gray-600">厂商（生产厂家）*</label>
                 <input
                   type="text"
                   maxLength={100}
-                  placeholder="如：远东电缆、正泰电器"
+                  placeholder="与供应商档案同名将自动作为补货来源，如：远东电缆"
                   value={newProduct.manufacturer}
                   onChange={(e) => setNewProduct((p) => ({ ...p, manufacturer: e.target.value }))}
                   className="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm text-gray-900"
