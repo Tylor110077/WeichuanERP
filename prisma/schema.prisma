@@ -243,13 +243,51 @@ model Customer {
   address     String?      @db.VarChar(200)
   remark      String?      @db.VarChar(200)
   status      Int          @default(1)
+  groupId     Int?         @map("group_id") // 客户组织（归属，可移动）
+  group       CustomerGroup? @relation(fields: [groupId], references: [id])
   createdAt   DateTime     @default(now()) @map("created_at")
   updatedAt   DateTime     @updatedAt @map("updated_at")
   saleOrders  SaleOrder[]
   saleReturns SaleReturn[]
+  tagLinks    CustomerTagLink[]
 
   @@index([name])
+  @@index([groupId])
   @@map("customers")
+}
+
+// 客户组织（分类，客户归属单一组织，可移动；同组织/标签管理页维护）
+model CustomerGroup {
+  id        Int        @id @default(autoincrement())
+  name      String     @unique @db.VarChar(50)
+  status    Int        @default(1)
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
+  customers Customer[]
+
+  @@map("customer_groups")
+}
+
+// 客户标签（多对多）
+model CustomerTag {
+  id        Int               @id @default(autoincrement())
+  name      String            @unique @db.VarChar(30)
+  status    Int               @default(1)
+  createdAt DateTime          @default(now()) @map("created_at")
+  updatedAt DateTime          @updatedAt @map("updated_at")
+  links     CustomerTagLink[]
+
+  @@map("customer_tags")
+}
+
+model CustomerTagLink {
+  customerId Int         @map("customer_id")
+  tagId      Int         @map("tag_id")
+  customer   Customer    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  tag        CustomerTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([customerId, tagId])
+  @@map("customer_tag_links")
 }
 
 // ---------------------------------------------------------------------------
