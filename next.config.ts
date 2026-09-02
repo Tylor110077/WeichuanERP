@@ -10,8 +10,10 @@ const securityHeaders = [
   },
   {
     key: "Content-Security-Policy",
-    value:
-      "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self'",
+    value: `default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'${
+      // React 开发模式需 eval 重建调用栈（生产构建不使用 eval，保持严格 CSP）
+      process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""
+    }; connect-src 'self'`,
   },
 ];
 
