@@ -22,6 +22,13 @@ const NAV_GROUPS: {
     ],
   },
   {
+    label: "销售",
+    items: [
+      { href: "/sale-orders", label: "售卖单", roles: ALL_ROLES },
+      { href: "/sale-orders/new", label: "销售开单", roles: ["admin", "sales"] },
+    ],
+  },
+  {
     label: "基础资料",
     items: [
       { href: "/products", label: "商品管理", roles: ALL_ROLES },
