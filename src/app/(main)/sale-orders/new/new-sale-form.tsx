@@ -318,6 +318,7 @@ export function NewSaleForm({
                 value={customerQuery}
                 onChange={(e) => onCustomerQueryChange(e.target.value)}
                 onFocus={() => setShowCandidates(true)}
+                onBlur={() => setShowCandidates(false)}
                 className={`w-full ${inputCls}`}
               />
               <input type="hidden" name="customerId" value={customerId} />
@@ -579,6 +580,7 @@ export function NewSaleForm({
                       value={row.productQuery}
                       onChange={(e) => onProductQueryChange(i, e.target.value)}
                       onFocus={(e) => openProductPanel(e, i)}
+                      onBlur={() => setProductPanel(null)}
                       className={inputCls}
                     />
                     <input type="hidden" name={`item_${i}_productId`} value={row.productId} />
