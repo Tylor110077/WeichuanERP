@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 :root {
+  /* 界面统一浅色主题（系统深色模式不切换）：文字固定深色，避免白底浅字看不清 */
   --background: #ffffff;
   --foreground: #171717;
 }
@@ -10,13 +11,6 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
