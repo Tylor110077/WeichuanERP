@@ -4,17 +4,9 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import type { UserRole } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUser } from "@/lib/auth/session";
+import { requireAdmin } from "@/lib/auth/guards";
 import { hashPassword, validatePasswordStrength } from "@/lib/auth/password";
 import { writeAudit } from "@/lib/audit";
-
-async function requireAdmin() {
-  const user = await getCurrentUser();
-  if (!user || user.role !== "admin") {
-    throw new Error("无权限执行此操作");
-  }
-  return user;
-}
 
 const createUserSchema = z.object({
   username: z

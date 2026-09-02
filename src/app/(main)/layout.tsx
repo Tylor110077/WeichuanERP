@@ -4,11 +4,34 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { logoutAction } from "./logout-action";
 import { ROLE_LABELS } from "@/lib/auth/roles";
 
-const NAV_ITEMS = [
-  { href: "/dashboard", label: "工作台", roles: ["admin", "sales", "boss"] },
-  { href: "/users", label: "用户管理", roles: ["admin"] },
-  { href: "/audit-logs", label: "审计日志", roles: ["admin"] },
-  { href: "/profile", label: "个人中心", roles: ["admin", "sales", "boss"] },
+const ALL_ROLES = ["admin", "sales", "boss"] as const;
+
+const NAV_GROUPS: {
+  label: string | null;
+  items: { href: string; label: string; roles: readonly string[] }[];
+}[] = [
+  {
+    label: null,
+    items: [{ href: "/dashboard", label: "工作台", roles: ALL_ROLES }],
+  },
+  {
+    label: "基础资料",
+    items: [
+      { href: "/products", label: "商品管理", roles: ALL_ROLES },
+      { href: "/categories", label: "商品分类", roles: ALL_ROLES },
+      { href: "/units", label: "单位字典", roles: ALL_ROLES },
+      { href: "/suppliers", label: "供应商管理", roles: ALL_ROLES },
+      { href: "/customers", label: "客户管理", roles: ALL_ROLES },
+    ],
+  },
+  {
+    label: "系统",
+    items: [
+      { href: "/users", label: "用户管理", roles: ["admin"] },
+      { href: "/audit-logs", label: "审计日志", roles: ["admin"] },
+      { href: "/profile", label: "个人中心", roles: ALL_ROLES },
+    ],
+  },
 ];
 
 export default async function MainLayout({
@@ -21,24 +44,37 @@ export default async function MainLayout({
     redirect("/login");
   }
 
-  const nav = NAV_ITEMS.filter((item) => item.roles.includes(user.role));
-
   return (
     <div className="flex min-h-screen bg-gray-50">
       <aside className="flex w-52 flex-col border-r border-gray-200 bg-white">
         <div className="border-b border-gray-200 px-4 py-4">
           <div className="text-base font-semibold text-gray-900">维川进销存</div>
         </div>
-        <nav className="flex-1 space-y-1 px-2 py-3">
-          {nav.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="block rounded-md px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
-            >
-              {item.label}
-            </Link>
-          ))}
+        <nav className="flex-1 space-y-4 overflow-y-auto px-2 py-3">
+          {NAV_GROUPS.map((group, gi) => {
+            const items = group.items.filter((item) => item.roles.includes(user.role));
+            if (items.length === 0) return null;
+            return (
+              <div key={gi}>
+                {group.label && (
+                  <div className="px-3 pb-1 text-xs font-medium text-gray-400">
+                    {group.label}
+                  </div>
+                )}
+                <div className="space-y-1">
+                  {items.map((item) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className="block rounded-md px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
         </nav>
         <div className="border-t border-gray-200 px-4 py-3">
           <div className="text-sm text-gray-900">{user.displayName}</div>
