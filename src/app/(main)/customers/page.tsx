@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { MasterDataManager } from "@/components/master-data-manager";
 import { saveCustomerAction, toggleCustomerStatusAction } from "./actions";
 
-export const metadata = { title: "客户管理 - 维川进销存" };
+export const metadata = { title: "客户管理 - 玮川进销存" };
 
 export default async function CustomersPage() {
   const user = await getCurrentUser();

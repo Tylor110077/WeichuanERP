@@ -8,7 +8,7 @@ import {
   toggleCategoryStatusAction,
 } from "./actions";
 
-export const metadata = { title: "商品分类 - 维川进销存" };
+export const metadata = { title: "商品分类 - 玮川进销存" };
 
 export default async function CategoriesPage() {
   const user = await getCurrentUser();

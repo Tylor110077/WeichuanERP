@@ -3,7 +3,7 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { ROLE_LABELS } from "@/lib/auth/roles";
 import { ChangePasswordForm } from "./change-password-form";
 
-export const metadata = { title: "个人中心 - 维川进销存" };
+export const metadata = { title: "个人中心 - 玮川进销存" };
 
 export default async function ProfilePage() {
   const user = await getCurrentUser();

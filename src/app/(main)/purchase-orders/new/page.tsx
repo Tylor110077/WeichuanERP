@@ -3,7 +3,7 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { NewOrderForm } from "./new-order-form";
 
-export const metadata = { title: "进货开单 - 维川进销存" };
+export const metadata = { title: "进货开单 - 玮川进销存" };
 
 export default async function NewPurchaseOrderPage() {
   const user = await getCurrentUser();

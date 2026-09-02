@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { PaymentForm } from "./payment-form";
 import { VoidPaymentButton } from "./void-payment-button";
 
-export const metadata = { title: "应收应付 - 维川进销存" };
+export const metadata = { title: "应收应付 - 玮川进销存" };
 
 const METHOD_LABELS: Record<string, string> = {
   cash: "现金",

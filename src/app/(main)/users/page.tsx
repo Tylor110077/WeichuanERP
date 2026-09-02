@@ -5,7 +5,7 @@ import { ROLE_LABELS } from "@/lib/auth/roles";
 import { CreateUserForm } from "./create-user-form";
 import { UserRowActions } from "./user-row-actions";
 
-export const metadata = { title: "用户管理 - 维川进销存" };
+export const metadata = { title: "用户管理 - 玮川进销存" };
 
 export default async function UsersPage() {
   const current = await getCurrentUser();

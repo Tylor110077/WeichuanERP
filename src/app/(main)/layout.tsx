@@ -78,7 +78,7 @@ export default async function MainLayout({
     <div className="flex min-h-screen bg-gray-50">
       <aside className="flex w-52 flex-col border-r border-gray-200 bg-white">
         <div className="border-b border-gray-200 px-4 py-4">
-          <div className="text-base font-semibold text-gray-900">维川进销存</div>
+          <div className="text-base font-semibold text-gray-900">玮川进销存</div>
         </div>
         <nav className="flex-1 space-y-4 overflow-y-auto px-2 py-3">
           {NAV_GROUPS.map((group, gi) => {

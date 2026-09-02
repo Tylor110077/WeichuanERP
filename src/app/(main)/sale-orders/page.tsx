@@ -4,7 +4,7 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { ROLE_LABELS } from "@/lib/auth/roles";
 
-export const metadata = { title: "售卖单 - 维川进销存" };
+export const metadata = { title: "售卖单 - 玮川进销存" };
 
 const PAGE_SIZE = 20;
 const STATUS_LABELS: Record<string, string> = {

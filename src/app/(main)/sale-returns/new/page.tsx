@@ -4,7 +4,7 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { ReturnForm } from "./return-form";
 
-export const metadata = { title: "销售退货 - 维川进销存" };
+export const metadata = { title: "销售退货 - 玮川进销存" };
 
 export default async function NewSaleReturnPage({
   searchParams,

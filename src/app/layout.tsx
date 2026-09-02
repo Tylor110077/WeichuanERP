@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "维川进销存",
+  title: "玮川进销存",
   description: "企业进销存管理系统（进货/销售/库存/往来/报表）",
 };
 

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 
-export const metadata = { title: "审计日志 - 维川进销存" };
+export const metadata = { title: "审计日志 - 玮川进销存" };
 
 const PAGE_SIZE = 20;
 

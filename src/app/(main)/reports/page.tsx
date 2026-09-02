@@ -3,7 +3,7 @@ import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { buildReport, REPORT_TABS, type ReportTabKey } from "@/lib/reports";
 
-export const metadata = { title: "报表中心 - 维川进销存" };
+export const metadata = { title: "报表中心 - 玮川进销存" };
 
 export default async function ReportsPage({
   searchParams,

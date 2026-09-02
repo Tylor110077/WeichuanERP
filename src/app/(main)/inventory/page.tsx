@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 
-export const metadata = { title: "库存查询 - 维川进销存" };
+export const metadata = { title: "库存查询 - 玮川进销存" };
 
 export default async function InventoryPage({
   searchParams,

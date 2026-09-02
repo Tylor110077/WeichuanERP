@@ -4,7 +4,7 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { DetailActions } from "./detail-actions";
 
-export const metadata = { title: "进货单详情 - 维川进销存" };
+export const metadata = { title: "进货单详情 - 玮川进销存" };
 
 const STATUS_LABELS: Record<string, string> = {
   pending: "待收货",

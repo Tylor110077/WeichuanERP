@@ -3,7 +3,7 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { ReturnListActions } from "./return-list-actions";
 
-export const metadata = { title: "进货退货单 - 维川进销存" };
+export const metadata = { title: "进货退货单 - 玮川进销存" };
 
 const STATUS_LABELS: Record<string, string> = { confirmed: "已开单", voided: "已作废" };
 

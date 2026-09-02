@@ -8,7 +8,7 @@ import {
   toggleUnitStatusAction,
 } from "./actions";
 
-export const metadata = { title: "单位字典 - 维川进销存" };
+export const metadata = { title: "单位字典 - 玮川进销存" };
 
 export default async function UnitsPage() {
   const user = await getCurrentUser();
