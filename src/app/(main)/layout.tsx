@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { logoutAction } from "./logout-action";
 import { ROLE_LABELS } from "@/lib/auth/roles";
+import { SidebarNav } from "@/components/sidebar-nav";
 
 const ALL_ROLES = ["admin", "sales", "boss"] as const;
 
@@ -80,32 +80,14 @@ export default async function MainLayout({
         <div className="border-b border-gray-200 px-4 py-4">
           <div className="text-base font-semibold text-gray-900">玮川进销存</div>
         </div>
-        <nav className="flex-1 space-y-4 overflow-y-auto px-2 py-3">
-          {NAV_GROUPS.map((group, gi) => {
-            const items = group.items.filter((item) => item.roles.includes(user.role));
-            if (items.length === 0) return null;
-            return (
-              <div key={gi}>
-                {group.label && (
-                  <div className="px-3 pb-1 text-xs font-medium text-gray-400">
-                    {group.label}
-                  </div>
-                )}
-                <div className="space-y-1">
-                  {items.map((item) => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className="block rounded-md px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      {item.label}
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </nav>
+        <SidebarNav
+          groups={NAV_GROUPS.map((group) => ({
+            label: group.label,
+            items: group.items
+              .filter((item) => item.roles.includes(user.role))
+              .map(({ href, label }) => ({ href, label })),
+          })).filter((g) => g.items.length > 0)}
+        />
         <div className="border-t border-gray-200 px-4 py-3">
           <div className="text-sm text-gray-900">{user.displayName}</div>
           <div className="text-xs text-gray-500">{ROLE_LABELS[user.role]}</div>
