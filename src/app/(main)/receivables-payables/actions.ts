@@ -110,6 +110,8 @@ export async function createPaymentAction(_prev: FormState, formData: FormData):
         after: { orderNo: result.orderNo, direction, orderType, orderId, amount, method },
       });
       revalidatePath("/receivables-payables");
+      revalidatePath(`/purchase-orders/${orderId}`);
+      revalidatePath(`/sale-orders/${orderId}`);
       return {
         ok: `${direction === "receipt" ? "收款" : "付款"}登记成功（${result.orderNo}，关联 ${orderNo}）`,
       };
@@ -162,5 +164,7 @@ export async function voidPaymentAction(_prev: FormState, formData: FormData): P
     after: { orderNo: payment.orderNo, status: "voided", voidReason: reason },
   });
   revalidatePath("/receivables-payables");
+  revalidatePath(`/purchase-orders/${payment.orderId}`);
+  revalidatePath(`/sale-orders/${payment.orderId}`);
   return { ok: "已作废，收付金额已冲回" };
 }

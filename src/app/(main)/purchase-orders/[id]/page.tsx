@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { DetailActions } from "./detail-actions";
+import { PaymentBlock } from "./payment-block";
 
 export const metadata = { title: "进货单详情 - 玮川进销存" };
 
@@ -46,6 +47,23 @@ export default async function PurchaseOrderDetailPage({
   const canReceive = user.role !== "boss" && (user.role === "admin" || order.operatorId === user.id);
   const canVoid = user.role === "admin" || user.role === "boss";
   const canReturn = user.role !== "boss" && order.status === "received";
+  const canPay = user.role === "admin" || user.role === "boss"; // 矩阵：付款登记
+
+  // 付款记录与未付金额（未付 = 应付 − 已付 − 未作废退货冲减）
+  const [payments, returns] = await Promise.all([
+    prisma.payment.findMany({
+      where: { orderType: "purchase", orderId: order.id },
+      orderBy: { createdAt: "desc" },
+      include: { operator: { select: { displayName: true } } },
+    }),
+    prisma.purchaseReturn.findMany({
+      where: { purchaseOrderId: order.id, status: "confirmed" },
+      select: { totalAmount: true },
+    }),
+  ]);
+  const returnedSum = returns.reduce((s, r) => s + Number(r.totalAmount), 0);
+  const outstanding =
+    Number(order.totalAmount) - Number(order.paidAmount) - returnedSum;
 
   return (
     <div className="space-y-6">
@@ -142,6 +160,22 @@ export default async function PurchaseOrderDetailPage({
           </div>
         </div>
       )}
+
+      <PaymentBlock
+        orderId={order.id}
+        orderStatus={order.status}
+        outstanding={outstanding}
+        canPay={canPay}
+        payments={payments.map((p) => ({
+          id: p.id,
+          orderNo: p.orderNo,
+          amount: Number(p.amount),
+          method: p.method,
+          createdAt: p.createdAt.toLocaleString("zh-CN"),
+          operatorName: p.operator.displayName,
+          status: p.status,
+        }))}
+      />
 
       {order.status === "voided" && (
         <div className="rounded-xl border border-gray-200 bg-white p-5 text-sm text-gray-600">
