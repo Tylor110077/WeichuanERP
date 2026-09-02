@@ -15,6 +15,13 @@ const NAV_GROUPS: {
     items: [{ href: "/dashboard", label: "工作台", roles: ALL_ROLES }],
   },
   {
+    label: "进货",
+    items: [
+      { href: "/purchase-orders", label: "进货单", roles: ALL_ROLES },
+      { href: "/purchase-orders/new", label: "进货开单", roles: ["admin", "sales"] },
+    ],
+  },
+  {
     label: "基础资料",
     items: [
       { href: "/products", label: "商品管理", roles: ALL_ROLES },
