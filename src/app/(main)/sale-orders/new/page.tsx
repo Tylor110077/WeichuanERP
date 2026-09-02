@@ -79,9 +79,16 @@ export default async function NewSaleOrderPage() {
   }
 
   const supplierMap = new Map(suppliers.map((s) => [s.id, s.name]));
+  // 厂商优先：商品档案的“厂商”名称匹配到供应商档案时，自动补货商默认取该供应商
+  const supplierIdByName = new Map<string, number>();
+  for (const s of suppliers) {
+    supplierIdByName.set(s.name, s.id);
+  }
 
   const productOptions = products.map((p) => {
     const last = lastByProduct.get(p.id);
+    const mfrSupplierId = supplierIdByName.get(p.manufacturer.trim()) ?? null;
+    const autoSupplierId = mfrSupplierId ?? last?.supplierId ?? null;
     return {
       id: p.id,
       label: `${p.code} ${p.name}`,
@@ -92,7 +99,7 @@ export default async function NewSaleOrderPage() {
       unitName: p.unit.name,
       stockQty: Number(p.stockQty),
       refSalePrice: Number(p.refSalePrice),
-      lastSupplierId: last?.supplierId ?? null,
+      lastSupplierId: autoSupplierId,
       lastSupplierName: last ? supplierMap.get(last.supplierId) ?? "" : "",
       lastSupplyPrice: last?.price ?? Number(p.refPurchasePrice),
     };

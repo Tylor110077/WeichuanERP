@@ -51,7 +51,7 @@ export default async function ProductsPage() {
         fields={[
           { name: "name", label: "商品名称", required: true, maxLength: 100 },
           { name: "spec", label: "规格/型号", maxLength: 100 },
-          { name: "manufacturer", label: "厂商（生产厂家）", required: true, maxLength: 100, placeholder: "如：远东电缆、正泰电器" },
+          { name: "manufacturer", label: "厂商（生产厂家）*，与供应商档案同名将作为自动补货来源", required: true, maxLength: 100, placeholder: "如：远东电缆、正泰电器" },
           {
             name: "categoryId",
             label: "分类",

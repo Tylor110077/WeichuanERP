@@ -261,6 +261,8 @@ export function NewSaleForm({
         setProductMsg({ error: result.error });
         return;
       }
+      const mfrSupplierId =
+        suppliers.find((s) => s.name === result.manufacturer.trim())?.id ?? null;
       const opt: ProductOption = {
         id: result.id,
         label: `${result.code} ${result.name}（${result.manufacturer}）`,
@@ -271,7 +273,7 @@ export function NewSaleForm({
         unitName: result.unitName,
         stockQty: 0,
         refSalePrice: result.refSalePrice,
-        lastSupplierId: null,
+        lastSupplierId: mfrSupplierId,
         lastSupplyPrice: result.refPurchasePrice,
       };
       setProductOptions((prev) => (prev.some((p) => p.id === result.id) ? prev : [...prev, opt]));
@@ -458,7 +460,7 @@ export function NewSaleForm({
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600">厂商（生产厂家）*</label>
+                <label className="block text-xs font-medium text-gray-600">厂商（生产厂家）*，与供应商档案同名将自动作为补货来源</label>
                 <input
                   type="text"
                   maxLength={100}
