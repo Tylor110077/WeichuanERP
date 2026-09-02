@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { MasterDataManager } from "@/components/master-data-manager";
@@ -17,7 +18,17 @@ export default async function SuppliersPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-lg font-semibold text-gray-900">供应商管理</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-lg font-semibold text-gray-900">供应商管理</h1>
+        {user.role === "admin" && (
+          <Link
+            href="/suppliers/new"
+            className="rounded-md bg-blue-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
+          >
+            + 新建供应商
+          </Link>
+        )}
+      </div>
       <MasterDataManager
         entityLabel="供应商"
         columns={[
@@ -56,6 +67,8 @@ export default async function SuppliersPage() {
         saveAction={saveSupplierAction}
         toggleAction={toggleSupplierStatusAction}
         deleteAction={deleteSupplierAction}
+        hideForm
+        editBase="/suppliers"
       />
     </div>
   );

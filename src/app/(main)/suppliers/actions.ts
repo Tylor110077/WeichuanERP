@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireMasterDataWrite } from "@/lib/auth/guards";
@@ -62,7 +63,7 @@ export async function saveSupplierAction(_prev: FormState, formData: FormData): 
     });
   }
   revalidatePath("/suppliers");
-  return { ok: id ? "已更新" : "供应商创建成功" };
+  redirect("/suppliers");
 }
 
 export async function toggleSupplierStatusAction(_prev: FormState, formData: FormData): Promise<FormState> {

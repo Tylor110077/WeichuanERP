@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
@@ -130,7 +131,7 @@ export async function saveProductAction(_prev: FormState, formData: FormData): P
     });
   }
   revalidatePath("/products");
-  return { ok: id ? "已更新" : "商品创建成功" };
+  redirect("/products");
 }
 
 export async function toggleProductStatusAction(_prev: FormState, formData: FormData): Promise<FormState> {

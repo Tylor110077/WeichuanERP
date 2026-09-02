@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { MasterDataManager } from "@/components/master-data-manager";
@@ -39,7 +40,17 @@ export default async function ProductsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-lg font-semibold text-gray-900">商品管理</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-lg font-semibold text-gray-900">商品管理</h1>
+        {user.role === "admin" && (
+          <Link
+            href="/products/new"
+            className="rounded-md bg-blue-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
+          >
+            + 新建商品
+          </Link>
+        )}
+      </div>
       <details className="rounded-xl border border-gray-200 bg-white">
         <summary className="cursor-pointer px-5 py-3 text-sm font-medium text-gray-900">
           商品分类管理（{categories.length} 个）
@@ -100,6 +111,8 @@ export default async function ProductsPage() {
 
       <MasterDataManager
         entityLabel="商品"
+        hideForm
+        editBase="/products"
         columns={[
           { key: "code", label: "编码" },
           { key: "name", label: "名称" },

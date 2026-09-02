@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useState } from "react";
 
 export interface FieldDef {
@@ -8,9 +9,9 @@ export interface FieldDef {
   required?: boolean;
   maxLength?: number;
   step?: string;
-  type?: "text" | "number";
   placeholder?: string;
-  /** select 型字段；值为选中项的 value */
+  /** "select"/"multiselect" 通过 options 提供候选；缺省为文本 */
+  type?: "text" | "number" | "select" | "multiselect";
   options?: { value: string; label: string }[];
   /** 新建时的默认值 */
   defaultValue?: string;
@@ -37,6 +38,9 @@ interface Props {
   saveAction: ActionFn;
   toggleAction: ActionFn;
   deleteAction?: ActionFn;
+  /** 独立页模式：不渲染平铺表单；行内"编辑"变为链接（editBase + /{id}） */
+  hideForm?: boolean;
+  editBase?: string;
 }
 
 const fieldCls =
@@ -51,6 +55,8 @@ export function MasterDataManager({
   saveAction,
   toggleAction,
   deleteAction,
+  hideForm,
+  editBase,
 }: Props) {
   const [editing, setEditing] = useState<RowData | null>(null);
   const [saveState, formAction, savePending] = useActionState<FormState, FormData>(saveAction, null);
@@ -96,13 +102,19 @@ export function MasterDataManager({
               {isAdmin && (
                 <td className="px-4 py-2.5">
                   <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setEditing(row)}
-                      className="text-xs text-blue-600 hover:underline"
-                    >
-                      编辑
-                    </button>
+                    {hideForm && editBase ? (
+                      <Link href={`${editBase}/${row.id}`} className="text-xs text-blue-600 hover:underline">
+                        编辑
+                      </Link>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setEditing(row)}
+                        className="text-xs text-blue-600 hover:underline"
+                      >
+                        编辑
+                      </button>
+                    )}
                     <form action={toggleActionState}>
                       <input type="hidden" name="id" value={row.id} />
                       <button
@@ -139,7 +151,7 @@ export function MasterDataManager({
     </div>
   );
 
-  if (!isAdmin) {
+  if (!isAdmin || hideForm) {
     return table;
   }
 

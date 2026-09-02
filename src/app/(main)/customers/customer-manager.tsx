@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useState, useTransition } from "react";
 import {
   saveCustomerAction,
@@ -32,11 +33,16 @@ export function CustomerManager({
   groups,
   tags,
   isAdmin,
+  hideForm,
+  editBase,
 }: {
   customers: CustomerRowData[];
   groups: { id: number; name: string; status: number }[];
   tags: { id: number; name: string; status: number }[];
   isAdmin: boolean;
+  /** 独立页模式：不渲染平铺表单；行内"编辑"变为链接 */
+  hideForm?: boolean;
+  editBase?: string;
 }) {
   const [groupOptions, setGroupOptions] = useState(groups);
   const [tagOptions, setTagOptions] = useState(tags);
@@ -161,9 +167,15 @@ export function CustomerManager({
               {isAdmin && (
                 <td className="px-4 py-2.5">
                   <div className="flex gap-2">
-                    <button type="button" onClick={() => startCreate(c)} className="text-xs text-blue-600 hover:underline">
-                      编辑
-                    </button>
+                    {hideForm && editBase ? (
+                      <Link href={`${editBase}/${c.id}`} className="text-xs text-blue-600 hover:underline">
+                        编辑
+                      </Link>
+                    ) : (
+                      <button type="button" onClick={() => startCreate(c)} className="text-xs text-blue-600 hover:underline">
+                        编辑
+                      </button>
+                    )}
                     <form action={toggleAction}>
                       <input type="hidden" name="id" value={c.id} />
                       <button type="submit" disabled={togglePending} className="text-xs text-red-600 hover:underline disabled:opacity-50">
@@ -190,10 +202,10 @@ export function CustomerManager({
     </div>
   );
 
-  if (!isAdmin) {
+  if (!isAdmin || hideForm) {
     return (
       <div className="space-y-4">
-        <div className="text-xs text-gray-400">客户基础资料（含组织/标签）仅管理员可维护</div>
+        {!isAdmin && <div className="text-xs text-gray-400">客户基础资料（含组织/标签）仅管理员可维护</div>}
         {table}
       </div>
     );

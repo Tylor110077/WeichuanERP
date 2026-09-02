@@ -70,6 +70,15 @@ export default async function CustomersPage({
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-lg font-semibold text-gray-900">客户管理</h1>
+        <div className="flex items-center gap-2">
+          {user.role === "admin" && (
+            <Link
+              href="/customers/new"
+              className="rounded-md bg-blue-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
+            >
+              + 新建客户
+            </Link>
+          )}
         <form className="flex items-center gap-2">
           <select name="groupId" defaultValue={groupId ?? ""} className="rounded-md border border-gray-300 px-2 py-1.5 text-sm">
             <option value="">全部组织</option>
@@ -87,6 +96,7 @@ export default async function CustomersPage({
             筛选
           </button>
         </form>
+        </div>
       </div>
 
       <details className="rounded-xl border border-gray-200 bg-white">
@@ -219,6 +229,8 @@ export default async function CustomersPage({
         groups={groups}
         tags={tags}
         isAdmin={user.role === "admin"}
+        hideForm
+        editBase="/customers"
       />
     </div>
   );

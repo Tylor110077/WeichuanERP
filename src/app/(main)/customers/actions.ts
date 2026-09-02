@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin, requireMasterDataWrite } from "@/lib/auth/guards";
@@ -97,7 +98,7 @@ export async function saveCustomerAction(_prev: FormState, formData: FormData): 
   }
   revalidatePath("/customers");
   revalidatePath("/customer-groups");
-  return { ok: id ? "已更新" : "客户创建成功" };
+  redirect(id ? `/customers` : "/customers");
 }
 
 export async function toggleCustomerStatusAction(_prev: FormState, formData: FormData): Promise<FormState> {
