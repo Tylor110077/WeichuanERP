@@ -3,8 +3,17 @@
 import { useActionState, useState, useTransition } from "react";
 import { createSaleOrderAction, type FormState } from "../actions";
 import { createQuickCustomerAction, type QuickCustomerResult } from "../../customers/actions";
+import { createQuickProductAction, type QuickProductResult } from "../../products/actions";
 
 interface CustomerOption {
+  id: number;
+  name: string;
+}
+interface UnitOption {
+  id: number;
+  name: string;
+}
+interface CategoryOption {
   id: number;
   name: string;
 }
@@ -39,15 +48,34 @@ export function NewSaleForm({
   customers,
   suppliers,
   products,
+  units,
+  categories,
   canCreateCustomer,
+  canCreateProduct,
 }: {
   customers: CustomerOption[];
   suppliers: SupplierOption[];
   products: ProductOption[];
+  units: UnitOption[];
+  categories: CategoryOption[];
   canCreateCustomer: boolean;
+  canCreateProduct: boolean;
 }) {
   const [rows, setRows] = useState<Row[]>([emptyRow()]);
+  const [productOptions, setProductOptions] = useState<ProductOption[]>(products);
   const [customerOptions, setCustomerOptions] = useState<CustomerOption[]>(customers);
+  const [showCreateProduct, setShowCreateProduct] = useState(false);
+  const [newProduct, setNewProduct] = useState({
+    name: "",
+    spec: "",
+    categoryId: "",
+    unitId: "",
+    refSalePrice: "",
+    refPurchasePrice: "",
+    minStock: "",
+  });
+  const [productMsg, setProductMsg] = useState<{ ok?: string; error?: string } | null>(null);
+  const [productPending, startProductTransition] = useTransition();
   const [customerId, setCustomerId] = useState("");
   const [showCreateCustomer, setShowCreateCustomer] = useState(false);
   const [createCustomerMsg, setCreateCustomerMsg] = useState<{ ok?: string; error?: string } | null>(null);
@@ -128,6 +156,60 @@ export function NewSaleForm({
     const q = Number(row.quantity);
     const price = Number(row.unitPrice);
     return Number.isFinite(q) && Number.isFinite(price) ? q * price : 0;
+  }
+
+  function onCreateProduct() {
+    if (!newProduct.name.trim()) {
+      setProductMsg({ error: "请填写商品名称" });
+      return;
+    }
+    if (!newProduct.unitId) {
+      setProductMsg({ error: "请选择单位" });
+      return;
+    }
+    startProductTransition(async () => {
+      const result: QuickProductResult = await createQuickProductAction({
+        name: newProduct.name,
+        spec: newProduct.spec,
+        categoryId: newProduct.categoryId ? Number(newProduct.categoryId) : null,
+        unitId: Number(newProduct.unitId),
+        refSalePrice: Number(newProduct.refSalePrice) || 0,
+        refPurchasePrice: Number(newProduct.refPurchasePrice) || 0,
+        minStock: Number(newProduct.minStock) || 0,
+      });
+      if ("error" in result) {
+        setProductMsg({ error: result.error });
+        return;
+      }
+      const opt: ProductOption = {
+        id: result.id,
+        label: `${result.code} ${result.name}`,
+        unitName: result.unitName,
+        stockQty: 0,
+        refSalePrice: result.refSalePrice,
+        lastSupplierId: null,
+        lastSupplyPrice: result.refPurchasePrice,
+      };
+      setProductOptions((prev) => (prev.some((p) => p.id === result.id) ? prev : [...prev, opt]));
+      // 自动追加一行商品并选中新商品（库存 0 → 走缺货补货流程）
+      setRows((prev) => [
+        ...prev,
+        {
+          productId: String(result.id),
+          unitName: result.unitName,
+          stockQty: 0,
+          quantity: "",
+          unitPrice: String(result.refSalePrice),
+          supplierId: "",
+          supplyPrice: String(result.refPurchasePrice),
+          hasLastSupplier: false,
+        },
+      ]);
+      setShowCreateProduct(false);
+      setNewProduct({ name: "", spec: "", categoryId: "", unitId: "", refSalePrice: "", refPurchasePrice: "", minStock: "" });
+      setProductMsg({ ok: `商品「${result.name}」已创建（${result.code}），已加入商品行` });
+      setTimeout(() => setProductMsg(null), 5000);
+    });
   }
 
   const total = rows.reduce((s, r) => s + lineAmount(r), 0);
@@ -230,6 +312,131 @@ export function NewSaleForm({
         </div>
       </div>
 
+      {canCreateProduct && (
+        <div className="rounded-xl border border-gray-200 bg-white p-4">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-gray-500">
+              下拉里没有这个商品？可以当场建档（编码自动生成，默认未上架为启用）。
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                setShowCreateProduct((v) => !v);
+                setProductMsg(null);
+              }}
+              className="rounded-md border border-blue-300 px-3 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-50"
+            >
+              {showCreateProduct ? "收起" : "+ 新建商品"}
+            </button>
+          </div>
+          {showCreateProduct && (
+            <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-600">商品名称 *</label>
+                <input
+                  type="text"
+                  maxLength={100}
+                  placeholder="商品名称（必填）"
+                  value={newProduct.name}
+                  onChange={(e) => setNewProduct((p) => ({ ...p, name: e.target.value }))}
+                  className="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm text-gray-900"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600">规格/型号</label>
+                <input
+                  type="text"
+                  maxLength={100}
+                  placeholder="规格/型号"
+                  value={newProduct.spec}
+                  onChange={(e) => setNewProduct((p) => ({ ...p, spec: e.target.value }))}
+                  className="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm text-gray-900"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600">分类</label>
+                <select
+                  name="quickCategory"
+                  value={newProduct.categoryId}
+                  onChange={(e) => setNewProduct((p) => ({ ...p, categoryId: e.target.value }))}
+                  className="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm text-gray-900"
+                >
+                  <option value="">未分类</option>
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600">单位 *</label>
+                <select
+                  name="quickUnit"
+                  value={newProduct.unitId}
+                  onChange={(e) => setNewProduct((p) => ({ ...p, unitId: e.target.value }))}
+                  className="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm text-gray-900"
+                >
+                  <option value="">请选择</option>
+                  {units.map((u) => (
+                    <option key={u.id} value={u.id}>{u.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600">参考进价</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="参考进价"
+                  value={newProduct.refPurchasePrice}
+                  onChange={(e) => setNewProduct((p) => ({ ...p, refPurchasePrice: e.target.value }))}
+                  className="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm text-gray-900"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600">参考售价</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="参考售价"
+                  value={newProduct.refSalePrice}
+                  onChange={(e) => setNewProduct((p) => ({ ...p, refSalePrice: e.target.value }))}
+                  className="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm text-gray-900"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600">库存预警线</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.001"
+                  placeholder="库存预警线"
+                  value={newProduct.minStock}
+                  onChange={(e) => setNewProduct((p) => ({ ...p, minStock: e.target.value }))}
+                  className="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm text-gray-900"
+                />
+              </div>
+              <div className="flex items-end gap-2">
+                <button
+                  type="button"
+                  onClick={onCreateProduct}
+                  disabled={productPending}
+                  className="rounded-md bg-blue-600 px-4 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {productPending ? "创建中…" : "创建商品并加行"}
+                </button>
+              </div>
+              {(productMsg?.ok || productMsg?.error) && (
+                <p className={`col-span-full text-xs ${productMsg.ok ? "text-green-600" : "text-red-600"}`}>
+                  {productMsg.ok ?? productMsg.error}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
         <table className="min-w-full divide-y divide-gray-200 text-sm">
           <thead className="bg-gray-50 text-left text-xs text-gray-500">
@@ -258,7 +465,7 @@ export function NewSaleForm({
                       className={inputCls}
                     >
                       <option value="">请选择商品</option>
-                      {products.map((p) => (
+                      {productOptions.map((p) => (
                         <option key={p.id} value={p.id}>
                           {p.label}
                         </option>

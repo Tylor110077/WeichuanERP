@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { requireMasterDataWrite } from "@/lib/auth/guards";
+import { requireAdmin, requireMasterDataWrite } from "@/lib/auth/guards";
 import { writeAudit } from "@/lib/audit";
 
 const productSchema = z.object({
@@ -145,4 +145,85 @@ export async function toggleProductStatusAction(_prev: FormState, formData: Form
   });
   revalidatePath("/products");
   return { ok: next === 1 ? "已启用" : "已停用" };
+}
+
+export type QuickProductResult =
+  | {
+      id: number;
+      code: string;
+      name: string;
+      unitId: number;
+      unitName: string;
+      refSalePrice: number;
+      refPurchasePrice: number;
+    }
+  | { error: string };
+
+/** 销售开单页内直接新建商品（仅管理员；SKU 自动生成，同商品管理页）。 */
+export async function createQuickProductAction(data: {
+  name: string;
+  spec?: string;
+  categoryId?: number | null;
+  unitId: number;
+  refPurchasePrice?: number | null;
+  refSalePrice?: number | null;
+  minStock?: number | null;
+}): Promise<QuickProductResult> {
+  const admin = await requireAdmin().catch(() => null);
+  if (!admin) return { error: "仅管理员可在开单页新建商品" };
+
+  const parsed = productSchema.safeParse({
+    name: data.name ?? "",
+    spec: data.spec ?? "",
+    categoryId: data.categoryId || null,
+    unitId: Number(data.unitId),
+    refPurchasePrice: data.refPurchasePrice ?? 0,
+    refSalePrice: data.refSalePrice ?? 0,
+    minStock: data.minStock ?? 0,
+  });
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "输入有误" };
+
+  const unit = await prisma.unit.findUnique({ where: { id: parsed.data.unitId } });
+  if (!unit || unit.status !== 1) return { error: "单位不存在或已停用" };
+
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const code = await generateUniqueCode();
+    try {
+      const product = await prisma.product.create({
+        data: {
+          code,
+          name: parsed.data.name,
+          spec: parsed.data.spec || null,
+          categoryId: parsed.data.categoryId,
+          unitId: parsed.data.unitId,
+          refPurchasePrice: parsed.data.refPurchasePrice,
+          refSalePrice: parsed.data.refSalePrice,
+          minStock: parsed.data.minStock,
+          createdBy: admin.id,
+        },
+        select: { id: true, code: true, name: true },
+      });
+      await writeAudit({
+        userId: admin.id,
+        action: "create",
+        entityType: "product",
+        entityId: product.id,
+        after: { code, name: parsed.data.name, quickCreate: true },
+      });
+      revalidatePath("/products");
+      return {
+        id: product.id,
+        code: product.code,
+        name: product.name,
+        unitId: parsed.data.unitId,
+        unitName: unit.name,
+        refSalePrice: parsed.data.refSalePrice,
+        refPurchasePrice: parsed.data.refPurchasePrice,
+      };
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") continue;
+      throw err;
+    }
+  }
+  return { error: "商品编码生成失败，请重试" };
 }
