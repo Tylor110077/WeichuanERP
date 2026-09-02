@@ -140,18 +140,20 @@ export default async function SaleOrderDetailPage({
 
       <div className="rounded-xl border border-gray-200 bg-white p-5">
         <h2 className="mb-3 text-sm font-semibold text-gray-900">单据操作</h2>
-        {canVoid && <DetailActions orderId={order.id} status={order.status} />}
-        {!canVoid && order.status === "confirmed" && (
-          <span className="text-xs text-gray-400">业务员无作废权限（管理员/老板可作废）</span>
-        )}
-        {order.status === "confirmed" && (
-          <Link
-            href={`/sale-returns/new?orderId=${order.id}`}
-            className="ml-3 inline-block rounded-md bg-orange-500 px-4 py-1.5 text-sm font-medium text-white hover:bg-orange-600"
-          >
-            退货（按原单部分退货）
-          </Link>
-        )}
+        <div className="flex flex-wrap items-center gap-3">
+          {canVoid && <DetailActions orderId={order.id} status={order.status} />}
+          {!canVoid && order.status === "confirmed" && (
+            <span className="text-xs text-gray-400">业务员无作废权限（管理员/老板可作废）</span>
+          )}
+          {order.status === "confirmed" && (
+            <Link
+              href={`/sale-returns/new?orderId=${order.id}`}
+              className="rounded-md bg-orange-500 px-4 py-1.5 text-sm font-medium text-white hover:bg-orange-600"
+            >
+              退货（按原单部分退货）
+            </Link>
+          )}
+        </div>
       </div>
 
       {order.status === "voided" && (

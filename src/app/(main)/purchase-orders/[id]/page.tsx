@@ -124,20 +124,22 @@ export default async function PurchaseOrderDetailPage({
       {order.status !== "voided" && (canReceive || canVoid || canReturn) && (
         <div className="rounded-xl border border-gray-200 bg-white p-5">
           <h2 className="mb-3 text-sm font-semibold text-gray-900">单据操作</h2>
-          <DetailActions
-            orderId={order.id}
-            status={order.status}
-            canReceive={canReceive}
-            canVoid={canVoid}
-          />
-          {canReturn && (
-            <Link
-              href={`/purchase-returns/new?orderId=${order.id}`}
-              className="mt-3 inline-block rounded-md bg-orange-500 px-4 py-1.5 text-sm font-medium text-white hover:bg-orange-600"
-            >
-              退货（按原单部分退货）
-            </Link>
-          )}
+          <div className="flex flex-wrap items-center gap-3">
+            <DetailActions
+              orderId={order.id}
+              status={order.status}
+              canReceive={canReceive}
+              canVoid={canVoid}
+            />
+            {canReturn && (
+              <Link
+                href={`/purchase-returns/new?orderId=${order.id}`}
+                className="rounded-md bg-orange-500 px-4 py-1.5 text-sm font-medium text-white hover:bg-orange-600"
+              >
+                退货（按原单部分退货）
+              </Link>
+            )}
+          </div>
         </div>
       )}
 
