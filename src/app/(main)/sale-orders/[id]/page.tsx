@@ -173,7 +173,7 @@ export default async function SaleOrderDetailPage({
           {order.status === "confirmed" && (
             <Link
               href={`/sale-returns/new?orderId=${order.id}`}
-              className="rounded-md bg-orange-500 px-4 py-1.5 text-sm font-medium text-white hover:bg-orange-600"
+              className="rounded-md border border-orange-300 px-4 py-1.5 text-sm font-medium text-orange-600 hover:bg-orange-50"
             >
               退货（按原单部分退货）
             </Link>
