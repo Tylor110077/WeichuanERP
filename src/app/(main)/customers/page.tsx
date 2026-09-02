@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { MasterDataManager } from "@/components/master-data-manager";
+import { buildCustomerProfile } from "@/lib/customer-profile";
 import { CustomerManager } from "./customer-manager";
 import {
   deleteCustomerGroupAction,
@@ -47,6 +49,8 @@ export default async function CustomersPage({
       select: { id: true, name: true, status: true, _count: { select: { links: true } } },
     }),
   ]);
+
+  const { profileRows } = await buildCustomerProfile();
 
   const customersData = customers.map((c) => ({
     id: c.id,
@@ -140,6 +144,73 @@ export default async function CustomersPage({
             toggleAction={toggleCustomerTagStatusAction}
             deleteAction={deleteCustomerTagAction}
           />
+        </div>
+      </details>
+
+      <details className="rounded-xl border border-gray-200 bg-white">
+        <summary className="cursor-pointer px-5 py-3 text-sm font-medium text-gray-900">
+          客户画像（{profileRows.length} 个客户有成交）
+          <span className="ml-2 text-xs font-normal text-gray-400">点击展开/收起 · 单数/销售额/毛利/平均利润率，点击客户「看明细」进入详情</span>
+        </summary>
+        <div className="border-t border-gray-100 p-5">
+          <div className="overflow-x-auto rounded-xl border border-gray-200">
+            <table className="min-w-full divide-y divide-gray-200 text-sm">
+              <thead className="bg-gray-50 text-left text-xs text-gray-500">
+                <tr>
+                  <th className="px-4 py-3 font-medium">客户</th>
+                  <th className="px-4 py-3 font-medium">组织</th>
+                  <th className="px-4 py-3 font-medium">标签</th>
+                  <th className="px-4 py-3 text-right font-medium">成交单数</th>
+                  <th className="px-4 py-3 text-right font-medium">销售额</th>
+                  <th className="px-4 py-3 text-right font-medium">成本</th>
+                  <th className="px-4 py-3 text-right font-medium">毛利</th>
+                  <th className="px-4 py-3 text-right font-medium">平均利润率</th>
+                  <th className="px-4 py-3 font-medium"></th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {profileRows.length === 0 && (
+                  <tr>
+                    <td colSpan={9} className="px-4 py-8 text-center text-gray-400">暂无成交客户（开售卖单后自动统计）</td>
+                  </tr>
+                )}
+                {profileRows.map((r) => (
+                  <tr key={r.id}>
+                    <td className="px-4 py-2.5 text-gray-900">{r.name}</td>
+                    <td className="px-4 py-2.5">
+                      {r.groupName ? (
+                        <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-700">{r.groupName}</span>
+                      ) : (
+                        <span className="text-gray-400">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-2.5">
+                      <div className="flex flex-wrap gap-1">
+                        {r.tagNames.map((t) => (
+                          <span key={t} className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">{t}</span>
+                        ))}
+                        {r.tagNames.length === 0 && <span className="text-gray-400">—</span>}
+                      </div>
+                    </td>
+                    <td className="px-4 py-2.5 text-right text-gray-900">{r.count}</td>
+                    <td className="px-4 py-2.5 text-right text-gray-900">¥{r.sales.toFixed(2)}</td>
+                    <td className="px-4 py-2.5 text-right text-gray-600">¥{r.cost.toFixed(2)}</td>
+                    <td className={`px-4 py-2.5 text-right font-medium ${r.profit >= 0 ? "text-green-700" : "text-red-600"}`}>
+                      ¥{r.profit.toFixed(2)}
+                    </td>
+                    <td className={`px-4 py-2.5 text-right ${r.margin >= 0 ? "text-green-700" : "text-red-600"}`}>
+                      {r.margin.toFixed(2)}%
+                    </td>
+                    <td className="px-4 py-2.5">
+                      <Link href={`/customer-profile?customerId=${r.id}`} className="text-blue-600 hover:underline">
+                        看明细
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </details>
 

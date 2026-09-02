@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
-import { prisma } from "@/lib/prisma";
+import { buildCustomerProfile } from "@/lib/customer-profile";
 import { DateShortcuts } from "@/components/date-shortcuts";
 
 export const metadata = { title: "客户画像 - 玮川进销存" };
@@ -28,55 +28,7 @@ export default async function CustomerProfilePage({
 
   const params = await searchParams;
   const customerId = params.customerId ? Number(params.customerId) : undefined;
-  const { gte, lte } = dateRange(params.from, params.to);
-
-  const [customers, orders] = await Promise.all([
-    prisma.customer.findMany({
-      orderBy: { name: "asc" },
-      include: {
-        group: { select: { name: true } },
-        tagLinks: { include: { tag: { select: { name: true } } } },
-      },
-    }),
-    prisma.saleOrder.findMany({
-      where: { status: "confirmed", createdAt: { gte, lte } },
-      include: {
-        items: { include: { product: { select: { code: true, name: true } }, unit: { select: { name: true } } } },
-      },
-      orderBy: { createdAt: "asc" },
-      take: 5000,
-    }),
-  ]);
-
-  // 按客户聚合
-  const agg = new Map<number, { count: number; sales: number; cost: number }>();
-  for (const o of orders) {
-    const cur = agg.get(o.customerId) ?? { count: 0, sales: 0, cost: 0 };
-    cur.count += 1;
-    cur.sales += Number(o.totalAmount);
-    cur.cost += o.items.reduce((s, it) => s + Number(it.costAmount), 0);
-    agg.set(o.customerId, cur);
-  }
-
-  const profileRows = customers
-    .map((c) => {
-      const a = agg.get(c.id);
-      if (!a) return null;
-      const profit = a.sales - a.cost;
-      return {
-        id: c.id,
-        name: c.name,
-        groupName: c.group?.name ?? "",
-        tagNames: c.tagLinks.map((l) => l.tag.name),
-        count: a.count,
-        sales: a.sales,
-        cost: a.cost,
-        profit,
-        margin: a.sales > 0 ? (profit / a.sales) * 100 : 0,
-      };
-    })
-    .filter((r): r is NonNullable<typeof r> => r !== null)
-    .sort((a, b) => b.profit - a.profit);
+  const { orders, profileRows } = await buildCustomerProfile(params.from, params.to);
 
   // 选中客户明细
   const selected =
@@ -279,11 +231,4 @@ function MiniStat({ label, value, colorClass }: { label: string; value: string; 
       <div className={`mt-1 text-base font-semibold ${colorClass ?? "text-gray-900"}`}>{value}</div>
     </div>
   );
-}
-
-function dateRange(from?: string, to?: string): { gte: Date; lte: Date } {
-  if (from && to && /^\d{4}-\d{2}-\d{2}$/.test(from) && /^\d{4}-\d{2}-\d{2}$/.test(to)) {
-    return { gte: new Date(`${from}T00:00:00`), lte: new Date(`${to}T23:59:59.999`) };
-  }
-  return { gte: new Date(2000, 0, 1), lte: new Date(2100, 11, 31, 23, 59, 59, 999) };
 }
