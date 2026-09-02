@@ -4,6 +4,7 @@ import { useActionState, useState, useTransition } from "react";
 import {
   saveCustomerAction,
   toggleCustomerStatusAction,
+  deleteCustomerAction,
   createQuickCustomerGroupAction,
   createQuickCustomerTagAction,
   type FormState,
@@ -56,6 +57,7 @@ export function CustomerManager({
   const [quickPending, startQuick] = useTransition();
   const [saveState, saveAction, savePending] = useActionState<FormState, FormData>(saveCustomerAction, null);
   const [toggleState, toggleAction, togglePending] = useActionState<FormState, FormData>(toggleCustomerStatusAction, null);
+  const [deleteState, deleteAction, deletePending] = useActionState<FormState, FormData>(deleteCustomerAction, null);
 
   function startCreate(row: CustomerRowData | null) {
     setEditing(row);
@@ -168,8 +170,16 @@ export function CustomerManager({
                         {c.status === 1 ? "停用" : "启用"}
                       </button>
                     </form>
+                    <form action={deleteAction}>
+                      <input type="hidden" name="id" value={c.id} />
+                      <button type="submit" disabled={deletePending} className="text-xs text-gray-500 hover:underline disabled:opacity-50">
+                        删除
+                      </button>
+                    </form>
                   </div>
                   {toggleState?.error && <p className="text-xs text-red-600">{toggleState.error}</p>}
+                  {deleteState?.error && <p className="text-xs text-red-600">{deleteState.error}</p>}
+                  {deleteState?.ok && <p className="text-xs text-green-600">{deleteState.ok}</p>}
                   {toggleState?.ok && <p className="text-xs text-green-600">{toggleState.ok}</p>}
                 </td>
               )}

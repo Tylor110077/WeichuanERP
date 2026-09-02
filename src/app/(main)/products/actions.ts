@@ -237,3 +237,35 @@ export async function createQuickProductAction(data: {
   }
   return { error: "商品编码生成失败，请重试" };
 }
+
+
+/** 删除商品：未被任何单据/流水引用才可删（引用关系建议用停用）。 */
+export async function deleteProductAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const admin = await requireMasterDataWrite().catch(() => {
+    throw new Error("无权限执行此操作");
+  });
+  const id = Number(formData.get("id"));
+  const product = await prisma.product.findUnique({ where: { id } });
+  if (!product) return { error: "商品不存在" };
+  const [po, so, pr, sr, sm] = await Promise.all([
+    prisma.purchaseOrderItem.count({ where: { productId: id } }),
+    prisma.saleOrderItem.count({ where: { productId: id } }),
+    prisma.purchaseReturnItem.count({ where: { productId: id } }),
+    prisma.saleReturnItem.count({ where: { productId: id } }),
+    prisma.stockMovement.count({ where: { productId: id } }),
+  ]);
+  const refs = po + so + pr + sr + sm;
+  if (refs > 0) {
+    return { error: `该商品已出现在 ${refs} 处单据/流水中，不可删除，请停用` };
+  }
+  await prisma.product.delete({ where: { id } });
+  await writeAudit({
+    userId: admin.id,
+    action: "delete",
+    entityType: "product",
+    entityId: id,
+    before: { code: product.code, name: product.name },
+  });
+  revalidatePath("/products");
+  return { ok: "已删除" };
+}

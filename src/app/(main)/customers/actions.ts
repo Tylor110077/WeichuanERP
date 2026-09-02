@@ -375,3 +375,30 @@ export async function toggleCustomerTagStatusAction(_prev: FormState, formData: 
   revalidatePath("/customer-tags");
   return { ok: next === 1 ? "已启用" : "已停用" };
 }
+
+/** 删除客户：未被任何售卖/退货单引用才可删（引用关系建议用停用）。 */
+export async function deleteCustomerAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const admin = await requireMasterDataWrite().catch(() => {
+    throw new Error("无权限执行此操作");
+  });
+  const id = Number(formData.get("id"));
+  const customer = await prisma.customer.findUnique({ where: { id } });
+  if (!customer) return { error: "客户不存在" };
+  const [soCount, srCount] = await Promise.all([
+    prisma.saleOrder.count({ where: { customerId: id } }),
+    prisma.saleReturn.count({ where: { customerId: id } }),
+  ]);
+  if (soCount + srCount > 0) {
+    return { error: `该客户已有 ${soCount + srCount} 张单据，不可删除，请停用` };
+  }
+  await prisma.customer.delete({ where: { id } }); // tagLinks 级联删除
+  await writeAudit({
+    userId: admin.id,
+    action: "delete",
+    entityType: "customer",
+    entityId: id,
+    before: { name: customer.name },
+  });
+  revalidatePath("/customers");
+  return { ok: "已删除" };
+}

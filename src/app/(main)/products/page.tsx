@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { MasterDataManager } from "@/components/master-data-manager";
-import { saveProductAction, toggleProductStatusAction } from "./actions";
+import { deleteProductAction, saveProductAction, toggleProductStatusAction } from "./actions";
 
 export const metadata = { title: "商品管理 - 玮川进销存" };
 
@@ -109,6 +109,7 @@ export default async function ProductsPage() {
         isAdmin={user.role === "admin"}
         saveAction={saveProductAction}
         toggleAction={toggleProductStatusAction}
+        deleteAction={deleteProductAction}
       />
     </div>
   );
