@@ -134,6 +134,8 @@ export async function createQuickCustomerAction(data: {
   name: string;
   contact?: string;
   phone?: string;
+  groupId?: number | null; // 新客户所属组织（可空）
+  tagIds?: number[]; // 新客户标签（可空）
 }): Promise<QuickCustomerResult> {
   const admin = await requireAdmin().catch(() => null);
   if (!admin) return { error: "仅管理员可在开单页新建客户" };
@@ -145,13 +147,34 @@ export async function createQuickCustomerAction(data: {
   });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "输入有误" };
 
-  const customer = await prisma.customer.create({
-    data: {
-      name: parsed.data.name,
-      contact: parsed.data.contact || null,
-      phone: parsed.data.phone || null,
-    },
-    select: { id: true, name: true },
+  const groupId = data.groupId ? Number(data.groupId) : null;
+  const tagIds = (data.tagIds ?? []).map(Number).filter((n) => Number.isInteger(n) && n > 0);
+
+  if (groupId && !(await prisma.customerGroup.findUnique({ where: { id: groupId } }))) {
+    return { error: "组织不存在" };
+  }
+  if (tagIds.length > 0) {
+    const tagCount = await prisma.customerTag.count({ where: { id: { in: tagIds } } });
+    if (tagCount !== tagIds.length) return { error: "存在无效标签" };
+  }
+
+  const customer = await prisma.$transaction(async (tx) => {
+    const created = await tx.customer.create({
+      data: {
+        name: parsed.data.name,
+        contact: parsed.data.contact || null,
+        phone: parsed.data.phone || null,
+        groupId,
+      },
+      select: { id: true, name: true },
+    });
+    if (tagIds.length > 0) {
+      await tx.customerTagLink.createMany({
+        data: tagIds.map((tagId) => ({ customerId: created.id, tagId })),
+        skipDuplicates: true,
+      });
+    }
+    return created;
   });
   await writeAudit({
     userId: admin.id,
@@ -162,6 +185,8 @@ export async function createQuickCustomerAction(data: {
       name: customer.name,
       contact: parsed.data.contact || null,
       phone: parsed.data.phone || null,
+      groupId,
+      tagIds,
     },
   });
   revalidatePath("/customers");

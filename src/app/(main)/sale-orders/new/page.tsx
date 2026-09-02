@@ -32,7 +32,7 @@ export default async function NewSaleOrderPage() {
     },
   });
 
-  const [customers, suppliers, units, categories, lastPurchases] = await Promise.all([
+  const [customers, suppliers, units, categories, groups, tags, lastPurchases] = await Promise.all([
     prisma.customer.findMany({
       where: { status: 1 },
       orderBy: { name: "asc" },
@@ -49,6 +49,16 @@ export default async function NewSaleOrderPage() {
       select: { id: true, name: true },
     }),
     prisma.productCategory.findMany({
+      where: { status: 1 },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true },
+    }),
+    prisma.customerGroup.findMany({
+      where: { status: 1 },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true },
+    }),
+    prisma.customerTag.findMany({
       where: { status: 1 },
       orderBy: { name: "asc" },
       select: { id: true, name: true },
@@ -114,6 +124,8 @@ export default async function NewSaleOrderPage() {
         products={productOptions}
         units={units.map((u) => ({ id: u.id, name: u.name }))}
         categories={categories.map((c) => ({ id: c.id, name: c.name }))}
+        customerGroups={groups.map((g) => ({ id: g.id, name: g.name }))}
+        customerTags={tags.map((t) => ({ id: t.id, name: t.name }))}
         canCreateCustomer={user.role === "admin"}
         canCreateProduct={user.role === "admin"}
       />

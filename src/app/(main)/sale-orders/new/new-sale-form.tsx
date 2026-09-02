@@ -2,7 +2,13 @@
 
 import { useActionState, useState, useTransition } from "react";
 import { createSaleOrderAction, type FormState } from "../actions";
-import { createQuickCustomerAction, type QuickCustomerResult } from "../../customers/actions";
+import {
+  createQuickCustomerAction,
+  createQuickCustomerGroupAction,
+  createQuickCustomerTagAction,
+  type QuickCustomerResult,
+  type QuickResult,
+} from "../../customers/actions";
 import { createQuickProductAction, type QuickProductResult } from "../../products/actions";
 
 interface CustomerOption {
@@ -56,6 +62,8 @@ export function NewSaleForm({
   products,
   units,
   categories,
+  customerGroups,
+  customerTags,
   canCreateCustomer,
   canCreateProduct,
 }: {
@@ -64,6 +72,8 @@ export function NewSaleForm({
   products: ProductOption[];
   units: UnitOption[];
   categories: CategoryOption[];
+  customerGroups: { id: number; name: string }[];
+  customerTags: { id: number; name: string }[];
   canCreateCustomer: boolean;
   canCreateProduct: boolean;
 }) {
@@ -114,6 +124,14 @@ export function NewSaleForm({
   );
 
   const [newCustomer, setNewCustomer] = useState({ name: "", contact: "", phone: "" });
+  const [quickGroupOptions, setQuickGroupOptions] = useState(customerGroups);
+  const [quickTagOptions, setQuickTagOptions] = useState(customerTags);
+  const [newCustomerGroupId, setNewCustomerGroupId] = useState("");
+  const [newCustomerTagIds, setNewCustomerTagIds] = useState<number[]>([]);
+  const [showQuickGroup, setShowQuickGroup] = useState(false);
+  const [showQuickTag, setShowQuickTag] = useState(false);
+  const [quickOrgName, setQuickOrgName] = useState("");
+  const [quickOrgMsg, setQuickOrgMsg] = useState<{ error?: string } | null>(null);
 
   function onCreateCustomer() {
     if (!newCustomer.name.trim()) {
@@ -125,6 +143,8 @@ export function NewSaleForm({
         name: newCustomer.name,
         contact: newCustomer.contact,
         phone: newCustomer.phone,
+        groupId: newCustomerGroupId ? Number(newCustomerGroupId) : null,
+        tagIds: newCustomerTagIds,
       });
       if ("error" in result) {
         setCreateCustomerMsg({ error: result.error });
@@ -136,8 +156,44 @@ export function NewSaleForm({
       chooseCustomer(result);
       setShowCreateCustomer(false);
       setNewCustomer({ name: "", contact: "", phone: "" });
+      setNewCustomerGroupId("");
+      setNewCustomerTagIds([]);
       setCreateCustomerMsg({ ok: `客户「${result.name}」已创建并选中` });
       setTimeout(() => setCreateCustomerMsg(null), 4000);
+    });
+  }
+
+  function quickCreateGroup() {
+    const name = quickOrgName.trim();
+    if (!name) return;
+    startCreateTransition(async () => {
+      const r: QuickResult = await createQuickCustomerGroupAction({ name });
+      if ("error" in r) {
+        setQuickOrgMsg({ error: r.error });
+        return;
+      }
+      setQuickGroupOptions((prev) => (prev.some((g) => g.id === r.id) ? prev : [...prev, { id: r.id, name: r.name }]));
+      setNewCustomerGroupId(String(r.id));
+      setQuickOrgName("");
+      setShowQuickGroup(false);
+      setQuickOrgMsg(null);
+    });
+  }
+
+  function quickCreateTag() {
+    const name = quickOrgName.trim();
+    if (!name) return;
+    startCreateTransition(async () => {
+      const r: QuickResult = await createQuickCustomerTagAction({ name });
+      if ("error" in r) {
+        setQuickOrgMsg({ error: r.error });
+        return;
+      }
+      setQuickTagOptions((prev) => (prev.some((t) => t.id === r.id) ? prev : [...prev, { id: r.id, name: r.name }]));
+      setNewCustomerTagIds((prev) => (prev.includes(r.id) ? prev : [...prev, r.id]));
+      setQuickOrgName("");
+      setShowQuickTag(false);
+      setQuickOrgMsg(null);
     });
   }
 
@@ -384,6 +440,92 @@ export function NewSaleForm({
                   className="block w-full rounded-md border border-blue-200 px-2 py-1.5 text-sm text-gray-900"
                 />
               </div>
+
+              {/* 组织选择 + 快捷新建 */}
+              <div className="flex items-center gap-2">
+                <select
+                  value={newCustomerGroupId}
+                  onChange={(e) => setNewCustomerGroupId(e.target.value)}
+                  className="w-full rounded-md border border-blue-200 px-2 py-1.5 text-sm text-gray-900"
+                >
+                  <option value="">所属组织（可选）</option>
+                  {quickGroupOptions.map((g) => (
+                    <option key={g.id} value={g.id}>{g.name}</option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => { setShowQuickGroup((v) => !v); setShowQuickTag(false); setQuickOrgName(""); }}
+                  className="shrink-0 rounded-md border border-blue-300 px-2 py-1.5 text-xs text-blue-600 hover:bg-blue-50"
+                >
+                  {showQuickGroup ? "取消" : "+ 组织"}
+                </button>
+              </div>
+              {showQuickGroup && (
+                <div className="flex items-center gap-1">
+                  <input
+                    placeholder="新组织名称"
+                    maxLength={50}
+                    value={quickOrgName}
+                    onChange={(e) => setQuickOrgName(e.target.value)}
+                    className="w-full rounded-md border border-blue-200 px-2 py-1.5 text-sm text-gray-900"
+                  />
+                  <button type="button" onClick={quickCreateGroup} disabled={createPending}
+                    className="shrink-0 rounded-md bg-blue-600 px-2 py-1 text-xs text-white disabled:opacity-50">
+                    {createPending ? "…" : "创建"}
+                  </button>
+                </div>
+              )}
+
+              {/* 标签选择 + 快捷新建 */}
+              <div className="flex flex-wrap items-center gap-2">
+                {quickTagOptions.map((t) => (
+                  <label
+                    key={t.id}
+                    className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs cursor-pointer ${
+                      newCustomerTagIds.includes(t.id)
+                        ? "border-blue-300 bg-blue-50 text-blue-700"
+                        : "border-gray-200 bg-white text-gray-600"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={newCustomerTagIds.includes(t.id)}
+                      onChange={() =>
+                        setNewCustomerTagIds((prev) =>
+                          prev.includes(t.id) ? prev.filter((x) => x !== t.id) : [...prev, t.id]
+                        )
+                      }
+                      className="sr-only"
+                    />
+                    {t.name}
+                  </label>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => { setShowQuickTag((v) => !v); setShowQuickGroup(false); setQuickOrgName(""); }}
+                  className="rounded-full border border-dashed border-blue-300 px-2.5 py-1 text-xs text-blue-600 hover:bg-blue-50"
+                >
+                  {showQuickTag ? "取消" : "+ 标签"}
+                </button>
+                {showQuickTag && (
+                  <>
+                    <input
+                      placeholder="新标签名称"
+                      maxLength={30}
+                      value={quickOrgName}
+                      onChange={(e) => setQuickOrgName(e.target.value)}
+                      className="w-28 rounded-md border border-blue-200 px-2 py-1 text-xs text-gray-900"
+                    />
+                    <button type="button" onClick={quickCreateTag} disabled={createPending}
+                      className="rounded-md bg-blue-600 px-2 py-1 text-xs text-white disabled:opacity-50">
+                      {createPending ? "…" : "创建"}
+                    </button>
+                  </>
+                )}
+              </div>
+              {quickOrgMsg?.error && <p className="text-xs text-red-600">{quickOrgMsg.error}</p>}
+
               <div className="flex items-center gap-2">
                 <button
                   type="button"
