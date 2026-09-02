@@ -3,6 +3,12 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { MasterDataManager } from "@/components/master-data-manager";
 import { deleteProductAction, saveProductAction, toggleProductStatusAction } from "./actions";
+import {
+  deleteCategoryAction,
+  saveCategoryAction,
+  toggleCategoryStatusAction,
+} from "../categories/actions";
+import { deleteUnitAction, saveUnitAction, toggleUnitStatusAction } from "../units/actions";
 
 export const metadata = { title: "商品管理 - 玮川进销存" };
 
@@ -18,8 +24,8 @@ export default async function ProductsPage() {
         unit: { select: { name: true } },
       },
     }),
-    prisma.unit.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, status: true } }),
-    prisma.productCategory.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, status: true } }),
+    prisma.unit.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, status: true, _count: { select: { products: true } } } }),
+    prisma.productCategory.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, status: true, _count: { select: { products: true } } } }),
   ]);
 
   const unitOptions = units.map((u) => ({
@@ -34,6 +40,64 @@ export default async function ProductsPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-lg font-semibold text-gray-900">商品管理</h1>
+      <details className="rounded-xl border border-gray-200 bg-white">
+        <summary className="cursor-pointer px-5 py-3 text-sm font-medium text-gray-900">
+          商品分类管理（{categories.length} 个）
+          <span className="ml-2 text-xs font-normal text-gray-400">点击展开/收起 · 有商品的分类不可删除，请停用</span>
+        </summary>
+        <div className="border-t border-gray-100 p-5">
+          <MasterDataManager
+            entityLabel="分类"
+            columns={[
+              { key: "name", label: "分类名称" },
+              { key: "count", label: "商品数" },
+            ]}
+            fields={[
+              { name: "name", label: "分类名称", required: true, maxLength: 50 },
+            ]}
+            rows={categories.map((c) => ({
+              id: c.id,
+              status: c.status,
+              cells: { name: c.name, count: `${c._count.products} 个` },
+              formValues: { name: c.name },
+            }))}
+            isAdmin={user.role === "admin"}
+            saveAction={saveCategoryAction}
+            toggleAction={toggleCategoryStatusAction}
+            deleteAction={deleteCategoryAction}
+          />
+        </div>
+      </details>
+
+      <details className="rounded-xl border border-gray-200 bg-white">
+        <summary className="cursor-pointer px-5 py-3 text-sm font-medium text-gray-900">
+          单位字典管理（{units.length} 个）
+          <span className="ml-2 text-xs font-normal text-gray-400">点击展开/收起 · 被商品引用的单位不可删除，请停用</span>
+        </summary>
+        <div className="border-t border-gray-100 p-5">
+          <MasterDataManager
+            entityLabel="单位"
+            columns={[
+              { key: "name", label: "单位名称" },
+              { key: "count", label: "商品数" },
+            ]}
+            fields={[
+              { name: "name", label: "单位名称", required: true, maxLength: 20 },
+            ]}
+            rows={units.map((u) => ({
+              id: u.id,
+              status: u.status,
+              cells: { name: u.name, count: `${u._count.products} 个` },
+              formValues: { name: u.name },
+            }))}
+            isAdmin={user.role === "admin"}
+            saveAction={saveUnitAction}
+            toggleAction={toggleUnitStatusAction}
+            deleteAction={deleteUnitAction}
+          />
+        </div>
+      </details>
+
       <MasterDataManager
         entityLabel="商品"
         columns={[

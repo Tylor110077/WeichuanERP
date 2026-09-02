@@ -50,8 +50,6 @@ const NAV_GROUPS: {
     label: "基础资料",
     items: [
       { href: "/products", label: "商品管理", roles: ALL_ROLES },
-      { href: "/categories", label: "商品分类", roles: ALL_ROLES },
-      { href: "/units", label: "单位字典", roles: ALL_ROLES },
       { href: "/suppliers", label: "供应商管理", roles: ALL_ROLES },
       { href: "/customers", label: "客户管理", roles: ALL_ROLES },
     ],
