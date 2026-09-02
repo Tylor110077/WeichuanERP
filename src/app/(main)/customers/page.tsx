@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { MasterDataManager } from "@/components/master-data-manager";
+import { AutoFilterForm } from "@/components/auto-filter-form";
 import { buildCustomerProfile } from "@/lib/customer-profile";
 import { CustomerManager } from "./customer-manager";
 import {
@@ -68,36 +69,41 @@ export default async function CustomersPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex items-center justify-between gap-3">
         <h1 className="text-lg font-semibold text-gray-900">客户管理</h1>
-        <div className="flex items-center gap-2">
-          {user.role === "admin" && (
-            <Link
-              href="/customers/new"
-              className="rounded-md bg-blue-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
-            >
-              + 新建客户
-            </Link>
-          )}
-        <form className="flex items-center gap-2">
-          <select name="groupId" defaultValue={groupId ?? ""} className="rounded-md border border-gray-300 px-2 py-1.5 text-sm">
-            <option value="">全部组织</option>
-            {groups.map((g) => (
-              <option key={g.id} value={g.id}>{g.name}</option>
-            ))}
-          </select>
-          <select name="tagId" defaultValue={tagId ?? ""} className="rounded-md border border-gray-300 px-2 py-1.5 text-sm">
-            <option value="">全部标签</option>
-            {tags.map((t) => (
-              <option key={t.id} value={t.id}>{t.name}</option>
-            ))}
-          </select>
-          <button type="submit" className="rounded-md bg-gray-100 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-200">
-            筛选
-          </button>
-        </form>
-        </div>
+        {user.role === "admin" && (
+          <Link
+            href="/customers/new"
+            className="rounded-md bg-blue-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
+          >
+            + 新建客户
+          </Link>
+        )}
       </div>
+
+      <AutoFilterForm
+        basePath="/customers"
+        fields={[
+          {
+            name: "groupId",
+            label: "组织",
+            current: groupId != null ? String(groupId) : "",
+            options: [
+              { value: "", label: "全部组织" },
+              ...groups.map((g) => ({ value: String(g.id), label: g.name })),
+            ],
+          },
+          {
+            name: "tagId",
+            label: "标签",
+            current: tagId != null ? String(tagId) : "",
+            options: [
+              { value: "", label: "全部标签" },
+              ...tags.map((t) => ({ value: String(t.id), label: t.name })),
+            ],
+          },
+        ]}
+      />
 
       <details className="rounded-xl border border-gray-200 bg-white">
         <summary className="cursor-pointer px-5 py-3 text-sm font-medium text-gray-900">
