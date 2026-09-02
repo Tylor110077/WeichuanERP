@@ -190,6 +190,7 @@ model Product {
   code             String           @unique @db.VarChar(20) // 自动 SKU，如 P000001
   name             String           @db.VarChar(100)
   spec             String?          @db.VarChar(100)
+  manufacturer     String           @default("") @db.VarChar(100) // 厂商（生产厂家，必填——应用层强制）
   categoryId       Int?             @map("category_id")
   category         ProductCategory? @relation(fields: [categoryId], references: [id])
   unitId           Int              @map("unit_id")

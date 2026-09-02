@@ -10,6 +10,7 @@ import { writeAudit } from "@/lib/audit";
 const productSchema = z.object({
   name: z.string().trim().min(1, "请填写商品名称").max(100),
   spec: z.string().trim().max(100),
+  manufacturer: z.string().trim().min(1, "请填厂商/生产厂家").max(100), // 必填
   categoryId: z.coerce.number().int().positive().nullable(),
   unitId: z.coerce.number().int().positive("请选择单位"),
   refPurchasePrice: z.coerce.number().min(0).max(9_999_999_999.99),
@@ -24,6 +25,7 @@ function parseProduct(formData: FormData) {
   return productSchema.safeParse({
     name: formData.get("name") ?? "",
     spec: formData.get("spec") ?? "",
+    manufacturer: formData.get("manufacturer") ?? "",
     categoryId: catRaw ? Number(catRaw) : null,
     unitId: Number(formData.get("unitId")),
     refPurchasePrice: formData.get("refPurchasePrice") ?? 0,
@@ -65,6 +67,7 @@ export async function saveProductAction(_prev: FormState, formData: FormData): P
   const writeData = {
     name: data.name,
     spec: data.spec || null,
+    manufacturer: data.manufacturer,
     categoryId,
     unitId: data.unitId,
     refPurchasePrice: data.refPurchasePrice,
@@ -85,6 +88,7 @@ export async function saveProductAction(_prev: FormState, formData: FormData): P
         code: before.code,
         name: before.name,
         spec: before.spec,
+        manufacturer: before.manufacturer,
         refPurchasePrice: Number(before.refPurchasePrice),
         refSalePrice: Number(before.refSalePrice),
         minStock: Number(before.minStock),
@@ -93,6 +97,7 @@ export async function saveProductAction(_prev: FormState, formData: FormData): P
         code: before.code,
         name: writeData.name,
         spec: writeData.spec,
+        manufacturer: writeData.manufacturer,
         refPurchasePrice: writeData.refPurchasePrice,
         refSalePrice: writeData.refSalePrice,
         minStock: writeData.minStock,
@@ -152,6 +157,7 @@ export type QuickProductResult =
       id: number;
       code: string;
       name: string;
+      manufacturer: string;
       unitId: number;
       unitName: string;
       refSalePrice: number;
@@ -163,6 +169,7 @@ export type QuickProductResult =
 export async function createQuickProductAction(data: {
   name: string;
   spec?: string;
+  manufacturer: string; // 必填：厂商/生产厂家
   categoryId?: number | null;
   unitId: number;
   refPurchasePrice?: number | null;
@@ -175,6 +182,7 @@ export async function createQuickProductAction(data: {
   const parsed = productSchema.safeParse({
     name: data.name ?? "",
     spec: data.spec ?? "",
+    manufacturer: data.manufacturer ?? "",
     categoryId: data.categoryId || null,
     unitId: Number(data.unitId),
     refPurchasePrice: data.refPurchasePrice ?? 0,
@@ -194,6 +202,7 @@ export async function createQuickProductAction(data: {
           code,
           name: parsed.data.name,
           spec: parsed.data.spec || null,
+          manufacturer: parsed.data.manufacturer,
           categoryId: parsed.data.categoryId,
           unitId: parsed.data.unitId,
           refPurchasePrice: parsed.data.refPurchasePrice,
@@ -215,6 +224,7 @@ export async function createQuickProductAction(data: {
         id: product.id,
         code: product.code,
         name: product.name,
+        manufacturer: parsed.data.manufacturer,
         unitId: parsed.data.unitId,
         unitName: unit.name,
         refSalePrice: parsed.data.refSalePrice,

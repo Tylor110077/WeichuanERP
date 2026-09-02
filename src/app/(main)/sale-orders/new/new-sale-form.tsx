@@ -68,6 +68,7 @@ export function NewSaleForm({
   const [newProduct, setNewProduct] = useState({
     name: "",
     spec: "",
+    manufacturer: "",
     categoryId: "",
     unitId: "",
     refSalePrice: "",
@@ -167,10 +168,15 @@ export function NewSaleForm({
       setProductMsg({ error: "请选择单位" });
       return;
     }
+    if (!newProduct.manufacturer.trim()) {
+      setProductMsg({ error: "请填写厂商/生产厂家" });
+      return;
+    }
     startProductTransition(async () => {
       const result: QuickProductResult = await createQuickProductAction({
         name: newProduct.name,
         spec: newProduct.spec,
+        manufacturer: newProduct.manufacturer,
         categoryId: newProduct.categoryId ? Number(newProduct.categoryId) : null,
         unitId: Number(newProduct.unitId),
         refSalePrice: Number(newProduct.refSalePrice) || 0,
@@ -183,7 +189,7 @@ export function NewSaleForm({
       }
       const opt: ProductOption = {
         id: result.id,
-        label: `${result.code} ${result.name}`,
+        label: `${result.code} ${result.name}（${result.manufacturer}）`,
         unitName: result.unitName,
         stockQty: 0,
         refSalePrice: result.refSalePrice,
@@ -206,7 +212,7 @@ export function NewSaleForm({
         },
       ]);
       setShowCreateProduct(false);
-      setNewProduct({ name: "", spec: "", categoryId: "", unitId: "", refSalePrice: "", refPurchasePrice: "", minStock: "" });
+      setNewProduct({ name: "", spec: "", manufacturer: "", categoryId: "", unitId: "", refSalePrice: "", refPurchasePrice: "", minStock: "" });
       setProductMsg({ ok: `商品「${result.name}」已创建（${result.code}），已加入商品行` });
       setTimeout(() => setProductMsg(null), 5000);
     });
@@ -350,6 +356,17 @@ export function NewSaleForm({
                   placeholder="规格/型号"
                   value={newProduct.spec}
                   onChange={(e) => setNewProduct((p) => ({ ...p, spec: e.target.value }))}
+                  className="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm text-gray-900"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600">厂商（生产厂家）*</label>
+                <input
+                  type="text"
+                  maxLength={100}
+                  placeholder="如：远东电缆、正泰电器"
+                  value={newProduct.manufacturer}
+                  onChange={(e) => setNewProduct((p) => ({ ...p, manufacturer: e.target.value }))}
                   className="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm text-gray-900"
                 />
               </div>

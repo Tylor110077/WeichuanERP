@@ -40,6 +40,7 @@ export default async function ProductsPage() {
           { key: "code", label: "编码" },
           { key: "name", label: "名称" },
           { key: "spec", label: "规格" },
+          { key: "manufacturer", label: "厂商" },
           { key: "category", label: "分类" },
           { key: "unit", label: "单位" },
           { key: "refPurchasePrice", label: "参考进价" },
@@ -50,6 +51,7 @@ export default async function ProductsPage() {
         fields={[
           { name: "name", label: "商品名称", required: true, maxLength: 100 },
           { name: "spec", label: "规格/型号", maxLength: 100 },
+          { name: "manufacturer", label: "厂商（生产厂家）", required: true, maxLength: 100, placeholder: "如：远东电缆、正泰电器" },
           {
             name: "categoryId",
             label: "分类",
@@ -85,6 +87,7 @@ export default async function ProductsPage() {
             code: p.code,
             name: p.name,
             spec: p.spec ?? "",
+            manufacturer: p.manufacturer || "（未填写）",
             category: p.category?.name ?? "",
             unit: p.unit.name,
             refPurchasePrice: Number(p.refPurchasePrice).toFixed(2),
@@ -95,6 +98,7 @@ export default async function ProductsPage() {
           formValues: {
             name: p.name,
             spec: p.spec ?? "",
+            manufacturer: p.manufacturer,
             categoryId: p.categoryId != null ? String(p.categoryId) : "",
             unitId: String(p.unitId),
             refPurchasePrice: p.refPurchasePrice.toString(),
