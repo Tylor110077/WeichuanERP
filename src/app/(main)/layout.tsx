@@ -15,11 +15,11 @@ const NAV_GROUPS: {
     items: [{ href: "/dashboard", label: "工作台", roles: ALL_ROLES }],
   },
   {
+    // 退货入口集成在单据详情页的「单据操作」中，不再单列菜单
     label: "进货",
     items: [
       { href: "/purchase-orders", label: "进货单", roles: ALL_ROLES },
       { href: "/purchase-orders/new", label: "进货开单", roles: ["admin", "sales"] },
-      { href: "/purchase-returns", label: "进货退货", roles: ALL_ROLES },
     ],
   },
   {
@@ -27,7 +27,6 @@ const NAV_GROUPS: {
     items: [
       { href: "/sale-orders", label: "售卖单", roles: ALL_ROLES },
       { href: "/sale-orders/new", label: "销售开单", roles: ["admin", "sales"] },
-      { href: "/sale-returns", label: "销售退货", roles: ALL_ROLES },
     ],
   },
   {

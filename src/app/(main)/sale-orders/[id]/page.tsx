@@ -31,6 +31,7 @@ export default async function SaleOrderDetailPage({
       operator: true,
       items: { include: { product: true, unit: true } },
       autoRestockOrders: { include: { supplier: { select: { name: true } } } },
+      returns: { orderBy: { createdAt: "desc" } }, // 本单退货记录
     },
   });
   if (!order) notFound();
@@ -185,6 +186,32 @@ export default async function SaleOrderDetailPage({
         <div className="rounded-xl border border-gray-200 bg-white p-5 text-sm text-gray-600">
           作废人：{order.voidedBy ?? "—"} ｜ 作废时间：{order.voidedAt?.toLocaleString("zh-CN") ?? "—"} ｜
           原因：{order.voidReason ?? "—"}
+        </div>
+      )}
+
+      {order.returns.length > 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white p-5 text-sm">
+          <h2 className="mb-2 font-semibold text-gray-900">本单退货记录</h2>
+          <div className="space-y-1">
+            {order.returns.map((r) => (
+              <div key={r.id} className="flex items-center gap-3 text-gray-700">
+                <span className="font-medium text-gray-900">{r.orderNo}</span>
+                <span>¥{Number(r.totalAmount).toFixed(2)}</span>
+                <span
+                  className={
+                    r.status === "confirmed"
+                      ? "rounded-full bg-green-50 px-2 py-0.5 text-xs text-green-700"
+                      : "rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600"
+                  }
+                >
+                  {r.status === "confirmed" ? "已退" : "已作废"}
+                </span>
+                <Link href="/sale-returns" className="text-xs text-blue-600 hover:underline">
+                  查看退货单
+                </Link>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
