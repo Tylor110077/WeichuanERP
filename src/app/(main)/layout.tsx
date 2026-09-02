@@ -39,7 +39,10 @@ const NAV_GROUPS: {
   },
   {
     label: "财务",
-    items: [{ href: "/receivables-payables", label: "应收应付", roles: ["admin", "boss"] }],
+    items: [
+      { href: "/receivables-payables", label: "应收应付", roles: ["admin", "boss"] },
+      { href: "/reports", label: "报表中心", roles: ["admin", "boss"] },
+    ],
   },
   {
     label: "基础资料",
