@@ -560,25 +560,19 @@ export function NewSaleForm({
         </div>
       </div>
 
-      {canCreateProduct && (
+      {canCreateProduct && showCreateProduct && (
         <div className="rounded-xl border border-gray-200 bg-white p-4">
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-gray-500">
-              下拉里没有这个商品？可以当场建档（编码自动生成，默认未上架为启用）。
-            </span>
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-sm font-semibold text-gray-900">新建商品（编码自动生成）</span>
             <button
               type="button"
-              onClick={() => {
-                setShowCreateProduct((v) => !v);
-                setProductMsg(null);
-              }}
-              className="rounded-md border border-blue-300 px-3 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-50"
+              onClick={() => setShowCreateProduct(false)}
+              className="text-xs text-gray-400 hover:underline"
             >
-              {showCreateProduct ? "收起" : "+ 新建商品"}
+              收起
             </button>
           </div>
-          {showCreateProduct && (
-            <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
+<div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
               <div>
                 <label className="block text-xs font-medium text-gray-600">商品名称 *</label>
                 <input
@@ -692,10 +686,9 @@ export function NewSaleForm({
                 </p>
               )}
             </div>
-          )}
+
         </div>
       )}
-
       <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
         <table className="min-w-full divide-y divide-gray-200 text-sm">
           <thead className="bg-gray-50 text-left text-xs text-gray-500">
@@ -823,7 +816,7 @@ export function NewSaleForm({
             })}
           </tbody>
         </table>
-        <div className="border-t border-gray-100 px-4 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 px-4 py-3">
           <button
             type="button"
             onClick={() => setRows((prev) => [...prev, emptyRow()])}
@@ -831,6 +824,18 @@ export function NewSaleForm({
           >
             + 添加商品行
           </button>
+          {canCreateProduct && (
+            <button
+              type="button"
+              onClick={() => {
+                setShowCreateProduct((v) => !v);
+                setProductMsg(null);
+              }}
+              className="rounded-md border border-blue-300 px-2.5 py-1.5 text-xs text-blue-600 hover:bg-blue-50"
+            >
+              {showCreateProduct ? "收起" : "+ 新建商品"}
+            </button>
+          )}
         </div>
       </div>
 
@@ -844,8 +849,23 @@ export function NewSaleForm({
           >
             {hits.length === 0 && (
               <div className="px-3 py-2 text-xs text-gray-400">
-                无匹配商品（试试厂商、型号、名称、编码）{row && row.productQuery ? "" : "，或点击「+ 新建商品」"}
+                无匹配商品（试试厂商、型号、名称、编码）
               </div>
+            )}
+            {canCreateProduct && row && row.productQuery.trim() && (
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  setProductMsg(null);
+                  setNewProduct((prev) => ({ ...prev, name: row.productQuery.trim() }));
+                  setShowCreateProduct(true);
+                  setProductPanel(null);
+                }}
+                className="block w-full border-t border-gray-100 px-3 py-2 text-left text-sm text-blue-600 hover:bg-blue-50"
+              >
+                ＋ 新建商品：「{row.productQuery.trim()}」
+              </button>
             )}
             {hits.map((p) => (
               <button
