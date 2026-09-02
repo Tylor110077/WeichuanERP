@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { DetailActions } from "./detail-actions";
+import { ReceiptBlock } from "./receipt-block";
 
 export const metadata = { title: "售卖单详情 - 玮川进销存" };
 
@@ -45,6 +46,22 @@ export default async function SaleOrderDetailPage({
   const canVoid = user.role === "admin" || user.role === "boss";
   // 矩阵：成本/毛利仅管理员/老板可见
   const canSeeCost = user.role !== "sales";
+  const canCollect = user.role === "admin" || user.role === "boss"; // 矩阵：收款登记
+
+  const [payments, returns] = await Promise.all([
+    prisma.payment.findMany({
+      where: { orderType: "sale", orderId: order.id },
+      orderBy: { createdAt: "desc" },
+      include: { operator: { select: { displayName: true } } },
+    }),
+    prisma.saleReturn.findMany({
+      where: { saleOrderId: order.id, status: "confirmed" },
+      select: { totalAmount: true },
+    }),
+  ]);
+  const returnedSum = returns.reduce((s, r) => s + Number(r.totalAmount), 0);
+  const outstanding =
+    Number(order.totalAmount) - Number(order.receivedAmount) - returnedSum;
 
   return (
     <div className="space-y-6">
@@ -72,6 +89,14 @@ export default async function SaleOrderDetailPage({
         <InfoCard label="开单时间" value={order.createdAt.toLocaleString("zh-CN")} />
         <InfoCard label="应收金额" value={`¥${Number(order.totalAmount).toFixed(2)}`} />
         <InfoCard label="已收金额" value={`¥${Number(order.receivedAmount).toFixed(2)}`} />
+        <InfoCard
+          label="未收金额"
+          value={`¥${Math.max(
+            Number(order.totalAmount) - Number(order.receivedAmount) - returnedSum,
+            0
+          ).toFixed(2)}`}
+          highlight={Number(order.totalAmount) - Number(order.receivedAmount) - returnedSum > 0}
+        />
         <InfoCard
           label="本单毛利（按成本快照）"
           value={canSeeCost ? `¥${(Number(order.totalAmount) - costSum(order)).toFixed(2)}` : "仅管理员/老板可见"}
@@ -162,6 +187,22 @@ export default async function SaleOrderDetailPage({
           原因：{order.voidReason ?? "—"}
         </div>
       )}
+
+      <ReceiptBlock
+        orderId={order.id}
+        orderStatus={order.status}
+        outstanding={outstanding}
+        canPay={canCollect}
+        payments={payments.map((p) => ({
+          id: p.id,
+          orderNo: p.orderNo,
+          amount: Number(p.amount),
+          method: p.method,
+          createdAt: p.createdAt.toLocaleString("zh-CN"),
+          operatorName: p.operator.displayName,
+          status: p.status,
+        }))}
+      />
     </div>
   );
 }
@@ -172,11 +213,11 @@ function costSum(order: {
   return order.items.reduce((s, it) => s + Number(it.costAmount), 0);
 }
 
-function InfoCard({ label, value }: { label: string; value: string }) {
+function InfoCard({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4">
+    <div className={`rounded-xl border border-gray-200 bg-white p-4 ${highlight ? "bg-red-50/40" : ""}`}>
       <div className="text-xs text-gray-500">{label}</div>
-      <div className="mt-1 text-sm font-medium text-gray-900">{value}</div>
+      <div className={`mt-1 text-sm font-medium ${highlight ? "text-red-600" : "text-gray-900"}`}>{value}</div>
     </div>
   );
 }
