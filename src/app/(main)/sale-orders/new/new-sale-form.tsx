@@ -47,6 +47,7 @@ interface Row {
   productId: string;
   productLabel: string; // 选中商品的回填文本（编码 + 名称）
   productQuery: string; // 输入框当前文本（搜索用）
+  manufacturer: string; // 选中商品的厂商（用于"自动补货：厂商"提示）
   unitName: string;
   stockQty: number;
   quantity: string;
@@ -244,6 +245,7 @@ export function NewSaleForm({
       productId: "",
       productLabel: "",
       productQuery: "",
+      manufacturer: "",
       unitName: "",
       stockQty: 0,
       quantity: "",
@@ -306,6 +308,7 @@ export function NewSaleForm({
               productId: String(p.id),
               productLabel: `${p.code} ${p.name}`,
               productQuery: `${p.code} ${p.name}`,
+              manufacturer: p.manufacturer,
               unitName: p.unitName,
               stockQty: p.stockQty,
               unitPrice: String(p.refSalePrice),
@@ -382,6 +385,7 @@ export function NewSaleForm({
           productId: String(result.id),
           productLabel: `${result.code} ${result.name}`,
           productQuery: `${result.code} ${result.name}`,
+          manufacturer: result.manufacturer,
           unitName: result.unitName,
           stockQty: 0,
           quantity: "",
@@ -884,6 +888,11 @@ export function NewSaleForm({
                         <span className="whitespace-nowrap text-xs text-amber-600">
                           缺 {sf.toFixed(3)}
                         </span>
+                        {row.productId && !row.hasLastSupplier && (
+                          <span className="whitespace-nowrap text-xs text-gray-400">
+                            {row.manufacturer ? `自动补货：厂商「${row.manufacturer}」` : "请选补货商"}
+                          </span>
+                        )}
                       </div>
                     ) : (
                       <span className="text-xs text-gray-400">

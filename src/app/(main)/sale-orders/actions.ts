@@ -100,23 +100,30 @@ export async function createSaleOrderAction(
   const productIds = [...new Set(items.map((it) => it.productId))];
   const products = await prisma.product.findMany({
     where: { id: { in: productIds } },
-    select: { id: true, status: true, unitId: true, stockQty: true, stockAmount: true, avgCost: true },
+    select: { id: true, status: true, unitId: true, manufacturer: true, stockQty: true, stockAmount: true, avgCost: true },
   });
   const productMap = new Map(products.map((p) => [p.id, p]));
   for (const p of products) {
     if (p.status !== 1) return { error: `商品 #${p.id} 已停用，无法开单` };
   }
 
-  // 归属供应商：缺货行必须能确定供应商
+  // 归属供应商：缺货行没有指定供应商时，默认使用商品档案的厂商
+  // （厂商名无对应供应商档案则自动按厂商名建档，不再需要手选）
   const supplierIds = new Set<number>();
+  const mfrNames = new Set<string>();
   for (const it of items) {
     const product = productMap.get(it.productId);
     if (!product) return { error: `商品 #${it.productId} 不存在` };
     const shortfall = Math.max(Number(product.stockQty) < it.quantity ? it.quantity - Number(product.stockQty) : 0, 0);
-    if (shortfall > 0 && !it.supplierId) {
-      return { error: `商品 #${product.id} 缺货，请选择补货供应商` };
+    if (shortfall > 0) {
+      if (it.supplierId) {
+        supplierIds.add(it.supplierId);
+      } else if (product.manufacturer.trim()) {
+        mfrNames.add(product.manufacturer.trim());
+      } else {
+        return { error: `商品 #${product.id} 缺货且无厂商，请选择补货供应商` };
+      }
     }
-    if (it.supplierId) supplierIds.add(it.supplierId);
   }
   if (supplierIds.size > 0) {
     const suppliers = await prisma.supplier.findMany({
@@ -124,6 +131,31 @@ export async function createSaleOrderAction(
       select: { id: true },
     });
     if (suppliers.length !== supplierIds.size) return { error: "存在已停用的补货供应商" };
+  }
+  // 按厂商名确定/创建供应商档案，建立 商品厂商名 → supplierId 映射
+  const supplierByMfr = new Map<string, number>();
+  if (mfrNames.size > 0) {
+    const existing = await prisma.supplier.findMany({
+      where: { name: { in: [...mfrNames] } },
+      select: { id: true, name: true },
+    });
+    for (const s of existing) supplierByMfr.set(s.name, s.id);
+    for (const name of mfrNames) {
+      if (!supplierByMfr.has(name)) {
+        const created = await prisma.supplier.create({
+          data: { name },
+          select: { id: true, name: true },
+        });
+        supplierByMfr.set(name, created.id);
+        await writeAudit({
+          userId: user.id,
+          action: "create",
+          entityType: "supplier",
+          entityId: created.id,
+          after: { name: created.name, autoFromManufacturer: true },
+        });
+      }
+    }
   }
 
   for (let attempt = 0; attempt < 3; attempt++) {
@@ -154,14 +186,23 @@ export async function createSaleOrderAction(
           const stock = Number(product.stockQty);
           const shortfall = round3(Math.max(it.quantity - stock, 0));
           if (shortfall > 0) {
-            const g = autoGroups.get(it.supplierId!) ?? [];
+            // 供应商：行内指定优先，否则用厂商匹配到的供应商（事务前已兜底建档）
+            const supplierId =
+              it.supplierId ??
+              (product.manufacturer.trim()
+                ? supplierByMfr.get(product.manufacturer.trim())
+                : undefined);
+            if (supplierId == null) {
+              throw new Error(`商品 #${product.id} 缺货且无法确定补货供应商`);
+            }
+            const g = autoGroups.get(supplierId) ?? [];
             g.push({
               productId: it.productId,
               quantity: shortfall,
               supplyPrice: round2(it.supplyPrice),
               unitId: product.unitId,
             });
-            autoGroups.set(it.supplierId!, g);
+            autoGroups.set(supplierId, g);
           }
         }
         const saleOrder = await tx.saleOrder.create({
