@@ -56,6 +56,7 @@ interface Row {
   stockQty: number;
   quantity: string;
   unitPrice: string;
+  lastGlobalSalePrice: number; // 全局最近成交价/参考价（参考展示用）
   supplierId: string;
   supplyPrice: string;
   hasLastSupplier: boolean;
@@ -271,6 +272,7 @@ export function NewSaleForm({
       stockQty: 0,
       quantity: "",
       unitPrice: "",
+      lastGlobalSalePrice: 0,
       supplierId: "",
       supplyPrice: "",
       hasLastSupplier: false,
@@ -347,6 +349,7 @@ export function NewSaleForm({
               unitName: p.unitName,
               stockQty: p.stockQty,
               unitPrice: String(p.refSalePrice),
+              lastGlobalSalePrice: p.refSalePrice,
               supplierId: p.lastSupplierId != null ? String(p.lastSupplierId) : "",
               supplyPrice: String(p.lastSupplyPrice),
               hasLastSupplier: p.lastSupplierId != null,
@@ -423,6 +426,7 @@ export function NewSaleForm({
           stockQty: 0,
           quantity: "",
           unitPrice: String(result.refSalePrice),
+          lastGlobalSalePrice: result.refSalePrice,
           supplierId: "",
           supplyPrice: String(result.refPurchasePrice),
           hasLastSupplier: false,
@@ -465,7 +469,13 @@ export function NewSaleForm({
                 onBlur={() => setShowCandidates(false)}
                 className={`w-full ${inputCls} pr-32`}
               />
-              {customerId && selectedCustomer && (
+    
+          {customerQuery.trim() && !customerId && (
+            <p className="mt-1 text-xs text-amber-600">
+              已输入但未选中客户：请从弹出的候选中点选
+            </p>
+          )}
+          {customerId && selectedCustomer && (
                 <div className="pointer-events-none absolute inset-y-0 right-2 top-1 flex items-center gap-1">
                   {selectedCustomer.groupName && (
                     <span className="rounded-full bg-blue-50 px-1.5 py-0.5 text-[10px] leading-none text-blue-700">
@@ -926,9 +936,14 @@ export function NewSaleForm({
                   </td>
                   <td className="px-4 py-2 text-gray-600">{row.unitName || "—"}</td>
                   <td className="px-4 py-2">
-                    {customerId && row.productId && lastCustomerPrices[`${customerId}-${row.productId}`] != null && (
+                    {row.productId && customerId && lastCustomerPrices[`${customerId}-${row.productId}`] != null && (
+                      <div className="mb-1 text-xs text-blue-500">
+                        上次（{selectedCustomer?.name ?? "该客户"}）：¥{lastCustomerPrices[`${customerId}-${row.productId}`].toFixed(2)}
+                      </div>
+                    )}
+                    {row.productId && (!customerId || lastCustomerPrices[`${customerId}-${row.productId}`] == null) && row.lastGlobalSalePrice > 0 && (
                       <div className="mb-1 text-xs text-gray-400">
-                        上次：¥{lastCustomerPrices[`${customerId}-${row.productId}`].toFixed(2)}
+                        最近成交/参考价：¥{row.lastGlobalSalePrice.toFixed(2)}
                       </div>
                     )}
                     <input
