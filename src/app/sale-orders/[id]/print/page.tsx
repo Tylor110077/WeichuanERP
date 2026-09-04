@@ -28,7 +28,7 @@ export default async function SaleOrderPrintPage({
       })
     : null;
   if (!order) notFound();
-  if (user.role === "sales" && order.operatorId !== user.id) notFound();
+  // 打印权限不做限制：所有操作员可打印所有销售单（业务员仅详情页查看受限，打印放开）
 
   const total = Number(order.totalAmount);
 
