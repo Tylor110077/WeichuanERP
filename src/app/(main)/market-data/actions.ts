@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { Prisma, prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import { requireMasterDataWrite } from "@/lib/auth/guards";
 import { writeAudit } from "@/lib/audit";
 
