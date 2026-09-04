@@ -424,9 +424,8 @@ export function NewSaleForm({
           supplyPrice: String(result.refPurchasePrice),
           hasLastSupplier: false,
         };
-        const emptyIdx = prev.findIndex(
-          (r) => !r.productId && !r.productCode && !r.productQuery
-        );
+        // 未选中的行视为空行（即便输入过搜索词），替换为新商品行
+        const emptyIdx = prev.findIndex((r) => !r.productId);
         if (emptyIdx >= 0) {
           return prev.map((r, idx) => (idx === emptyIdx ? newRow : r));
         }
