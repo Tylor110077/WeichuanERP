@@ -18,10 +18,21 @@ const METHOD_LABELS: Record<string, string> = {
 
 const PAGE_SIZE = 20;
 
+/**
+ * 应收应付：顶部「应收（客户）/ 应付（供应商）」视图切换，一次只呈现一类；
+ * 支持指定客户/厂商筛选、日期快捷、方式等组合筛选，往来明细分页与合计。
+ */
 export default async function ReceivablesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; from?: string; to?: string; direction?: string; orderType?: string; method?: string }>;
+  searchParams: Promise<{
+    view?: string;
+    page?: string;
+    from?: string;
+    to?: string;
+    counterId?: string;
+    method?: string;
+  }>;
 }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
@@ -34,34 +45,103 @@ export default async function ReceivablesPage({
   }
 
   const params = await searchParams;
+  const view = params.view === "payable" ? "payable" : "receivable";
+  const isReceivable = view === "receivable";
   const page = Math.max(1, Number(params.page) || 1);
   const range = dateRange(params.from, params.to);
+  const counterId = params.counterId ? Number(params.counterId) : undefined;
+  const method = params.method as "cash" | "bank" | "wechat" | "alipay" | "other" | undefined;
+
+  // 视图基础：应收 → 客户售卖单（收款）；应付 → 供应商进货单（付款）
+  const orders = isReceivable
+    ? await prisma.saleOrder.findMany({
+        where: { status: "confirmed", ...(counterId ? { customerId: counterId } : {}) },
+        include: {
+          customer: { select: { name: true } },
+          returns: { where: { status: "confirmed" } },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 200,
+      })
+    : await prisma.purchaseOrder.findMany({
+        where: { status: { in: ["pending", "received"] }, ...(counterId ? { supplierId: counterId } : {}) },
+        include: {
+          supplier: { select: { name: true } },
+          returns: { where: { status: "confirmed" } },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 200,
+      });
+
+  // 概览：按对方聚合未收/未付
+  const totalOutstanding = orders.reduce((s, o) => {
+    const returned = o.returns.reduce((r, x) => r + Number(x.totalAmount), 0);
+    const paid = isReceivable ? Number((o as { receivedAmount: unknown }).receivedAmount) : Number((o as { paidAmount: unknown }).paidAmount);
+    const total = Number((o as { totalAmount: unknown }).totalAmount);
+    return s + Math.max(0, total - paid - returned);
+  }, 0);
+
+  const byCounter = new Map<number, { name: string; total: number }>();
+  for (const o of orders) {
+    const returned = o.returns.reduce((r, x) => r + Number(x.totalAmount), 0);
+    const paid = isReceivable ? Number((o as { receivedAmount: unknown }).receivedAmount) : Number((o as { paidAmount: unknown }).paidAmount);
+    const total = Number((o as { totalAmount: unknown }).totalAmount);
+    const key = isReceivable ? (o as { customerId: number }).customerId : (o as { supplierId: number }).supplierId;
+    const name = isReceivable ? (o as { customer: { name: string } }).customer.name : (o as { supplier: { name: string } }).supplier.name;
+    const cur = byCounter.get(key) ?? { name, total: 0 };
+    cur.total += Math.max(0, total - paid - returned);
+    byCounter.set(key, cur);
+  }
+
+  // 未结清单据（登记表单用）
+  const sales = isReceivable
+    ? orders
+        .map((o) => {
+          const returned = o.returns.reduce((r, x) => r + Number(x.totalAmount), 0);
+          const received = Number((o as { receivedAmount: unknown }).receivedAmount);
+          const total = Number((o as { totalAmount: unknown }).totalAmount);
+          return {
+            id: o.id,
+            orderNo: o.orderNo,
+            customerName: (o as { customer: { name: string } }).customer.name,
+            outstanding: Math.max(0, total - received - returned),
+          };
+        })
+        .filter((o) => o.outstanding > 0)
+    : [];
+  const purchases = !isReceivable
+    ? orders
+        .map((o) => {
+          const returned = o.returns.reduce((r, x) => r + Number(x.totalAmount), 0);
+          const paid = Number((o as { paidAmount: unknown }).paidAmount);
+          const total = Number((o as { totalAmount: unknown }).totalAmount);
+          return {
+            id: o.id,
+            orderNo: o.orderNo,
+            supplierName: (o as { supplier: { name: string } }).supplier.name,
+            outstanding: Math.max(0, total - paid - returned),
+          };
+        })
+        .filter((o) => o.outstanding > 0)
+    : [];
+
+  // 往来方选项（客户/供应商）
+  const counterOptions =
+    isReceivable
+      ? await prisma.customer.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } })
+      : await prisma.supplier.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } });
+
+  // 明细筛选：视图方向 + 指定往来方（其单据 id 集合）+ 日期/方式
+  const counterOrderIds = counterId !== undefined ? orders.map((o) => o.id) : undefined;
   const where = {
+    direction: (isReceivable ? "receipt" : "payment") as "receipt" | "payment",
+    orderType: (isReceivable ? "sale" : "purchase") as "sale" | "purchase",
     createdAt: { gte: range.gte, lte: range.lte },
-    ...(params.direction === "receipt" || params.direction === "payment" ? { direction: params.direction as "receipt" | "payment" } : {}),
-    ...(params.orderType === "sale" || params.orderType === "purchase" ? { orderType: params.orderType as "sale" | "purchase" } : {}),
-    ...(params.method ? { method: params.method as "cash" | "bank" | "wechat" | "alipay" | "other" } : {}),
+    ...(method ? { method } : {}),
+    ...(counterOrderIds ? { orderId: { in: counterOrderIds } } : {}),
   };
 
-  const [saleOrders, purchaseOrders, payments, total, sumResult] = await Promise.all([
-    prisma.saleOrder.findMany({
-      where: { status: "confirmed" },
-      include: {
-        customer: { select: { name: true } },
-        returns: { where: { status: "confirmed" } },
-      },
-      orderBy: { createdAt: "desc" },
-      take: 200,
-    }),
-    prisma.purchaseOrder.findMany({
-      where: { status: { in: ["pending", "received"] } },
-      include: {
-        supplier: { select: { name: true } },
-        returns: { where: { status: "confirmed" } },
-      },
-      orderBy: { createdAt: "desc" },
-      take: 200,
-    }),
+  const [payments, total, sumResult] = await Promise.all([
     prisma.payment.findMany({
       where,
       orderBy: { createdAt: "desc" },
@@ -75,102 +155,69 @@ export default async function ReceivablesPage({
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const filteredSum = Number(sumResult._sum.amount ?? 0);
 
-  // 应收按客户、应付按供应商聚合
-  const receivablesByCustomer = new Map<number, { name: string; total: number }>();
-  for (const o of saleOrders) {
-    const returned = o.returns.reduce((s, r) => s + Number(r.totalAmount), 0);
-    const outstanding = Number(o.totalAmount) - Number(o.receivedAmount) - returned;
-    const cur = receivablesByCustomer.get(o.customerId) ?? { name: o.customer.name, total: 0 };
-    cur.total += outstanding;
-    receivablesByCustomer.set(o.customerId, cur);
-  }
-  const payablesBySupplier = new Map<number, { name: string; total: number }>();
-  for (const o of purchaseOrders) {
-    const returned = o.returns.reduce((s, r) => s + Number(r.totalAmount), 0);
-    const outstanding = Number(o.totalAmount) - Number(o.paidAmount) - returned;
-    const cur = payablesBySupplier.get(o.supplierId) ?? { name: o.supplier.name, total: 0 };
-    cur.total += outstanding;
-    payablesBySupplier.set(o.supplierId, cur);
-  }
-
-  const sales = saleOrders
-    .map((o) => {
-      const returned = o.returns.reduce((s, r) => s + Number(r.totalAmount), 0);
-      return {
-        id: o.id,
-        orderNo: o.orderNo,
-        customerName: o.customer.name,
-        outstanding: Math.max(0, Number(o.totalAmount) - Number(o.receivedAmount) - returned),
-      };
-    })
-    .filter((o) => o.outstanding > 0);
-  const purchases = purchaseOrders
-    .map((o) => {
-      const returned = o.returns.reduce((s, r) => s + Number(r.totalAmount), 0);
-      return {
-        id: o.id,
-        orderNo: o.orderNo,
-        supplierName: o.supplier.name,
-        outstanding: Math.max(0, Number(o.totalAmount) - Number(o.paidAmount) - returned),
-      };
-    })
-    .filter((o) => o.outstanding > 0);
-
   const paymentContext = new Map<number, { orderNo: string; counterName: string }>();
-  for (const o of saleOrders) {
-    paymentContext.set(o.id, { orderNo: o.orderNo, counterName: o.customer.name });
-  }
-  for (const o of purchaseOrders) {
-    paymentContext.set(o.id, { orderNo: o.orderNo, counterName: o.supplier.name });
+  for (const o of orders) {
+    paymentContext.set(o.id, {
+      orderNo: o.orderNo,
+      counterName:
+        (o as { customer?: { name: string }; supplier?: { name: string } }).customer?.name ??
+        (o as { supplier?: { name: string } }).supplier?.name ??
+        "",
+    });
   }
 
-  const totalReceivable = [...receivablesByCustomer.values()].reduce((s, v) => s + Math.max(v.total, 0), 0);
-  const totalPayable = [...payablesBySupplier.values()].reduce((s, v) => s + Math.max(v.total, 0), 0);
+  const viewHref = (v: string) => {
+    const sp = new URLSearchParams({ view: v });
+    return `/receivables-payables?${sp.toString()}`;
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold text-gray-900">应收应付</h1>
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <div className="rounded-xl border border-gray-200 bg-white p-5">
-          <div className="text-sm text-gray-500">客户应收合计（未收）</div>
-          <div className="mt-1 text-2xl font-semibold text-gray-900">¥{totalReceivable.toFixed(2)}</div>
-          <div className="mt-2 space-y-1">
-            {[...receivablesByCustomer.entries()]
-              .filter(([, v]) => v.total > 0)
-              .map(([id, v]) => (
-                <div key={id} className="flex justify-between text-sm">
-                  <span className="text-gray-700">{v.name}</span>
-                  <span className="text-gray-900">¥{v.total.toFixed(2)}</span>
-                </div>
-              ))}
-          </div>
-        </div>
-        <div className="rounded-xl border border-gray-200 bg-white p-5">
-          <div className="text-sm text-gray-500">供应商应付合计（未付）</div>
-          <div className="mt-1 text-2xl font-semibold text-gray-900">¥{totalPayable.toFixed(2)}</div>
-          <div className="mt-2 space-y-1">
-            {[...payablesBySupplier.entries()]
-              .filter(([, v]) => v.total > 0)
-              .map(([id, v]) => (
-                <div key={id} className="flex justify-between text-sm">
-                  <span className="text-gray-700">{v.name}</span>
-                  <span className="text-gray-900">¥{v.total.toFixed(2)}</span>
-                </div>
-              ))}
-          </div>
+        <div className="flex rounded-lg border border-gray-200 bg-gray-50 p-0.5 text-sm">
+          <a
+            href={viewHref("receivable")}
+            className={`rounded-md px-4 py-1.5 ${isReceivable ? "bg-blue-600 text-white" : "text-gray-600 hover:text-gray-900"}`}
+          >
+            应收（客户）
+          </a>
+          <a
+            href={viewHref("payable")}
+            className={`rounded-md px-4 py-1.5 ${!isReceivable ? "bg-blue-600 text-white" : "text-gray-600 hover:text-gray-900"}`}
+          >
+            应付（供应商）
+          </a>
         </div>
       </div>
 
-      <PaymentForm saleOrders={sales} purchaseOrders={purchases} />
+      <div className="rounded-xl border border-gray-200 bg-white p-5">
+        <div className="text-sm text-gray-500">
+          {isReceivable ? "客户应收合计（未收）" : "供应商应付合计（未付）"}
+        </div>
+        <div className="mt-1 text-2xl font-semibold text-gray-900">¥{totalOutstanding.toFixed(2)}</div>
+        <div className="mt-2 space-y-1">
+          {[...byCounter.entries()]
+            .sort((a, b) => b[1].total - a[1].total)
+            .map(([id, v]) => (
+              <div key={id} className="flex justify-between text-sm">
+                <span className="text-gray-700">{v.name}</span>
+                <span className="text-gray-900">¥{v.total.toFixed(2)}</span>
+              </div>
+            ))}
+        </div>
+      </div>
 
-      <DateShortcuts basePath="/receivables-payables" extraQuery={{
-        direction: params.direction ?? "",
-        orderType: params.orderType ?? "",
-        method: params.method ?? "",
-      }} />
+      <PaymentForm saleOrders={sales} purchaseOrders={purchases} lockedDirection={isReceivable ? "receipt" : "payment"} />
+
+      <DateShortcuts
+        basePath="/receivables-payables"
+        extraQuery={{
+          view,
+          counterId: params.counterId ?? "",
+          method: params.method ?? "",
+        }}
+      />
       <form className="flex flex-wrap items-end gap-3 rounded-xl border border-gray-200 bg-white p-4">
         <div>
           <label htmlFor="from" className="block text-xs font-medium text-gray-600">开始日期</label>
@@ -180,15 +227,11 @@ export default async function ReceivablesPage({
           <label htmlFor="to" className="block text-xs font-medium text-gray-600">结束日期</label>
           <input id="to" type="date" name="to" defaultValue={params.to} className="mt-1 rounded-md border border-gray-300 px-2 py-1.5 text-sm" />
         </div>
-        <select name="direction" defaultValue={params.direction ?? ""} className="rounded-md border border-gray-300 px-2 py-1.5 text-sm">
-          <option value="">全部方向</option>
-          <option value="receipt">收款</option>
-          <option value="payment">付款</option>
-        </select>
-        <select name="orderType" defaultValue={params.orderType ?? ""} className="rounded-md border border-gray-300 px-2 py-1.5 text-sm">
-          <option value="">全部单据类型</option>
-          <option value="sale">售卖单（客户）</option>
-          <option value="purchase">进货单（供应商）</option>
+        <select name="counterId" defaultValue={params.counterId ?? ""} className="rounded-md border border-gray-300 px-2 py-1.5 text-sm">
+          <option value="">{isReceivable ? "全部客户" : "全部供应商"}</option>
+          {counterOptions.map((c) => (
+            <option key={c.id} value={c.id}>{c.name}</option>
+          ))}
         </select>
         <select name="method" defaultValue={params.method ?? ""} className="rounded-md border border-gray-300 px-2 py-1.5 text-sm">
           <option value="">全部方式</option>
@@ -196,9 +239,10 @@ export default async function ReceivablesPage({
             <option key={k} value={k}>{v}</option>
           ))}
         </select>
+        <input type="hidden" name="view" value={view} />
         <button type="submit" className="rounded-md bg-gray-100 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-200">查询</button>
-        {(params.from || params.to || params.direction || params.orderType || params.method) && (
-          <a href="/receivables-payables" className="text-xs text-blue-600 hover:underline">清除条件</a>
+        {(params.from || params.to || params.counterId || params.method) && (
+          <Link href={`/receivables-payables?view=${view}`} className="text-xs text-blue-600 hover:underline">清除条件</Link>
         )}
       </form>
 
@@ -209,7 +253,7 @@ export default async function ReceivablesPage({
               <th className="px-4 py-3 font-medium">时间</th>
               <th className="px-4 py-3 font-medium">收付单号</th>
               <th className="px-4 py-3 font-medium">方向</th>
-              <th className="px-4 py-3 font-medium">对方</th>
+              <th className="px-4 py-3 font-medium">{isReceivable ? "客户" : "供应商"}</th>
               <th className="px-4 py-3 font-medium">关联单据</th>
               <th className="px-4 py-3 font-medium">方式</th>
               <th className="px-4 py-3 text-right font-medium">金额</th>
@@ -221,9 +265,7 @@ export default async function ReceivablesPage({
           <tbody className="divide-y divide-gray-100">
             {payments.length === 0 && (
               <tr>
-                <td colSpan={10} className="px-4 py-8 text-center text-gray-400">
-                  暂无收付款记录
-                </td>
+                <td colSpan={10} className="px-4 py-8 text-center text-gray-400">该条件下暂无记录</td>
               </tr>
             )}
             {payments.map((p) => {
@@ -279,13 +321,13 @@ export default async function ReceivablesPage({
         {totalPages > 1 && (
           <div className="flex items-center gap-3 border-t border-gray-100 px-4 py-3 text-sm">
             {page > 1 ? (
-              <Link href={buildHref(page - 1, params)} className="text-blue-600 hover:underline">上一页</Link>
+              <Link href={buildHref(page - 1, view, params)} className="text-blue-600 hover:underline">上一页</Link>
             ) : (
               <span className="text-gray-400">上一页</span>
             )}
             <span className="text-gray-600">第 {page} / {totalPages} 页 ・ 共 {total} 条</span>
             {page < totalPages ? (
-              <Link href={buildHref(page + 1, params)} className="text-blue-600 hover:underline">下一页</Link>
+              <Link href={buildHref(page + 1, view, params)} className="text-blue-600 hover:underline">下一页</Link>
             ) : (
               <span className="text-gray-400">下一页</span>
             )}
@@ -296,11 +338,16 @@ export default async function ReceivablesPage({
   );
 }
 
-function buildHref(page: number, params: Record<string, string | undefined>): string {
-  const sp = new URLSearchParams({ page: String(page) });
-  for (const k of ["from", "to", "direction", "orderType", "method"] as const) {
-    if (params[k]) sp.set(k, params[k]);
-  }
+function buildHref(
+  page: number,
+  view: string,
+  params: { from?: string; to?: string; counterId?: string; method?: string }
+): string {
+  const sp = new URLSearchParams({ view, page: String(page) });
+  if (params.from) sp.set("from", params.from);
+  if (params.to) sp.set("to", params.to);
+  if (params.counterId) sp.set("counterId", params.counterId);
+  if (params.method) sp.set("method", params.method);
   return `/receivables-payables?${sp.toString()}`;
 }
 

@@ -21,11 +21,14 @@ const inputCls = "mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text
 export function PaymentForm({
   saleOrders,
   purchaseOrders,
+  lockedDirection,
 }: {
   saleOrders: SaleOption[];
   purchaseOrders: PurchaseOption[];
+  /** 视图锁定：应收视图只允许登记收款，应付视图只允许付款 */
+  lockedDirection?: "receipt" | "payment";
 }) {
-  const [direction, setDirection] = useState<"receipt" | "payment">("receipt");
+  const [direction, setDirection] = useState<"receipt" | "payment">(lockedDirection ?? "receipt");
   const [orderId, setOrderId] = useState("");
   const [state, formAction, pending] = useActionState<FormState, FormData>(
     createPaymentAction,
@@ -45,19 +48,25 @@ export function PaymentForm({
           <label htmlFor="direction" className="block text-xs font-medium text-gray-600">
             方向 *
           </label>
-          <select
-            id="direction"
-            name="direction"
-            value={direction}
-            onChange={(e) => {
-              setDirection(e.target.value as "receipt" | "payment");
-              setOrderId("");
-            }}
-            className={inputCls}
-          >
-            <option value="receipt">收款（客户）</option>
-            <option value="payment">付款（供应商）</option>
-          </select>
+          {lockedDirection ? (
+            <span className="mt-1 block rounded-md border border-gray-200 bg-gray-50 px-2 py-1.5 text-sm text-gray-600">
+              {lockedDirection === "receipt" ? "收款（客户）" : "付款（供应商）"}
+            </span>
+          ) : (
+            <select
+              id="direction"
+              name="direction"
+              value={direction}
+              onChange={(e) => {
+                setDirection(e.target.value as "receipt" | "payment");
+                setOrderId("");
+              }}
+              className={inputCls}
+            >
+              <option value="receipt">收款（客户）</option>
+              <option value="payment">付款（供应商）</option>
+            </select>
+          )}
         </div>
         <div>
           <label htmlFor="orderId" className="block text-xs font-medium text-gray-600">
