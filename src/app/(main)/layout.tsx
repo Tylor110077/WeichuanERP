@@ -19,14 +19,12 @@ const NAV_GROUPS: {
     label: "进货",
     items: [
       { href: "/purchase-orders", label: "进货单", roles: ALL_ROLES },
-      { href: "/purchase-orders/new", label: "进货开单", roles: ["admin", "sales"] },
     ],
   },
   {
     label: "销售",
     items: [
       { href: "/sale-orders", label: "售卖单", roles: ALL_ROLES },
-      { href: "/sale-orders/new", label: "销售开单", roles: ["admin", "sales"] },
     ],
   },
   {
