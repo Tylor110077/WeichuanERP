@@ -408,10 +408,9 @@ export function NewSaleForm({
         lastSupplyPrice: result.refPurchasePrice,
       };
       setProductOptions((prev) => (prev.some((p) => p.id === result.id) ? prev : [...prev, opt]));
-      // 自动追加一行商品并选中新商品（库存 0 → 走缺货补货流程）
-      setRows((prev) => [
-        ...prev,
-        {
+      // 替换当前的空行（不存在空行才追加），选中新商品（库存 0 → 走缺货补货流程）
+      setRows((prev) => {
+        const newRow = {
           productId: String(result.id),
           productLabel: `${result.code} ${result.name}`,
           productCode: result.code,
@@ -424,8 +423,15 @@ export function NewSaleForm({
           supplierId: "",
           supplyPrice: String(result.refPurchasePrice),
           hasLastSupplier: false,
-        },
-      ]);
+        };
+        const emptyIdx = prev.findIndex(
+          (r) => !r.productId && !r.productCode && !r.productQuery
+        );
+        if (emptyIdx >= 0) {
+          return prev.map((r, idx) => (idx === emptyIdx ? newRow : r));
+        }
+        return [...prev, newRow];
+      });
       setShowCreateProduct(false);
       setNewProduct({ name: "", spec: "", manufacturer: "", categoryId: "", unitId: "", refSalePrice: "", refPurchasePrice: "", minStock: "1" });
       setMfrQuery("");
@@ -863,7 +869,7 @@ export function NewSaleForm({
               <th className="w-28 px-4 py-3 font-medium">数量 *</th>
               <th className="w-16 px-4 py-3 font-medium">单位</th>
               <th className="w-32 px-4 py-3 font-medium">售价 *</th>
-              <th className="w-48 px-4 py-3 font-medium">自动补货（缺货时）</th>
+              <th className="w-52 px-4 py-3 font-medium">补货商家 / 进价（缺货时）</th>
               <th className="w-28 px-4 py-3 text-right font-medium">金额</th>
               <th className="w-14 px-4 py-3 font-medium"></th>
             </tr>
