@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { NewSaleForm } from "./new-sale-form";
@@ -130,7 +131,12 @@ export default async function NewSaleOrderPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-lg font-semibold text-gray-900">销售开单</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-lg font-semibold text-gray-900">销售开单</h1>
+        <Link href="/sale-orders" className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50">
+          ← 返回售卖单
+        </Link>
+      </div>
       <NewSaleForm
         customers={customers.map((c) => ({ id: c.id, name: c.name }))}
         suppliers={suppliers.map((s) => ({ id: s.id, name: s.name }))}
