@@ -32,8 +32,8 @@ function buildAreaPath(points: Point[], width: number, height: number, pad: numb
 
 export function CuPriceChart({
   points,
-  height = 150,
-  width = 640,
+  height = 230,
+  width = 900,
   label = "铜价（元/吨）",
 }: {
   points: Point[];
@@ -83,19 +83,30 @@ export function CuPriceChart({
         strokeLinecap="round"
       />
       {/* 首尾/极值标注 */}
-      <text x={pad} y={pad - 6} fontSize="11" fill="#6b7280">
+      <text x={pad} y={pad - 10} fontSize="13" fontWeight="600" fill="#374151">
         ¥{max.toFixed(0)}
       </text>
-      <text x={pad} y={height - pad + 14} fontSize="11" fill="#6b7280">
+      <text x={pad} y={height - pad + 18} fontSize="13" fontWeight="600" fill="#374151">
         ¥{min.toFixed(0)}
       </text>
-      {/* X 轴标签（首尾） */}
-      <text x={pad} y={height - 2} fontSize="11" fill="#9ca3af">
-        {points[0].label}
-      </text>
-      <text x={width - pad} y={height - 2} fontSize="11" fill="#9ca3af" textAnchor="end">
-        {points[points.length - 1].label}
-      </text>
+      {/* X 轴标签（首/中/尾） */}
+      {[0, Math.floor((points.length - 1) / 2), points.length - 1]
+        .filter((idx, i, arr) => arr.indexOf(idx) === i)
+        .map((idx) => {
+          const x = pad + (idx / Math.max(points.length - 1, 1)) * (width - pad * 2);
+          return (
+            <text
+              key={idx}
+              x={x}
+              y={height - 4}
+              fontSize="12"
+              fill="#9ca3af"
+              textAnchor="middle"
+            >
+              {points[idx].label}
+            </text>
+          );
+        })}
       {/* 最新点 */}
       <circle
         cx={pad + (width - pad * 2)}
