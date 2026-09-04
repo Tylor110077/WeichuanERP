@@ -455,8 +455,27 @@ export function NewSaleForm({
                 onChange={(e) => onCustomerQueryChange(e.target.value)}
                 onFocus={() => setShowCandidates(true)}
                 onBlur={() => setShowCandidates(false)}
-                className={`w-full ${inputCls}`}
+                className={`w-full ${inputCls} pr-32`}
               />
+              {customerId && selectedCustomer && (
+                <div className="pointer-events-none absolute inset-y-0 right-2 top-1 flex items-center gap-1">
+                  {selectedCustomer.groupName && (
+                    <span className="rounded-full bg-blue-50 px-1.5 py-0.5 text-[10px] leading-none text-blue-700">
+                      {selectedCustomer.groupName}
+                    </span>
+                  )}
+                  {selectedCustomer.tagNames.slice(0, 2).map((t) => (
+                    <span key={t} className="rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] leading-none text-gray-600">
+                      {t}
+                    </span>
+                  ))}
+                  {selectedCustomer.tagNames.length > 2 && (
+                    <span className="text-[10px] text-gray-400">
+                      +{selectedCustomer.tagNames.length - 2}
+                    </span>
+                  )}
+                </div>
+              )}
               <input type="hidden" name="customerId" value={customerId} />
               {showCandidates && customerQuery && (
                 <div className="absolute z-20 mt-1 max-h-64 w-full overflow-auto rounded-md border border-gray-200 bg-white shadow-lg">
@@ -496,20 +515,7 @@ export function NewSaleForm({
               </button>
             )}
           </div>
-          {customerId && selectedCustomer && (
-            <div className="mt-1 flex flex-wrap items-center gap-1">
-              {selectedCustomer.groupName && (
-                <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-700">
-                  {selectedCustomer.groupName}
-                </span>
-              )}
-              {selectedCustomer.tagNames.map((t) => (
-                <span key={t} className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
-                  {t}
-                </span>
-              ))}
-            </div>
-          )}
+
           {showCreateCustomer && (
             <div className="mt-2 rounded-lg border border-blue-200 bg-blue-50/50 p-3 space-y-2">
               <input
