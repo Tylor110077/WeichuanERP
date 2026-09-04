@@ -450,7 +450,7 @@ export function NewSaleForm({
                 name="customerQuery"
                 type="text"
                 autoComplete="off"
-                placeholder="输入客户名称，边输入边弹候选…"
+                placeholder="搜索客户…"
                 value={customerQuery}
                 onChange={(e) => onCustomerQueryChange(e.target.value)}
                 onFocus={() => setShowCandidates(true)}
