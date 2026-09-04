@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
+import { DateShortcuts } from "@/components/date-shortcuts";
 import { ROLE_LABELS } from "@/lib/auth/roles";
 
 export const metadata = { title: "进货单 - 玮川进销存" };
@@ -16,7 +17,7 @@ const STATUS_LABELS: Record<string, string> = {
 export default async function PurchaseOrdersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; status?: string; supplierId?: string; q?: string }>;
+  searchParams: Promise<{ page?: string; status?: string; from?: string; to?: string; supplierId?: string; q?: string }>;
 }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
@@ -26,11 +27,13 @@ export default async function PurchaseOrdersPage({
   const status = params.status || undefined;
   const supplierId = params.supplierId ? Number(params.supplierId) : undefined;
   const q = params.q?.trim();
+  const range = dateRange(params.from, params.to);
 
   const where = {
     ...(status ? { status: status as "pending" | "received" | "voided" } : {}),
     ...(supplierId ? { supplierId } : {}),
     ...(q ? { orderNo: { contains: q } } : {}),
+    createdAt: { gte: range.gte, lte: range.lte },
     // 矩阵：业务员只能看自己开的单
     ...(user.role === "sales" ? { operatorId: user.id } : {}),
   };
@@ -72,6 +75,8 @@ export default async function PurchaseOrdersPage({
         )}
       </div>
 
+      <DateShortcuts basePath="/purchase-orders" />
+
       <form className="flex flex-wrap items-center gap-3 rounded-xl border border-gray-200 bg-white p-4">
         <input
           name="q"
@@ -88,6 +93,8 @@ export default async function PurchaseOrdersPage({
             </option>
           ))}
         </select>
+        <input type="date" name="from" defaultValue={params.from} className="rounded-md border border-gray-300 px-2 py-1.5 text-sm" />
+        <input type="date" name="to" defaultValue={params.to} className="rounded-md border border-gray-300 px-2 py-1.5 text-sm" />
         <select name="status" defaultValue={status ?? ""} className="rounded-md border border-gray-300 px-2 py-1.5 text-sm">
           {statusOptions.map((s) => (
             <option key={s.value} value={s.value}>
@@ -194,7 +201,21 @@ export default async function PurchaseOrdersPage({
     if (q) sp.set("q", q);
     if (supplierId) sp.set("supplierId", String(supplierId));
     if (status) sp.set("status", status);
+    if (params.from) sp.set("from", params.from);
+    if (params.to) sp.set("to", params.to);
     sp.set("page", String(p));
     return `/purchase-orders?${sp.toString()}`;
   }
+}
+
+
+function dateRange(from?: string, to?: string): { gte: Date; lte: Date } {
+  const now = new Date();
+  const gte = from && /^\d{4}-\d{2}-\d{2}$/.test(from)
+    ? new Date(`${from}T00:00:00`)
+    : new Date(now.getFullYear(), now.getMonth(), 1);
+  const toDate = to && /^\d{4}-\d{2}-\d{2}$/.test(to) ? new Date(`${to}T00:00:00`) : now;
+  const lte = new Date(toDate.getTime());
+  lte.setHours(23, 59, 59, 999);
+  return { gte, lte };
 }

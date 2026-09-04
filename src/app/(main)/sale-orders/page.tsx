@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
+import { DateShortcuts } from "@/components/date-shortcuts";
 import { ROLE_LABELS } from "@/lib/auth/roles";
 
 export const metadata = { title: "售卖单 - 玮川进销存" };
@@ -15,7 +16,7 @@ const STATUS_LABELS: Record<string, string> = {
 export default async function SaleOrdersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; status?: string; customerId?: string; q?: string }>;
+  searchParams: Promise<{ page?: string; status?: string; from?: string; to?: string; customerId?: string; q?: string }>;
 }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
@@ -25,11 +26,13 @@ export default async function SaleOrdersPage({
   const status = params.status || undefined;
   const customerId = params.customerId ? Number(params.customerId) : undefined;
   const q = params.q?.trim();
+  const range = dateRange(params.from, params.to);
 
   const where = {
     ...(status ? { status: status as "confirmed" | "voided" } : {}),
     ...(customerId ? { customerId } : {}),
     ...(q ? { orderNo: { contains: q } } : {}),
+    createdAt: { gte: range.gte, lte: range.lte },
     ...(user.role === "sales" ? { operatorId: user.id } : {}),
   };
 
@@ -64,6 +67,8 @@ export default async function SaleOrdersPage({
         )}
       </div>
 
+      <DateShortcuts basePath="/sale-orders" />
+
       <form className="flex flex-wrap items-center gap-3 rounded-xl border border-gray-200 bg-white p-4">
         <input
           name="q"
@@ -80,6 +85,8 @@ export default async function SaleOrdersPage({
             </option>
           ))}
         </select>
+        <input type="date" name="from" defaultValue={params.from} className="rounded-md border border-gray-300 px-2 py-1.5 text-sm" />
+        <input type="date" name="to" defaultValue={params.to} className="rounded-md border border-gray-300 px-2 py-1.5 text-sm" />
         <select name="status" defaultValue={status ?? ""} className="rounded-md border border-gray-300 px-2 py-1.5 text-sm">
           <option value="">全部状态</option>
           <option value="confirmed">已开单</option>
@@ -167,7 +174,21 @@ export default async function SaleOrdersPage({
     if (q) sp.set("q", q);
     if (customerId) sp.set("customerId", String(customerId));
     if (status) sp.set("status", status);
+    if (params.from) sp.set("from", params.from);
+    if (params.to) sp.set("to", params.to);
     sp.set("page", String(p));
     return `/sale-orders?${sp.toString()}`;
   }
+}
+
+
+function dateRange(from?: string, to?: string): { gte: Date; lte: Date } {
+  const now = new Date();
+  const gte = from && /^\d{4}-\d{2}-\d{2}$/.test(from)
+    ? new Date(`${from}T00:00:00`)
+    : new Date(now.getFullYear(), now.getMonth(), 1);
+  const toDate = to && /^\d{4}-\d{2}-\d{2}$/.test(to) ? new Date(`${to}T00:00:00`) : now;
+  const lte = new Date(toDate.getTime());
+  lte.setHours(23, 59, 59, 999);
+  return { gte, lte };
 }
