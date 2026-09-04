@@ -47,7 +47,8 @@ interface ProductOption {
 interface Row {
   productId: string;
   productLabel: string; // 选中商品的回填文本（编码 + 名称）
-  productQuery: string; // 输入框当前文本（搜索用）
+  productCode: string; // 编码输入框（分开显示/搜索）
+  productQuery: string; // 名称输入框（搜索用）
   manufacturer: string; // 选中商品的厂商（用于"自动补货：厂商"提示）
   unitName: string;
   stockQty: number;
@@ -251,6 +252,7 @@ export function NewSaleForm({
     return {
       productId: "",
       productLabel: "",
+      productCode: "",
       productQuery: "",
       manufacturer: "",
       unitName: "",
@@ -266,17 +268,19 @@ export function NewSaleForm({
   // 商品候选弹层（fixed 定位，避免被表格 overflow 裁剪）
   const [productPanel, setProductPanel] = useState<{ index: number; top: number; left: number; width: number } | null>(null);
 
-  function searchProducts(query: string): ProductOption[] {
-    const kw = query.trim().toLowerCase();
-    if (!kw) return [];
+  function searchProducts(row: Row | undefined): ProductOption[] {
+    if (!row) return [];
+    const kws = [row.productCode.trim(), row.productQuery.trim()]
+      .map((v) => v.toLowerCase())
+      .filter(Boolean);
+    if (kws.length === 0) return [];
     return productOptions
-      .filter(
-        (p) =>
-          p.name.toLowerCase().includes(kw) ||
-          p.code.toLowerCase().includes(kw) ||
-          p.manufacturer.toLowerCase().includes(kw) ||
-          p.spec.toLowerCase().includes(kw)
-      )
+      .filter((p) => {
+        const hay = [p.code, p.name, p.manufacturer, p.spec]
+          .join(" ")
+          .toLowerCase();
+        return kws.every((kw) => hay.includes(kw));
+      })
       .slice(0, 30);
   }
 
@@ -285,24 +289,35 @@ export function NewSaleForm({
     setProductPanel({ index, top: rect.bottom + 4, left: rect.left, width: rect.width });
   }
 
-  function onProductQueryChange(index: number, value: string) {
+  function onProductInputChange(index: number, field: "code" | "name", value: string) {
     setRows((prev) =>
-      prev.map((row, i) =>
-        i === index
-          ? {
-              // 输入与选中商品回填文本不一致 = 重新搜索，清空该行选中
-              ...row,
-              productId: value === row.productLabel && row.productLabel ? row.productId : "",
-              productQuery: value,
-              unitName: value === row.productLabel && row.productLabel ? row.unitName : "",
-              stockQty: value === row.productLabel && row.productLabel ? row.stockQty : 0,
-              unitPrice: value === row.productLabel && row.productLabel ? row.unitPrice : "",
-              supplierId: value === row.productLabel && row.productLabel ? row.supplierId : "",
-              supplyPrice: value === row.productLabel && row.productLabel ? row.supplyPrice : "",
-              hasLastSupplier: value === row.productLabel && row.productLabel ? row.hasLastSupplier : false,
-            }
-          : row
-      )
+      prev.map((row, i) => {
+        if (i !== index) return row;
+        // 输入与选中商品不一致 = 重新搜索，清空该行选中
+        const stillSelected =
+          value === (field === "code" ? row.productCode : row.productQuery) &&
+          value.length > 0;
+        const matchNote = stillSelected || !row.productId ? true : false;
+        if (!matchNote) {
+          return {
+            ...row,
+            productId: "",
+            productCode: field === "code" ? value : row.productCode,
+            productQuery: field === "name" ? value : row.productQuery,
+            unitName: "",
+            stockQty: 0,
+            unitPrice: "",
+            supplierId: "",
+            supplyPrice: "",
+            hasLastSupplier: false,
+          };
+        }
+        return {
+          ...row,
+          productCode: field === "code" ? value : row.productCode,
+          productQuery: field === "name" ? value : row.productQuery,
+        };
+      })
     );
   }
 
@@ -314,7 +329,8 @@ export function NewSaleForm({
               ...row,
               productId: String(p.id),
               productLabel: `${p.code} ${p.name}`,
-              productQuery: `${p.code} ${p.name}`,
+              productCode: p.code,
+              productQuery: p.name,
               manufacturer: p.manufacturer,
               unitName: p.unitName,
               stockQty: p.stockQty,
@@ -389,7 +405,8 @@ export function NewSaleForm({
         {
           productId: String(result.id),
           productLabel: `${result.code} ${result.name}`,
-          productQuery: `${result.code} ${result.name}`,
+          productCode: result.code,
+          productQuery: result.name,
           manufacturer: result.manufacturer,
           unitName: result.unitName,
           stockQty: 0,
@@ -825,17 +842,29 @@ export function NewSaleForm({
               return (
                 <tr key={i}>
                   <td className="px-4 py-2">
-                    <input
-                      name={`item_${i}_productQuery`}
-                      type="text"
-                      autoComplete="off"
-                      placeholder="搜索名称/型号/厂商/编码…"
-                      value={row.productQuery}
-                      onChange={(e) => onProductQueryChange(i, e.target.value)}
-                      onFocus={(e) => openProductPanel(e, i)}
-                      onBlur={() => setProductPanel(null)}
-                      className={inputCls}
-                    />
+                    <div className="flex gap-1">
+                      <input
+                        type="text"
+                        autoComplete="off"
+                        placeholder="编码"
+                        value={row.productCode}
+                        onChange={(e) => onProductInputChange(i, "code", e.target.value)}
+                        onFocus={(e) => openProductPanel(e, i)}
+                        onBlur={() => setProductPanel(null)}
+                        className={`${inputCls} w-24 shrink-0`}
+                      />
+                      <input
+                        name={`item_${i}_productQuery`}
+                        type="text"
+                        autoComplete="off"
+                        placeholder="名称/型号/厂商…"
+                        value={row.productQuery}
+                        onChange={(e) => onProductInputChange(i, "name", e.target.value)}
+                        onFocus={(e) => openProductPanel(e, i)}
+                        onBlur={() => setProductPanel(null)}
+                        className={inputCls}
+                      />
+                    </div>
                     <input type="hidden" name={`item_${i}_productId`} value={row.productId} />
                   </td>
                   <td className="px-4 py-2 text-gray-600">{row.unitName ? row.stockQty.toFixed(3) : "—"}</td>
@@ -962,7 +991,7 @@ export function NewSaleForm({
 
       {productPanel && (() => {
         const row = rows[productPanel.index];
-        const hits = row ? searchProducts(row.productQuery) : [];
+        const hits = searchProducts(row);
         return (
           <div
             style={{ position: "fixed", top: productPanel.top, left: productPanel.left, width: productPanel.width }}
@@ -979,7 +1008,7 @@ export function NewSaleForm({
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => {
                   setProductMsg(null);
-                  setNewProduct((prev) => ({ ...prev, name: row.productQuery.trim() }));
+                  setNewProduct((prev) => ({ ...prev, name: (row.productCode.trim() + " " + row.productQuery.trim()).trim() }));
                   setShowCreateProduct(true);
                   setProductPanel(null);
                 }}
