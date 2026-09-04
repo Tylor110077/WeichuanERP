@@ -496,6 +496,20 @@ export function NewSaleForm({
               </button>
             )}
           </div>
+          {customerId && selectedCustomer && (
+            <div className="mt-1 flex flex-wrap items-center gap-1">
+              {selectedCustomer.groupName && (
+                <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-700">
+                  {selectedCustomer.groupName}
+                </span>
+              )}
+              {selectedCustomer.tagNames.map((t) => (
+                <span key={t} className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
+                  {t}
+                </span>
+              ))}
+            </div>
+          )}
           {showCreateCustomer && (
             <div className="mt-2 rounded-lg border border-blue-200 bg-blue-50/50 p-3 space-y-2">
               <input
@@ -637,10 +651,6 @@ export function NewSaleForm({
             placeholder="选填"
             className={`mt-1 ${inputCls}`}
           />
-        </div>
-        <div className="text-right text-sm text-gray-600">
-          合计：
-          <span className="text-base font-semibold text-gray-900">¥{total.toFixed(2)}</span>
         </div>
       </div>
 
@@ -983,25 +993,31 @@ export function NewSaleForm({
           </tbody>
         </table>
         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 px-4 py-3">
-          <button
-            type="button"
-            onClick={() => setRows((prev) => [...prev, emptyRow()])}
-            className="text-sm text-blue-600 hover:underline"
-          >
-            + 添加商品行
-          </button>
-          {canCreateProduct && (
+          <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
-              onClick={() => {
-                setShowCreateProduct((v) => !v);
-                setProductMsg(null);
-              }}
-              className="rounded-md border border-blue-300 px-2.5 py-1.5 text-xs text-blue-600 hover:bg-blue-50"
+              onClick={() => setRows((prev) => [...prev, emptyRow()])}
+              className="text-sm text-blue-600 hover:underline"
             >
-              {showCreateProduct ? "收起" : "+ 新建商品"}
+              + 添加商品行
             </button>
-          )}
+            {canCreateProduct && (
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCreateProduct((v) => !v);
+                  setProductMsg(null);
+                }}
+                className="rounded-md border border-blue-300 px-2.5 py-1.5 text-xs text-blue-600 hover:bg-blue-50"
+              >
+                {showCreateProduct ? "收起" : "+ 新建商品"}
+              </button>
+            )}
+          </div>
+          <div className="text-sm text-gray-600">
+            合计：
+            <span className="text-base font-semibold text-gray-900">¥{total.toFixed(2)}</span>
+          </div>
         </div>
       </div>
 
