@@ -107,6 +107,22 @@ export default async function NewSaleOrderPage() {
     }
   }
 
+  // 同一客户 + 同一商品的最近成交价（开单参考："上次卖给该客户 XX 元"）
+  const lastCustomerSaleItems = await prisma.saleOrderItem.findMany({
+    where: { saleOrder: { status: "confirmed" } },
+    orderBy: { saleOrder: { createdAt: "desc" } },
+    select: {
+      productId: true,
+      unitPrice: true,
+      saleOrder: { select: { customerId: true, createdAt: true } },
+    },
+  });
+  const lastCustomerPrice = new Map<string, number>();
+  for (const si of lastCustomerSaleItems) {
+    const key = `${si.saleOrder.customerId}-${si.productId}`;
+    if (!lastCustomerPrice.has(key)) lastCustomerPrice.set(key, Number(si.unitPrice));
+  }
+
   const supplierMap = new Map(suppliers.map((s) => [s.id, s.name]));
   // 厂商优先：商品档案的“厂商”名称匹配到供应商档案时，自动补货商默认取该供应商
   const supplierIdByName = new Map<string, number>();
@@ -150,6 +166,7 @@ export default async function NewSaleOrderPage() {
         categories={categories.map((c) => ({ id: c.id, name: c.name }))}
         customerGroups={groups.map((g) => ({ id: g.id, name: g.name }))}
         customerTags={tags.map((t) => ({ id: t.id, name: t.name }))}
+        lastCustomerPrices={Object.fromEntries(lastCustomerPrice)}
         canCreateCustomer={user.role === "admin"}
         canCreateProduct={user.role === "admin"}
       />

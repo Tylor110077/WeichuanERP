@@ -71,6 +71,7 @@ export function NewSaleForm({
   categories,
   customerGroups,
   customerTags,
+  lastCustomerPrices,
   canCreateCustomer,
   canCreateProduct,
 }: {
@@ -81,6 +82,8 @@ export function NewSaleForm({
   categories: CategoryOption[];
   customerGroups: { id: number; name: string }[];
   customerTags: { id: number; name: string }[];
+  /** 客户-商品 → 最近成交价（参考展示，不覆盖输入） */
+  lastCustomerPrices: Record<string, number>;
   canCreateCustomer: boolean;
   canCreateProduct: boolean;
 }) {
@@ -923,6 +926,11 @@ export function NewSaleForm({
                   </td>
                   <td className="px-4 py-2 text-gray-600">{row.unitName || "—"}</td>
                   <td className="px-4 py-2">
+                    {customerId && row.productId && lastCustomerPrices[`${customerId}-${row.productId}`] != null && (
+                      <div className="mb-1 text-xs text-gray-400">
+                        上次：¥{lastCustomerPrices[`${customerId}-${row.productId}`].toFixed(2)}
+                      </div>
+                    )}
                     <input
                       name={`item_${i}_unitPrice`}
                       type="number"
