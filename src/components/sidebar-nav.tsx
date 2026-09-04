@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import { useEffect, useState } from "react";
 
 interface NavItem {
@@ -17,7 +18,16 @@ interface NavGroup {
 const STORAGE_KEY = "wc-nav-collapsed";
 
 export function SidebarNav({ groups }: { groups: NavGroup[] }) {
+  return (
+    <Suspense fallback={<nav className="flex-1 overflow-y-auto px-2 py-3" />}>
+      <SidebarNavInner groups={groups} />
+    </Suspense>
+  );
+}
+
+function SidebarNavInner({ groups }: { groups: NavGroup[] }) {
   const pathname = usePathname();
+  const search = useSearchParams().toString();
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
   // 恢复上次折叠状态（客户端；localStorage 读取放异步以防 hydration 闪烁）
@@ -46,7 +56,13 @@ export function SidebarNav({ groups }: { groups: NavGroup[] }) {
   }
 
   function isActive(href: string): boolean {
-    return pathname === href || pathname.startsWith(`${href}/`);
+    const [hrefPath, hrefQuery] = href.split("?");
+    const pathOk = pathname === hrefPath || pathname.startsWith(`${hrefPath}/`);
+    if (!pathOk) return false;
+    if (!hrefQuery) return true;
+    // 带查询参数的菜单项：要求当前 search 包含菜单项指定的键值对
+    const expect = new URLSearchParams(hrefQuery);
+    return [...expect.entries()].every(([k, v]) => new URLSearchParams(search).get(k) === v);
   }
 
   return (

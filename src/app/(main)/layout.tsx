@@ -37,8 +37,8 @@ const NAV_GROUPS: {
   {
     label: "财务",
     items: [
-      { href: "/receivables-payables", label: "应收应付", roles: ["admin", "boss"] },
-      { href: "/supplier-statement", label: "供应商对账", roles: ["admin", "boss"] },
+      { href: "/receivables-payables?view=receivable", label: "客户应收", roles: ["admin", "boss"] },
+      { href: "/receivables-payables?view=payable", label: "供应商应付", roles: ["admin", "boss"] },
       { href: "/sales-analysis", label: "销售分析", roles: ["admin", "boss"] },
       { href: "/reports", label: "报表中心", roles: ["admin", "boss"] },
     ],
