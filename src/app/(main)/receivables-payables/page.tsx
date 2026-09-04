@@ -55,7 +55,7 @@ export default async function ReceivablesPage({
   // 视图基础：应收 → 客户售卖单（收款）；应付 → 供应商进货单（付款）
   const orders = isReceivable
     ? await prisma.saleOrder.findMany({
-        where: { status: "confirmed", ...(counterId ? { customerId: counterId } : {}) },
+        where: { status: "confirmed", createdAt: { gte: range.gte, lte: range.lte }, ...(counterId ? { customerId: counterId } : {}) },
         include: {
           customer: { select: { name: true } },
           returns: { where: { status: "confirmed" } },
@@ -64,7 +64,7 @@ export default async function ReceivablesPage({
         take: 200,
       })
     : await prisma.purchaseOrder.findMany({
-        where: { status: { in: ["pending", "received"] }, ...(counterId ? { supplierId: counterId } : {}) },
+        where: { status: { in: ["pending", "received"] }, createdAt: { gte: range.gte, lte: range.lte }, ...(counterId ? { supplierId: counterId } : {}) },
         include: {
           supplier: { select: { name: true } },
           returns: { where: { status: "confirmed" } },
@@ -211,7 +211,7 @@ export default async function ReceivablesPage({
             <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
         <div className="border-b border-gray-100 px-4 py-3 text-sm font-semibold text-gray-900">
           {isReceivable ? "未结清售卖单（应收）" : "未结清进货单（应付）"}
-          <span className="ml-2 text-xs font-normal text-gray-400">点击单号可查看详情并登记收付</span>
+          <span className="ml-2 text-xs font-normal text-gray-400">点击单号可查看详情并登记收付 ・ 受下方筛选条件（日期/对象）影响</span>
         </div>
         <table className="min-w-full divide-y divide-gray-200 text-sm">
           <thead className="bg-gray-50 text-left text-xs text-gray-500">
@@ -323,6 +323,10 @@ export default async function ReceivablesPage({
       </form>
 
       <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+        <div className="border-b border-gray-100 px-4 py-3 text-sm font-semibold text-gray-900">
+          {isReceivable ? "收款记录（流水）" : "付款记录（流水）"}
+          <span className="ml-2 text-xs font-normal text-gray-400">登记收付款后显示</span>
+        </div>
         <table className="min-w-full divide-y divide-gray-200 text-sm">
           <thead className="bg-gray-50 text-left text-xs text-gray-500">
             <tr>
@@ -341,7 +345,9 @@ export default async function ReceivablesPage({
           <tbody className="divide-y divide-gray-100">
             {payments.length === 0 && (
               <tr>
-                <td colSpan={10} className="px-4 py-8 text-center text-gray-400">该条件下暂无记录</td>
+                <td colSpan={10} className="px-4 py-8 text-center text-gray-400">
+                  {isReceivable ? "暂无收款记录（该筛选条件下）" : "暂无付款记录（该筛选条件下）"} ・ 未结清单据见上方表格
+                </td>
               </tr>
             )}
             {payments.map((p) => {
