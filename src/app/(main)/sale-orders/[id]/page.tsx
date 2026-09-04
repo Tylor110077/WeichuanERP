@@ -79,9 +79,19 @@ export default async function SaleOrderDetailPage({
             {STATUS_LABELS[order.status]}
           </span>
         </h1>
-        <Link href="/sale-orders" className="text-sm text-blue-600 hover:underline">
-          ← 返回列表
-        </Link>
+        <div className="flex items-center gap-3">
+          <a
+            href={`/sale-orders/${order.id}/print`}
+            target="_blank"
+            rel="noopener"
+            className="rounded-md border border-gray-300 px-4 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+          >
+            打印销售单
+          </a>
+          <Link href="/sale-orders" className="text-sm text-blue-600 hover:underline">
+            ← 返回列表
+          </Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
