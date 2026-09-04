@@ -471,7 +471,13 @@ export function NewSaleForm({
                       onClick={() => chooseCustomer(c)}
                       className="block w-full px-3 py-2 text-left text-sm text-gray-900 hover:bg-blue-50"
                     >
-                      {c.name}
+                      <span className="font-medium">{c.name}</span>
+                      {c.groupName && (
+                        <span className="ml-2 rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-700">{c.groupName}</span>
+                      )}
+                      {c.tagNames.map((t) => (
+                        <span key={t} className="ml-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">{t}</span>
+                      ))}
                     </button>
                   ))}
                 </div>
