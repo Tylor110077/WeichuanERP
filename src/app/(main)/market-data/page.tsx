@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { MarketDataForm } from "./market-data-form";
+import { FetchButton } from "./fetch-button";
 import { DeleteCuPriceButton } from "./delete-button";
 
 export const metadata = { title: "行情管理 - 玮川进销存" };
@@ -30,9 +31,12 @@ export default async function MarketDataPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold text-gray-900">行情管理（铜价）</h1>
-        <Link href="/dashboard" className="text-sm text-blue-600 hover:underline">
-          查看工作台图表
-        </Link>
+        <div className="flex items-center gap-3">
+          <FetchButton />
+          <Link href="/dashboard" className="text-sm text-blue-600 hover:underline">
+            查看工作台图表
+          </Link>
+        </div>
       </div>
 
       <MarketDataForm defaultDate={todayStr} />

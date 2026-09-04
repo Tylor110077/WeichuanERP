@@ -6,6 +6,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireMasterDataWrite } from "@/lib/auth/guards";
 import { writeAudit } from "@/lib/audit";
+import { fetchCuPriceOnce } from "@/lib/cu-price-fetch";
 
 const pointSchema = z.object({
   time: z.string().trim().min(1).max(5),
@@ -82,4 +83,30 @@ export async function deleteCuPriceAction(
   revalidatePath("/market-data");
   revalidatePath("/dashboard");
   return { ok: "已删除" };
+}
+
+
+/** 手动抓取网络行情（管理员）；成功后写入当日行情。 */
+export async function fetchCuPriceNowAction(): Promise<FormState> {
+  const admin = await requireMasterDataWrite().catch(() => null);
+  if (!admin) return { error: "无权限维护行情" };
+  const fetched = await fetchCuPriceOnce();
+  if (!fetched) {
+    return { error: "自动抓取失败（网络不可用或数据源无响应），请人工录入" };
+  }
+  const date = new Date(`${fetched.priceDate}T00:00:00`);
+  await prisma.cuPrice.upsert({
+    where: { priceDate: date },
+    update: { price: fetched.price },
+    create: { priceDate: date, price: fetched.price },
+  });
+  await writeAudit({
+    userId: admin.id,
+    action: "update",
+    entityType: "cu_price",
+    after: { priceDate: fetched.priceDate, price: fetched.price, source: fetched.source, auto: true },
+  });
+  revalidatePath("/market-data");
+  revalidatePath("/dashboard");
+  return { ok: `已抓取 ${fetched.priceDate} 沪铜主力 ¥${fetched.price}（${fetched.source}）` };
 }
