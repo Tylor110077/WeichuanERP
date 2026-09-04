@@ -104,7 +104,7 @@ export async function createPurchaseOrderAction(
 
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      const order = await prisma.$transaction(async (tx) => {
+      await prisma.$transaction(async (tx) => {
         const seq = await nextSeq(tx, ORDER_NO_PREFIXES.PO);
         const no = buildOrderNo(ORDER_NO_PREFIXES.PO, seq);
         const itemsWithAmount = normalized.map((it) => ({
@@ -134,7 +134,7 @@ export async function createPurchaseOrderAction(
         return created;
       });
       revalidatePath("/purchase-orders");
-      redirect(`/purchase-orders/${order.id}`);
+      redirect("/purchase-orders");
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
         continue; // 序号冲突，重取

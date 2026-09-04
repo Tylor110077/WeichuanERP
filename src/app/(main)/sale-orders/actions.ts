@@ -341,7 +341,7 @@ export async function createSaleOrderAction(
         after: { orderNo: result.orderNo, customerId, totalAmount: result.totalAmount },
       });
       revalidatePath("/sale-orders");
-      redirect(`/sale-orders/${result.id}`);
+      redirect("/sale-orders");
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
         continue; // 序号冲突重试
