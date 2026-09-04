@@ -101,7 +101,7 @@ export function MasterDataManager({
               </td>
               {isAdmin && (
                 <td className="px-4 py-2.5">
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap items-center justify-end gap-2">
                     {hideForm && editBase ? (
                       <Link href={`${editBase}/${row.id}`} className="text-xs text-blue-600 hover:underline">
                         编辑
