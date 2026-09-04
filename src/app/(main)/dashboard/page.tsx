@@ -1,5 +1,6 @@
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
+import { CuPriceChart } from "@/components/cu-price-chart";
 
 /**
  * 工作台（文档 4#2）：今日销售额、待收货进货单、负库存预警、库存预警、应收应付概览。
@@ -10,6 +11,14 @@ export default async function DashboardPage() {
 
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
+
+  // 铜价行情：最近 14 天 + 最近一天的当日时点（供趋势图）
+  const cuRows = await prisma.cuPrice.findMany({
+    orderBy: { priceDate: "desc" },
+    take: 14,
+  });
+  const cu14 = [...cuRows].reverse(); // 时间升序
+  const latestCu = cuRows[0] ?? null;
 
   const [todaySales, pendingPurchases, warningCount] = await Promise.all([
     prisma.saleOrder.aggregate({
@@ -78,6 +87,38 @@ export default async function DashboardPage() {
             <div className="mt-1 text-xs text-gray-400">{card.note}</div>
           </div>
         ))}
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div className="rounded-xl border border-gray-200 bg-white p-5">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-gray-900">近 14 天铜价走势</h2>
+            <span className="text-xs text-gray-400">元/吨</span>
+          </div>
+          <CuPriceChart
+            points={cu14.map((r) => ({
+              label: r.priceDate.toISOString().slice(5, 10),
+              price: Number(r.price),
+            }))}
+          />
+        </div>
+        <div className="rounded-xl border border-gray-200 bg-white p-5">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-gray-900">
+              当日铜价趋势
+              {latestCu ? `（${latestCu.priceDate.toISOString().slice(0, 10)} ¥${Number(latestCu.price).toFixed(2)}）` : ""}
+            </h2>
+            <span className="text-xs text-gray-400">时点价格</span>
+          </div>
+          <CuPriceChart
+            points={
+              latestCu && Array.isArray(latestCu.intraday)
+                ? (latestCu.intraday as { time: string; price: number }[]).map((p) => ({ label: p.time, price: p.price }))
+                : []
+            }
+            label="当日铜价（元/吨）"
+          />
+        </div>
       </div>
     </div>
   );

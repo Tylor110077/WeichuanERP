@@ -530,3 +530,15 @@ model StockMovement {
   @@index([bizOrderNo])
   @@map("stock_movements")
 }
+
+// 铜价行情（人工维护：每日价格 + 可选当日时点序列，供工作台趋势图）
+model CuPrice {
+  id        Int      @id @default(autoincrement())
+  priceDate DateTime @unique @map("price_date") // 行情日期（仅日期）
+  price     Decimal  @db.Decimal(10, 2) // 当日铜价（元/吨）
+  intraday  Json?    // [{ "time": "09:00", "price": 78000 }, ...] 当日时点波动
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("cu_prices")
+}
