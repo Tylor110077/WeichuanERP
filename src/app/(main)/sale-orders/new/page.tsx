@@ -37,7 +37,12 @@ export default async function NewSaleOrderPage() {
     prisma.customer.findMany({
       where: { status: 1 },
       orderBy: { name: "asc" },
-      select: { id: true, name: true },
+      select: {
+        id: true,
+        name: true,
+        group: { select: { name: true } },
+        tagLinks: { select: { tag: { select: { name: true } } } },
+      },
     }),
     prisma.supplier.findMany({
       where: { status: 1 },
@@ -138,7 +143,7 @@ export default async function NewSaleOrderPage() {
         </Link>
       </div>
       <NewSaleForm
-        customers={customers.map((c) => ({ id: c.id, name: c.name }))}
+        customers={customers.map((c) => ({ id: c.id, name: c.name, groupName: c.group?.name ?? "", tagNames: c.tagLinks.map((l) => l.tag.name) }))}
         suppliers={suppliers.map((s) => ({ id: s.id, name: s.name }))}
         products={productOptions}
         units={units.map((u) => ({ id: u.id, name: u.name }))}

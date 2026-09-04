@@ -17,6 +17,8 @@ import { createQuickSupplierAction } from "../../suppliers/actions";
 interface CustomerOption {
   id: number;
   name: string;
+  groupName: string;
+  tagNames: string[];
 }
 interface UnitOption {
   id: number;
@@ -169,7 +171,13 @@ export function NewSaleForm({
       setCustomerOptions((prev) =>
         prev.some((c) => c.id === result.id) ? prev : [...prev, result]
       );
-      chooseCustomer(result);
+      chooseCustomer({
+        ...result,
+        groupName: quickGroupOptions.find((g) => String(g.id) === newCustomerGroupId)?.name ?? "",
+        tagNames: quickTagOptions
+          .filter((t) => newCustomerTagIds.includes(t.id))
+          .map((t) => t.name),
+      });
       setShowCreateCustomer(false);
       setNewCustomer({ name: "", contact: "", phone: "" });
       setNewCustomerGroupId("");
