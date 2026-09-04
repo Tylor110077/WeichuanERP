@@ -857,7 +857,7 @@ export function NewSaleForm({
         <table className="min-w-full divide-y divide-gray-200 text-sm">
           <thead className="bg-gray-50 text-left text-xs text-gray-500">
             <tr>
-              <th className="w-24 px-4 py-3 font-medium">编码</th>
+              <th className="w-28 px-4 py-3 font-medium">编码</th>
               <th className="min-w-64 px-4 py-3 font-medium">商品名称 *</th>
               <th className="w-20 px-4 py-3 font-medium">库存</th>
               <th className="w-28 px-4 py-3 font-medium">数量 *</th>
@@ -987,7 +987,12 @@ export function NewSaleForm({
                   <td className="px-4 py-2 text-right">
                     <button
                       type="button"
-                      onClick={() => setRows((prev) => (prev.length > 1 ? prev.filter((_, j) => j !== i) : prev))}
+                      onClick={() =>
+                        setRows((prev) => {
+                          const next = prev.filter((_, j) => j !== i);
+                          return next.length > 0 ? next : [emptyRow()];
+                        })
+                      }
                       className="text-xs text-red-500 hover:underline"
                     >
                       删除
