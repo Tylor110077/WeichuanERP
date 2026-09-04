@@ -826,7 +826,7 @@ export function NewSaleForm({
         <table className="min-w-full divide-y divide-gray-200 text-sm">
           <thead className="bg-gray-50 text-left text-xs text-gray-500">
             <tr>
-              <th className="px-4 py-3 font-medium">商品 *</th>
+              <th className="min-w-64 px-4 py-3 font-medium">商品 *</th>
               <th className="w-20 px-4 py-3 font-medium">库存</th>
               <th className="w-28 px-4 py-3 font-medium">数量 *</th>
               <th className="w-16 px-4 py-3 font-medium">单位</th>
@@ -842,7 +842,7 @@ export function NewSaleForm({
               return (
                 <tr key={i}>
                   <td className="px-4 py-2">
-                    <div className="flex gap-1">
+                    <div className="flex min-w-0 gap-1">
                       <input
                         type="text"
                         autoComplete="off"
@@ -851,7 +851,7 @@ export function NewSaleForm({
                         onChange={(e) => onProductInputChange(i, "code", e.target.value)}
                         onFocus={(e) => openProductPanel(e, i)}
                         onBlur={() => setProductPanel(null)}
-                        className={`${inputCls} w-24 shrink-0`}
+                        className={`${inputCls} w-20 shrink-0`}
                       />
                       <input
                         name={`item_${i}_productQuery`}
@@ -862,7 +862,7 @@ export function NewSaleForm({
                         onChange={(e) => onProductInputChange(i, "name", e.target.value)}
                         onFocus={(e) => openProductPanel(e, i)}
                         onBlur={() => setProductPanel(null)}
-                        className={inputCls}
+                        className={`${inputCls} min-w-0`}
                       />
                     </div>
                     <input type="hidden" name={`item_${i}_productId`} value={row.productId} />
