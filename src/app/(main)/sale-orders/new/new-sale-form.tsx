@@ -168,16 +168,17 @@ export function NewSaleForm({
         setCreateCustomerMsg({ error: result.error });
         return;
       }
-      setCustomerOptions((prev) =>
-        prev.some((c) => c.id === result.id) ? prev : [...prev, result]
-      );
-      chooseCustomer({
+      const opt = {
         ...result,
         groupName: quickGroupOptions.find((g) => String(g.id) === newCustomerGroupId)?.name ?? "",
         tagNames: quickTagOptions
           .filter((t) => newCustomerTagIds.includes(t.id))
           .map((t) => t.name),
-      });
+      };
+      setCustomerOptions((prev) =>
+        prev.some((c) => c.id === result.id) ? prev : [...prev, opt]
+      );
+      chooseCustomer(opt);
       setShowCreateCustomer(false);
       setNewCustomer({ name: "", contact: "", phone: "" });
       setNewCustomerGroupId("");
