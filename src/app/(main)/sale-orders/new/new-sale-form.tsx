@@ -295,7 +295,7 @@ export function NewSaleForm({
 
   function openProductPanel(e: React.FocusEvent<HTMLInputElement>, index: number) {
     const rect = e.currentTarget.getBoundingClientRect();
-    setProductPanel({ index, top: rect.bottom + 4, left: rect.left, width: rect.width });
+    setProductPanel({ index, top: rect.bottom + 4, left: rect.left, width: Math.max(rect.width, 320) });
   }
 
   function onProductInputChange(index: number, field: "code" | "name", value: string) {
@@ -868,7 +868,7 @@ export function NewSaleForm({
               <th className="w-28 px-4 py-3 font-medium">数量 *</th>
               <th className="w-16 px-4 py-3 font-medium">单位</th>
               <th className="w-32 px-4 py-3 font-medium">售价 *</th>
-              <th className="w-52 px-4 py-3 font-medium">补货商家 / 进价（缺货时）</th>
+              <th className="w-72 px-4 py-3 font-medium">补货商家 / 进价（缺货时）</th>
               <th className="w-28 px-4 py-3 text-right font-medium">金额</th>
               <th className="w-14 px-4 py-3 font-medium"></th>
             </tr>
@@ -950,7 +950,7 @@ export function NewSaleForm({
                               prev.map((r, j) => (j === i ? { ...r, supplierId: e.target.value } : r))
                             )
                           }
-                          className={`${inputCls} max-w-28`}
+                          className={`${inputCls} min-w-24 flex-1`}
                         >
                           <option value="">补货供应商</option>
                           {suppliers.map((s) => (
@@ -973,11 +973,11 @@ export function NewSaleForm({
                           }
                           className={`${inputCls} max-w-20`}
                         />
-                        <span className="whitespace-nowrap text-xs text-amber-600">
+                        <span className="shrink-0 whitespace-nowrap text-xs text-amber-600">
                           缺 {sf.toFixed(3)}
                         </span>
                         {row.productId && !row.hasLastSupplier && (
-                          <span className="whitespace-nowrap text-xs text-gray-400">
+                          <span className="shrink-0 whitespace-nowrap text-xs text-gray-400">
                             {row.manufacturer ? `自动补货：厂商「${row.manufacturer}」` : "请选补货商"}
                           </span>
                         )}
