@@ -88,6 +88,19 @@ export default async function NewSaleOrderPage() {
     }
   }
 
+  // 最近一次成交售价（每笔销售单价可能不同，预填最近成交价，参考售价兜底）
+  const lastSaleItems = await prisma.saleOrderItem.findMany({
+    where: { saleOrder: { status: "confirmed" } },
+    orderBy: { saleOrder: { createdAt: "desc" } },
+    select: { productId: true, unitPrice: true },
+  });
+  const lastSalePriceByProduct = new Map<number, number>();
+  for (const si of lastSaleItems) {
+    if (!lastSalePriceByProduct.has(si.productId)) {
+      lastSalePriceByProduct.set(si.productId, Number(si.unitPrice));
+    }
+  }
+
   const supplierMap = new Map(suppliers.map((s) => [s.id, s.name]));
   // 厂商优先：商品档案的“厂商”名称匹配到供应商档案时，自动补货商默认取该供应商
   const supplierIdByName = new Map<string, number>();
@@ -108,7 +121,7 @@ export default async function NewSaleOrderPage() {
       manufacturer: p.manufacturer,
       unitName: p.unit.name,
       stockQty: Number(p.stockQty),
-      refSalePrice: Number(p.refSalePrice),
+      refSalePrice: lastSalePriceByProduct.get(p.id) ?? Number(p.refSalePrice), // 预填最近成交价
       lastSupplierId: autoSupplierId,
       lastSupplierName: last ? supplierMap.get(last.supplierId) ?? "" : "",
       lastSupplyPrice: last?.price ?? Number(p.refPurchasePrice),

@@ -36,12 +36,25 @@ export default async function NewPurchaseOrderPage() {
     }),
   ]);
 
+  // 最近一次实际进价（同商品分批进价不同，开单预填最近成交价）
+  const lastPurchases = await prisma.purchaseOrderItem.findMany({
+    where: { purchaseOrder: { status: { not: "voided" } } },
+    orderBy: { purchaseOrder: { createdAt: "desc" } },
+    select: { productId: true, unitPrice: true },
+  });
+  const lastPriceByProduct = new Map<number, number>();
+  for (const lp of lastPurchases) {
+    if (!lastPriceByProduct.has(lp.productId)) {
+      lastPriceByProduct.set(lp.productId, Number(lp.unitPrice));
+    }
+  }
+
   const productOptions = products.map((p) => ({
     id: p.id,
     label: `${p.code} ${p.name}`,
     unitId: p.unitId,
     unitName: p.unit.name,
-    refPrice: Number(p.refPurchasePrice),
+    refPrice: lastPriceByProduct.get(p.id) ?? Number(p.refPurchasePrice),
   }));
 
   return (
