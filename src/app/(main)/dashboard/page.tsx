@@ -11,7 +11,7 @@ export default async function DashboardPage() {
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
 
-  const [todaySales, pendingPurchases, negativeCount, warningCount] = await Promise.all([
+  const [todaySales, pendingPurchases, warningCount] = await Promise.all([
     prisma.saleOrder.aggregate({
       where: { status: "confirmed", createdAt: { gte: todayStart } },
       _sum: { totalAmount: true },
@@ -20,7 +20,6 @@ export default async function DashboardPage() {
       where: { status: "pending" },
       select: { totalAmount: true },
     }),
-    prisma.product.count({ where: { stockQty: { lt: 0 } } }),
     prisma.product.count({
       where: { status: 1, minStock: { gt: 0 }, stockQty: { lt: prisma.product.fields.minStock } },
     }),
@@ -53,7 +52,6 @@ export default async function DashboardPage() {
   const statCards = [
     { label: "今日销售额", value: `¥${Number(todaySales._sum.totalAmount ?? 0).toFixed(2)}`, note: "今日已开售卖单（未作废）" },
     { label: "待收货进货单", value: `${pendingPurchases.length} 张`, note: `合计 ¥${pendingTotal.toFixed(2)}（手动进货单）` },
-    { label: "负库存商品", value: `${negativeCount} 个`, note: negativeCount > 0 ? "异常，请核查库存流水" : "正常（缺货自动补货，生意模式下不会出现）" },
     { label: "库存预警", value: `${warningCount} 个`, note: "低于预警线的启用商品" },
     { label: "应收余额", value: `¥${receivableTotal.toFixed(2)}`, note: "客户未收合计（含已开单未收）" },
     { label: "应付余额", value: `¥${payableTotal.toFixed(2)}`, note: "供应商未付合计" },
