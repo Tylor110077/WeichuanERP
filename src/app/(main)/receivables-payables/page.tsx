@@ -208,6 +208,82 @@ export default async function ReceivablesPage({
         </div>
       </div>
 
+            <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+        <div className="border-b border-gray-100 px-4 py-3 text-sm font-semibold text-gray-900">
+          {isReceivable ? "未结清售卖单（应收）" : "未结清进货单（应付）"}
+          <span className="ml-2 text-xs font-normal text-gray-400">点击单号可查看详情并登记收付</span>
+        </div>
+        <table className="min-w-full divide-y divide-gray-200 text-sm">
+          <thead className="bg-gray-50 text-left text-xs text-gray-500">
+            <tr>
+              <th className="px-4 py-3 font-medium">日期</th>
+              <th className="px-4 py-3 font-medium">单号</th>
+              <th className="px-4 py-3 font-medium">{isReceivable ? "客户" : "供应商"}</th>
+              <th className="px-4 py-3 text-right font-medium">{isReceivable ? "应收" : "应付"}</th>
+              <th className="px-4 py-3 text-right font-medium">{isReceivable ? "已收" : "已付"}</th>
+              <th className="px-4 py-3 text-right font-medium">退货冲减</th>
+              <th className="px-4 py-3 text-right font-medium">{isReceivable ? "未收" : "未付"}</th>
+              <th className="px-4 py-3 font-medium"></th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {orders
+              .filter((o) => {
+                const returned = o.returns.reduce((r, x) => r + Number(x.totalAmount), 0);
+                const paid = isReceivable ? Number((o as { receivedAmount: unknown }).receivedAmount) : Number((o as { paidAmount: unknown }).paidAmount);
+                const total = Number((o as { totalAmount: unknown }).totalAmount);
+                return total - paid - returned > 0;
+              })
+              .map((o) => {
+                const returned = o.returns.reduce((r, x) => r + Number(x.totalAmount), 0);
+                const paid = isReceivable ? Number((o as { receivedAmount: unknown }).receivedAmount) : Number((o as { paidAmount: unknown }).paidAmount);
+                const total = Number((o as { totalAmount: unknown }).totalAmount);
+                const unpaid = Math.max(0, total - paid - returned);
+                const counterName = isReceivable
+                  ? (o as { customer: { name: string } }).customer.name
+                  : (o as { supplier: { name: string } }).supplier.name;
+                const detailHref = isReceivable ? `/sale-orders/${o.id}` : `/purchase-orders/${o.id}`;
+                return (
+                  <tr key={o.id}>
+                    <td className="px-4 py-2.5 text-gray-600">
+                      {o.createdAt.toLocaleDateString("zh-CN")}
+                    </td>
+                    <td className="px-4 py-2.5">
+                      <Link href={detailHref} className="font-medium text-blue-600 hover:underline">
+                        {o.orderNo}
+                      </Link>
+                    </td>
+                    <td className="px-4 py-2.5 text-gray-900">{counterName}</td>
+                    <td className="px-4 py-2.5 text-right text-gray-900">¥{total.toFixed(2)}</td>
+                    <td className="px-4 py-2.5 text-right text-gray-600">¥{paid.toFixed(2)}</td>
+                    <td className="px-4 py-2.5 text-right text-orange-600">¥{returned.toFixed(2)}</td>
+                    <td className="px-4 py-2.5 text-right font-medium text-red-600">¥{unpaid.toFixed(2)}</td>
+                    <td className="px-4 py-2.5">
+                      <Link href={detailHref} className="text-xs text-blue-600 hover:underline">
+                        详情 / 登记
+                      </Link>
+                    </td>
+                  </tr>
+                );
+              })}
+          </tbody>
+          {orders.filter((o) => {
+            const returned = o.returns.reduce((r, x) => r + Number(x.totalAmount), 0);
+            const paid = isReceivable ? Number((o as { receivedAmount: unknown }).receivedAmount) : Number((o as { paidAmount: unknown }).paidAmount);
+            const total = Number((o as { totalAmount: unknown }).totalAmount);
+            return total - paid - returned > 0;
+          }).length === 0 && (
+            <tbody>
+              <tr>
+                <td colSpan={8} className="px-4 py-8 text-center text-gray-400">
+                  当前条件下单据已全部结清
+                </td>
+              </tr>
+            </tbody>
+          )}
+        </table>
+      </div>
+
       <PaymentForm saleOrders={sales} purchaseOrders={purchases} lockedDirection={isReceivable ? "receipt" : "payment"} />
 
       <DateShortcuts
