@@ -9,14 +9,18 @@ import { requireAdmin, requireMasterDataWrite } from "@/lib/auth/guards";
 import { writeAudit } from "@/lib/audit";
 
 const productSchema = z.object({
-  name: z.string().trim().min(1, "请填写商品名称").max(100),
-  spec: z.string().trim().max(100),
-  manufacturer: z.string().trim().min(1, "请填厂商/生产厂家").max(100), // 必填
+  name: z.string().trim().min(1, "请填写商品名称（完整名称，含规格）").max(100),
+  spec: z.string().trim().max(100).optional().default(""), // 表单已与名称合一（历史兼容）
+  manufacturer: z.string().trim().min(1, "请选择或新建厂商/生产厂家").max(100), // 必填（供应商档案）
   categoryId: z.coerce.number().int().positive().nullable(),
   unitId: z.coerce.number().int().positive("请选择单位"),
   refPurchasePrice: z.coerce.number().min(0).max(9_999_999_999.99),
-  refSalePrice: z.coerce.number().min(0).max(9_999_999_999.99),
-  minStock: z.coerce.number().min(0).max(9_999_999_999.999),
+  refSalePrice: z.coerce.number().min(0).max(9_999_999_999.99).optional().default(0),
+  // 预警线默认 1（不填即 1）
+  minStock: z.preprocess(
+    (v) => (v === "" || v == null ? 1 : v),
+    z.coerce.number().min(0).max(9_999_999_999.999)
+  ),
 });
 
 export type FormState = { error?: string; ok?: string } | null;

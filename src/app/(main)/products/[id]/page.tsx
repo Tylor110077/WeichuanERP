@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { EntityForm } from "@/components/entity-form";
 import { saveProductAction } from "../actions";
+import { createQuickSupplierAction } from "../../suppliers/actions";
 
 export const metadata = { title: "编辑商品 - 玮川进销存" };
 
@@ -29,9 +30,10 @@ export default async function EditProductPage({
     : null;
   if (!product) notFound();
 
-  const [units, categories] = await Promise.all([
+  const [units, categories, suppliers] = await Promise.all([
     prisma.unit.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, status: true } }),
     prisma.productCategory.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, status: true } }),
+    prisma.supplier.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
   ]);
 
   return (
@@ -41,14 +43,12 @@ export default async function EditProductPage({
       </h1>
       <EntityForm
         fields={[
-          { name: "name", label: "商品名称 *", required: true, maxLength: 100 },
-          { name: "spec", label: "规格/型号", maxLength: 100 },
+          { name: "name", label: "商品名称（完整名称，含规格）*", required: true, maxLength: 100 },
           {
             name: "manufacturer",
-            label: "厂商（生产厂家）*",
+            label: "厂商（生产厂家）*，选择供应商档案，可当场新建",
             required: true,
-            maxLength: 100,
-            placeholder: "与供应商档案同名将自动作为补货来源，如：远东电缆",
+            type: "manufacturer",
           },
           {
             name: "categoryId",
@@ -67,22 +67,21 @@ export default async function EditProductPage({
             options: units.map((u) => ({ value: String(u.id), label: u.status === 1 ? u.name : `${u.name}（停用）` })),
           },
           { name: "refPurchasePrice", label: "参考进价", type: "number", step: "0.01" },
-          { name: "refSalePrice", label: "参考售价", type: "number", step: "0.01" },
-          { name: "minStock", label: "库存预警线", type: "number", step: "0.001" },
+          { name: "minStock", label: "库存预警线（默认 1）", type: "number", step: "0.001" },
         ]}
         initial={{
           name: product.name,
-          spec: product.spec ?? "",
           manufacturer: product.manufacturer,
           categoryId: product.categoryId != null ? String(product.categoryId) : "",
           unitId: String(product.unitId),
           refPurchasePrice: product.refPurchasePrice.toString(),
-          refSalePrice: product.refSalePrice.toString(),
-          minStock: product.minStock.toString(),
+          minStock: product.minStock.toString() === "0" ? "1" : product.minStock.toString(),
         }}
         initialId={product.id}
         saveAction={saveProductAction}
         submitLabel="保存修改"
+        manufacturerSuppliers={suppliers.map((x) => ({ id: x.id, name: x.name }))}
+        onQuickCreateSupplier={createQuickSupplierAction}
       />
       <Link href="/products" className="text-sm text-gray-500 hover:underline">
         ← 返回商品列表

@@ -12,6 +12,7 @@ import {
 import { createQuickProductAction, type QuickProductResult } from "../../products/actions";
 import { createQuickCategoryAction, type QuickCategoryResult } from "../../categories/actions";
 import { createQuickUnitAction, type QuickUnitResult } from "../../units/actions";
+import { createQuickSupplierAction } from "../../suppliers/actions";
 
 interface CustomerOption {
   id: number;
@@ -114,9 +115,15 @@ export function NewSaleForm({
     unitId: "",
     refSalePrice: "",
     refPurchasePrice: "",
-    minStock: "",
+    minStock: "1",
   });
   const [productMsg, setProductMsg] = useState<{ ok?: string; error?: string } | null>(null);
+  const [mfrQuery, setMfrQuery] = useState("");
+  const [mfrOpen, setMfrOpen] = useState(false);
+  const mfrHits = (() => {
+    const kw = mfrQuery.trim().toLowerCase();
+    return kw ? suppliers.filter((s) => s.name.toLowerCase().includes(kw)).slice(0, 30) : [];
+  })();
   const [productPending, startProductTransition] = useTransition();
   const [showCreateCustomer, setShowCreateCustomer] = useState(false);
   const [createCustomerMsg, setCreateCustomerMsg] = useState<{ ok?: string; error?: string } | null>(null);
@@ -343,20 +350,18 @@ export function NewSaleForm({
       setProductMsg({ error: "请选择单位" });
       return;
     }
-    if (!newProduct.manufacturer.trim()) {
-      setProductMsg({ error: "请填写厂商/生产厂家" });
+    if (!mfrQuery.trim()) {
+      setProductMsg({ error: "请选择或新建厂商/生产厂家" });
       return;
     }
     startProductTransition(async () => {
       const result: QuickProductResult = await createQuickProductAction({
         name: newProduct.name,
-        spec: newProduct.spec,
-        manufacturer: newProduct.manufacturer,
+        manufacturer: mfrQuery.trim(),
         categoryId: newProduct.categoryId ? Number(newProduct.categoryId) : null,
         unitId: Number(newProduct.unitId),
-        refSalePrice: Number(newProduct.refSalePrice) || 0,
         refPurchasePrice: Number(newProduct.refPurchasePrice) || 0,
-        minStock: Number(newProduct.minStock) || 0,
+        minStock: Number(newProduct.minStock) || 1,
       });
       if ("error" in result) {
         setProductMsg({ error: result.error });
@@ -396,7 +401,8 @@ export function NewSaleForm({
         },
       ]);
       setShowCreateProduct(false);
-      setNewProduct({ name: "", spec: "", manufacturer: "", categoryId: "", unitId: "", refSalePrice: "", refPurchasePrice: "", minStock: "" });
+      setNewProduct({ name: "", spec: "", manufacturer: "", categoryId: "", unitId: "", refSalePrice: "", refPurchasePrice: "", minStock: "1" });
+      setMfrQuery("");
       setProductMsg({ ok: `商品「${result.name}」已创建（${result.code}），已加入商品行` });
       setTimeout(() => setProductMsg(null), 5000);
     });
@@ -620,7 +626,7 @@ export function NewSaleForm({
           </div>
 <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
               <div>
-                <label className="block text-xs font-medium text-gray-600">商品名称 *</label>
+                <label className="block text-xs font-medium text-gray-600">商品名称（完整名称，含规格）*</label>
                 <input
                   type="text"
                   maxLength={100}
@@ -631,26 +637,54 @@ export function NewSaleForm({
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600">规格/型号</label>
-                <input
-                  type="text"
-                  maxLength={100}
-                  placeholder="规格/型号"
-                  value={newProduct.spec}
-                  onChange={(e) => setNewProduct((p) => ({ ...p, spec: e.target.value }))}
-                  className="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm text-gray-900"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600">厂商（生产厂家）*</label>
-                <input
-                  type="text"
-                  maxLength={100}
-                  placeholder="与供应商档案同名将自动作为补货来源，如：远东电缆"
-                  value={newProduct.manufacturer}
-                  onChange={(e) => setNewProduct((p) => ({ ...p, manufacturer: e.target.value }))}
-                  className="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm text-gray-900"
-                />
+                <label className="block text-xs font-medium text-gray-600">厂商（生产厂家）*，选择或新建供应商档案</label>
+                <div className="relative mt-1">
+                  <input
+                    type="text"
+                    autoComplete="off"
+                    placeholder="输入厂商名搜索供应商档案…"
+                    value={mfrQuery}
+                    onChange={(e) => { setMfrQuery(e.target.value); setMfrOpen(true); }}
+                    onFocus={() => setMfrOpen(true)}
+                    onBlur={() => setTimeout(() => setMfrOpen(false), 150)}
+                    className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm text-gray-900"
+                  />
+                  {mfrOpen && mfrQuery.trim() && (
+                    <div className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-md border border-gray-200 bg-white shadow-lg">
+                      {mfrHits.length === 0 && <div className="px-3 py-2 text-xs text-gray-400">无匹配厂商</div>}
+                      {mfrHits.map((s) => (
+                        <button
+                          key={s.id}
+                          type="button"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => { setMfrQuery(s.name); setMfrOpen(false); }}
+                          className="block w-full px-3 py-2 text-left text-sm text-gray-900 hover:bg-blue-50"
+                        >
+                          {s.name}
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => {
+                          startProductTransition(async () => {
+                            const r = await createQuickSupplierAction({ name: mfrQuery.trim() });
+                            if ("error" in r) {
+                              setProductMsg({ error: r.error });
+                              return;
+                            }
+                            setMfrQuery(r.name);
+                            setMfrOpen(false);
+                          });
+                        }}
+                        disabled={productPending}
+                        className="block w-full border-t border-gray-100 px-3 py-2 text-left text-sm text-blue-600 hover:bg-blue-50 disabled:opacity-50"
+                      >
+                        ＋ 新建厂商：「{mfrQuery.trim()}」
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600">分类</label>
@@ -741,19 +775,7 @@ export function NewSaleForm({
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600">参考售价</label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="参考售价"
-                  value={newProduct.refSalePrice}
-                  onChange={(e) => setNewProduct((p) => ({ ...p, refSalePrice: e.target.value }))}
-                  className="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm text-gray-900"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600">库存预警线</label>
+                <label className="block text-xs font-medium text-gray-600">库存预警线（默认 1）</label>
                 <input
                   type="number"
                   min="0"

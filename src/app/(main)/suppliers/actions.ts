@@ -113,3 +113,27 @@ export async function deleteSupplierAction(_prev: FormState, formData: FormData)
   revalidatePath("/suppliers");
   return { ok: "已删除" };
 }
+
+export type QuickSupplierResult = { id: number; name: string } | { error: string };
+
+/** 商品建档处的厂商=供应商档案；不存在时按名称快速建档（仅管理员）。 */
+export async function createQuickSupplierAction(data: {
+  name: string;
+}): Promise<QuickSupplierResult> {
+  const admin = await requireMasterDataWrite().catch(() => null);
+  if (!admin) return { error: "仅管理员可新建厂商/供应商" };
+  const name = data.name?.trim() ?? "";
+  if (!name || name.length > 100) return { error: "厂商名称不能为空（≤100 字）" };
+  const dup = await prisma.supplier.findFirst({ where: { name } });
+  if (dup) return { error: "该厂商已存在" };
+  const supplier = await prisma.supplier.create({ data: { name }, select: { id: true, name: true } });
+  await writeAudit({
+    userId: admin.id,
+    action: "create",
+    entityType: "supplier",
+    entityId: supplier.id,
+    after: { name: supplier.name, fromManufacturer: true },
+  });
+  revalidatePath("/suppliers");
+  return { id: supplier.id, name: supplier.name };
+}

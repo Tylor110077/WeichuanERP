@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useState, useTransition, useActionState } from "react";
 import type { FieldDef, FormState } from "./master-data-manager";
 
 const inputCls = "mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm text-gray-900";
@@ -17,6 +17,8 @@ export function EntityForm({
   initialTags,
   saveAction,
   submitLabel,
+  manufacturerSuppliers,
+  onQuickCreateSupplier,
 }: {
   fields: FieldDef[];
   initial?: Record<string, string>;
@@ -25,6 +27,9 @@ export function EntityForm({
   initialTags?: string[];
   saveAction: (prev: FormState, fd: FormData) => Promise<FormState>;
   submitLabel: string;
+  /** 厂商字段（type="manufacturer"）：供应商档案自动补全 */
+  manufacturerSuppliers?: { id: number; name: string }[];
+  onQuickCreateSupplier?: (data: { name: string }) => Promise<{ id: number; name: string } | { error: string }>;
 }) {
   const [state, formAction, pending] = useActionState<FormState, FormData>(saveAction, null);
 
@@ -39,6 +44,19 @@ export function EntityForm({
         {fields.map((f) => {
           const value =
             initial?.[f.name] ?? (f.defaultValue ? String(f.defaultValue) : "");
+          if (f.type === "manufacturer") {
+            return (
+              <ManufacturerField
+                key={f.name}
+                name={f.name}
+                label={f.label}
+                required={f.required}
+                initial={value}
+                suppliers={manufacturerSuppliers ?? []}
+                onQuickCreate={onQuickCreateSupplier}
+              />
+            );
+          }
           if (f.type === "multiselect" && f.options) {
               return (
                 <div key={f.name} className="sm:col-span-2">
@@ -118,5 +136,111 @@ export function EntityForm({
         {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
       </div>
     </form>
+  );
+}
+
+
+function ManufacturerField({
+  name,
+  label,
+  required,
+  initial,
+  suppliers,
+  onQuickCreate,
+}: {
+  name: string;
+  label: string;
+  required?: boolean;
+  initial: string;
+  suppliers: { id: number; name: string }[];
+  onQuickCreate?: (data: { name: string }) => Promise<{ id: number; name: string } | { error: string }>;
+}) {
+  const [query, setQuery] = useState(initial);
+  const [open, setOpen] = useState(false);
+  const [pending, startTransition] = useTransition();
+  const [msg, setMsg] = useState<string | null>(null);
+
+  const kw = query.trim().toLowerCase();
+  const hits = kw
+    ? suppliers
+        .filter(
+          (s) =>
+            s.name.toLowerCase().includes(kw) ||
+            (s.name.toLowerCase().includes(kw))
+        )
+        .slice(0, 30)
+    : [];
+
+  function choose(s: { id: number; name: string }) {
+    setQuery(s.name);
+    setOpen(false);
+  }
+
+  function quickCreate() {
+    const name = query.trim();
+    if (!name || !onQuickCreate) return;
+    startTransition(async () => {
+      const r = await onQuickCreate({ name });
+      if ("error" in r) {
+        setMsg(r.error);
+        return;
+      }
+      choose(r);
+      setMsg(null);
+    });
+  }
+
+  return (
+    <div>
+      <label className="block text-xs font-medium text-gray-600">{label}</label>
+      <div className="relative mt-1">
+        <input
+          name={name}
+          type="text"
+          autoComplete="off"
+          required={required}
+          maxLength={100}
+          placeholder="输入厂商名搜索供应商档案…"
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setOpen(true);
+          }}
+          onFocus={() => setOpen(true)}
+          onBlur={() => setTimeout(() => setOpen(false), 150)}
+          className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm text-gray-900"
+        />
+        {open && kw && (
+          <div className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-md border border-gray-200 bg-white shadow-lg">
+            {hits.length === 0 && (
+              <div className="px-3 py-2 text-xs text-gray-400">无匹配厂商</div>
+            )}
+            {hits.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => choose(s)}
+                className="block w-full px-3 py-2 text-left text-sm text-gray-900 hover:bg-blue-50"
+              >
+                {s.name}
+              </button>
+            ))}
+            {onQuickCreate && (
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={quickCreate}
+                disabled={pending}
+                className="block w-full border-t border-gray-100 px-3 py-2 text-left text-sm text-blue-600 hover:bg-blue-50 disabled:opacity-50"
+              >
+                ＋ 新建厂商：「{kw}」
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+      {msg && <p className="mt-1 text-xs text-red-600">{msg}</p>}
+    </div>
   );
 }

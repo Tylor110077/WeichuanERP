@@ -11,7 +11,7 @@ export interface FieldDef {
   step?: string;
   placeholder?: string;
   /** "select"/"multiselect" 通过 options 提供候选；缺省为文本 */
-  type?: "text" | "number" | "select" | "multiselect";
+  type?: "text" | "number" | "select" | "multiselect" | "manufacturer";
   options?: { value: string; label: string }[];
   /** 新建时的默认值 */
   defaultValue?: string;
