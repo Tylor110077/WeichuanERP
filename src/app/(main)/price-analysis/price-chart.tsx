@@ -7,10 +7,10 @@ const W = 960;
 const H = 300;
 const PAD = { l: 64, r: 20, t: 18, b: 30 };
 const DOT = "#6b7280"; // 售价点统一灰色（客户一多颜色不够用）
-const COST = "#f97316"; // 成本线
+const COST = "#f97316"; // 成本点/区间
 
-/** 售价 × 成本图：灰点为每笔实际售价；橙线为当日成本（数量加权）；
- * 当日成本有高有低时，按最高/最低连线成着色波动区间。 */
+/** 售价 × 成本图：每天一个位置，展示当日所有进价点（含最高/最低/中间各价）；
+ * 跨天将最高与最高、最低与最低相连成着色波动区间；灰点为每笔实际售价。 */
 export function PriceChart({
   points,
   byDay,
@@ -51,7 +51,6 @@ export function PriceChart({
           .reverse()
           .join(" L")} Z`
       : "";
-  const costLine = byDay.map((d, i) => `${xOfDay(i)},${yOf(d.avgCost)}`).join(" ");
 
   function onDot(e: MouseEvent<SVGCircleElement>, p: PricePoint) {
     setTip({
@@ -98,17 +97,26 @@ export function PriceChart({
           </g>
         )}
 
-        {/* 当日成本波动区间（最高/最低成本连成着色区域） */}
+        {/* 当日成本波动区间（最高与最高、最低与最低跨天相连着色） */}
         {n > 1 && (
           <path d={bandPath} fill={COST} opacity="0.14" stroke={COST} strokeOpacity="0.35" strokeWidth="1" />
         )}
 
-        {/* 基础折线：每日成本点（当日数量加权平均成本） */}
-        {n > 1 && <polyline points={costLine} fill="none" stroke={COST} strokeWidth="2" strokeLinejoin="round" />}
-
-        {/* 每日成本点 */}
-        {byDay.map((d, i) => (
-          <circle key={`c${i}`} cx={xOfDay(i)} cy={yOf(d.avgCost)} r="3" fill={COST} />
+        {/* 当日各笔进价点（含最高/最低/中间各价，逐笔展示） */}
+        {points.map((p, i) => (
+          <circle
+            key={`c${i}`}
+            cx={xOfDay(dayIndex.get(p.dayTs) ?? 0)}
+            cy={yOf(p.unitCost)}
+            r={tip?.p === p ? 6 : 3.5}
+            fill={COST}
+            stroke="#ffffff"
+            strokeWidth="1"
+            className="cursor-pointer"
+            onMouseEnter={(e) => onDot(e, p)}
+            onMouseMove={(e) => onDot(e, p)}
+            onMouseLeave={() => setTip(null)}
+          />
         ))}
 
         {/* 实际售价点（统一灰色，不按客户配色） */}
@@ -148,12 +156,12 @@ export function PriceChart({
         {n > 1 && (
           <span className="flex items-center gap-1.5">
             <span className="inline-block h-3 w-5 rounded" style={{ background: COST, opacity: 0.15 }} />
-            当日成本波动区间（最高~最低）
+            进价波动区间（每日最高~最低跨天相连）
           </span>
         )}
         <span className="flex items-center gap-1.5">
-          <span className="inline-block h-0.5 w-5 rounded" style={{ background: COST }} />
-          当日成本（数量加权）
+          <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: COST }} />
+          每笔进价（逐单展示）
         </span>
         <span className="flex items-center gap-1.5">
           <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: DOT }} />

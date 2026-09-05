@@ -100,7 +100,7 @@ export default async function PriceAnalysisPage({
               <h2 className="text-sm font-semibold text-gray-900">
                 {analysis.product.name}
                 <span className="ml-2 text-xs font-normal text-gray-400">
-                  灰点＝每笔实际售价 ・ 橙线＝当日成本（区间＝当日最高/最低成本波动） ・{" "}
+                  灰点＝每笔实际售价 ・ 橙点＝每笔进价（区间＝每日最高/最低进价跨天相连着色） ・{" "}
                   {analysis.byDay.length} 天 / {analysis.points.length} 笔销售
                 </span>
               </h2>
