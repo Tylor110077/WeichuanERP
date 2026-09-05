@@ -3,11 +3,14 @@ import { prisma } from "@/lib/prisma";
 /**
  * 商品价格分析：同一商品对不同客户、不同时间的售价与成本（开单成本快照）变化。
  * 口径：非作废售卖单；单位成本 = 单行 costAmount / 数量（与销售分析、报表中心一致）。
+ * 图形口径：每天一个成本点（当日数量加权平均成本）；当日多笔成本不同时，
+ * 以当日最高/最低成本连线成波动区间；实际售价全部为灰点，不按客户配色。
  */
 
 export interface PricePoint {
-  ts: number; // 开单时间（epoch ms，图上 X 轴）
-  date: string; // yyyy/M/d（表格与提示用）
+  ts: number; // 开单时间（epoch ms）
+  dayTs: number; // 开单日零点（epoch ms，图上 X 轴按天定位）
+  date: string; // yyyy/M/d
   customer: string;
   orderNo: string;
   qty: number;
@@ -16,11 +19,21 @@ export interface PricePoint {
   amount: number;
   costAmount: number;
   profit: number;
+  margin: number; // 毛利率 %
 }
 
-/** 图上用的点位：带客户配色 */
-export interface ColoredPricePoint extends PricePoint {
-  color: string;
+export interface DayStats {
+  dayTs: number; // 当日零点（图上 X 轴）
+  date: string; // yyyy/M/d
+  saleCount: number;
+  qty: number;
+  amount: number;
+  cost: number;
+  minCost: number; // 当日最低成本单价
+  maxCost: number; // 当日最高成本单价
+  avgCost: number; // 当日加权平均成本单价（数量加权）
+  highest: PricePoint; // 当日售价最高的单
+  lowest: PricePoint; // 当日售价最低的单
 }
 
 export interface CustomerPriceRow {
@@ -40,10 +53,9 @@ export interface CustomerPriceRow {
 
 export interface PriceAnalysis {
   product: { code: string; name: string; unit: string; refSalePrice: number };
-  points: ColoredPricePoint[];
+  points: PricePoint[];
+  byDay: DayStats[];
   byCustomer: CustomerPriceRow[];
-  /** 图例配色：出现过的客户（按销售额降序前 9 个）+「其他客户」 */
-  customerColors: { customer: string; color: string }[];
   totals: {
     qty: number;
     amount: number;
@@ -56,19 +68,6 @@ export interface PriceAnalysis {
     maxPrice: number;
   };
 }
-
-const PALETTE = [
-  "#2563eb",
-  "#16a34a",
-  "#dc2626",
-  "#9333ea",
-  "#ea580c",
-  "#0891b2",
-  "#be185d",
-  "#65a30d",
-  "#7c3aed",
-];
-const OTHER_COLOR = "#6b7280";
 
 export async function buildPriceAnalysis(
   productId: number,
@@ -110,9 +109,11 @@ export async function buildPriceAnalysis(
     const costAmount = Number(it.costAmount);
     const unitPrice = qty > 0 ? Number(it.unitPrice) : 0;
     const unitCost = qty > 0 ? costAmount / qty : 0;
+    const created = it.saleOrder.createdAt;
     return {
-      ts: it.saleOrder.createdAt.getTime(),
-      date: it.saleOrder.createdAt.toLocaleDateString("zh-CN"),
+      ts: created.getTime(),
+      dayTs: new Date(created.getFullYear(), created.getMonth(), created.getDate()).getTime(),
+      date: created.toLocaleDateString("zh-CN"),
       customer: it.saleOrder.customer.name,
       orderNo: it.saleOrder.orderNo,
       qty,
@@ -121,8 +122,65 @@ export async function buildPriceAnalysis(
       amount,
       costAmount,
       profit: amount - costAmount,
+      margin: amount > 0 ? ((amount - costAmount) / amount) * 100 : 0,
     };
   });
+
+  // 按天汇总：成本最高/最低（波动区间）、加权平均成本、当日售价最高/最低的单
+  const dayMap = new Map<
+    number,
+    {
+      date: string;
+      saleCount: number;
+      qty: number;
+      amount: number;
+      cost: number;
+      minCost: number;
+      maxCost: number;
+      highest: PricePoint;
+      lowest: PricePoint;
+    }
+  >();
+  for (const p of points) {
+    const cur = dayMap.get(p.dayTs);
+    if (!cur) {
+      dayMap.set(p.dayTs, {
+        date: p.date,
+        saleCount: 1,
+        qty: p.qty,
+        amount: p.amount,
+        cost: p.costAmount,
+        minCost: p.unitCost,
+        maxCost: p.unitCost,
+        highest: p,
+        lowest: p,
+      });
+      continue;
+    }
+    cur.saleCount += 1;
+    cur.qty += p.qty;
+    cur.amount += p.amount;
+    cur.cost += p.costAmount;
+    cur.minCost = Math.min(cur.minCost, p.unitCost);
+    cur.maxCost = Math.max(cur.maxCost, p.unitCost);
+    if (p.unitPrice > cur.highest.unitPrice) cur.highest = p;
+    if (p.unitPrice < cur.lowest.unitPrice) cur.lowest = p;
+  }
+  const byDay: DayStats[] = [...dayMap.entries()]
+    .map(([dayTs, v]) => ({
+      dayTs,
+      date: v.date,
+      saleCount: v.saleCount,
+      qty: v.qty,
+      amount: v.amount,
+      cost: v.cost,
+      minCost: v.minCost,
+      maxCost: v.maxCost,
+      avgCost: v.qty > 0 ? v.cost / v.qty : 0,
+      highest: v.highest,
+      lowest: v.lowest,
+    }))
+    .sort((a, b) => a.dayTs - b.dayTs);
 
   // 按客户汇总（加权均价、最低/最高售价、毛利率）
   const map = new Map<
@@ -178,19 +236,6 @@ export async function buildPriceAnalysis(
     })
     .sort((a, b) => b.amount - a.amount);
 
-  // 配色：销售额前 9 的客户各占一色，其余归为「其他客户」
-  const customerColors: { customer: string; color: string }[] = byCustomer
-    .slice(0, PALETTE.length)
-    .map((r, i) => ({ customer: r.customer, color: PALETTE[i] }));
-  if (byCustomer.length > PALETTE.length) {
-    customerColors.push({ customer: "其他客户", color: OTHER_COLOR });
-  }
-  const colorMap = new Map(customerColors.map((c) => [c.customer, c.color]));
-  const pointColors = points.map((p) => ({
-    ...p,
-    color: colorMap.get(p.customer) ?? OTHER_COLOR,
-  }));
-
   const qty = points.reduce((s, p) => s + p.qty, 0);
   const amount = points.reduce((s, p) => s + p.amount, 0);
   const cost = points.reduce((s, p) => s + p.costAmount, 0);
@@ -214,9 +259,9 @@ export async function buildPriceAnalysis(
       unit: product.unit.name,
       refSalePrice: Number(product.refSalePrice),
     },
-    points: pointColors,
+    points,
+    byDay,
     byCustomer,
-    customerColors,
     totals,
   };
 }

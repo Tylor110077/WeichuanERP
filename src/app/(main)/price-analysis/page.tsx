@@ -100,7 +100,8 @@ export default async function PriceAnalysisPage({
               <h2 className="text-sm font-semibold text-gray-900">
                 {analysis.product.name}
                 <span className="ml-2 text-xs font-normal text-gray-400">
-                  售价散点（按客户着色） × 成本折线 ・ 共 {analysis.points.length} 笔销售
+                  灰点＝每笔实际售价 ・ 橙线＝当日成本（区间＝当日最高/最低成本波动） ・{" "}
+                  {analysis.byDay.length} 天 / {analysis.points.length} 笔销售
                 </span>
               </h2>
               <span className="text-xs text-gray-400">{label}</span>
@@ -112,11 +113,67 @@ export default async function PriceAnalysisPage({
             ) : (
               <PriceChart
                 points={analysis.points}
-                customerColors={analysis.customerColors}
+                byDay={analysis.byDay}
                 refSalePrice={analysis.product.refSalePrice}
               />
             )}
           </div>
+
+          {/* 每日售价统计：当日最高/最低售价分别是哪一单、利润率多少 */}
+          {analysis.byDay.length > 0 && (
+            <div>
+              <h2 className="mb-2 text-sm font-semibold text-gray-900">每日售价统计</h2>
+              <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+                <table className="min-w-full divide-y divide-gray-200 text-sm">
+                  <thead className="bg-gray-50 text-left text-xs text-gray-500">
+                    <tr>
+                      <th className="px-4 py-3 font-medium">日期</th>
+                      <th className="px-4 py-3 text-right font-medium">单数</th>
+                      <th className="px-4 py-3 text-right font-medium">当日成本区间</th>
+                      <th className="px-4 py-3 font-medium">售价最高单</th>
+                      <th className="px-4 py-3 text-right font-medium">最高售价</th>
+                      <th className="px-4 py-3 text-right font-medium">最高单毛利率</th>
+                      <th className="px-4 py-3 font-medium">售价最低单</th>
+                      <th className="px-4 py-3 text-right font-medium">最低售价</th>
+                      <th className="px-4 py-3 text-right font-medium">最低单毛利率</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {[...analysis.byDay].reverse().map((d) => {
+                      const one = d.highest === d.lowest;
+                      return (
+                        <tr key={d.dayTs}>
+                          <td className="px-4 py-2.5 text-gray-900">{d.date}</td>
+                          <td className="px-4 py-2.5 text-right text-gray-600">{d.saleCount}</td>
+                          <td className="px-4 py-2.5 text-right text-[#ea580c]">
+                            {d.minCost === d.maxCost
+                              ? `¥${d.minCost.toFixed(2)}`
+                              : `¥${d.minCost.toFixed(2)} ~ ¥${d.maxCost.toFixed(2)}`}
+                          </td>
+                          <td className="px-4 py-2.5 text-gray-900">
+                            {d.highest.customer}
+                            <span className="ml-1.5 text-xs text-gray-500">{d.highest.orderNo}</span>
+                          </td>
+                          <td className="px-4 py-2.5 text-right font-medium text-gray-900">¥{d.highest.unitPrice.toFixed(2)}</td>
+                          <td className={`px-4 py-2.5 text-right ${d.highest.profit >= 0 ? "text-green-700" : "text-red-600"}`}>
+                            {d.highest.margin.toFixed(2)}%
+                          </td>
+                          <td className="px-4 py-2.5 text-gray-900">
+                            {one ? "同上（仅一单）" : d.lowest.customer}
+                            {!one && <span className="ml-1.5 text-xs text-gray-500">{d.lowest.orderNo}</span>}
+                          </td>
+                          <td className="px-4 py-2.5 text-right font-medium text-gray-900">¥{d.lowest.unitPrice.toFixed(2)}</td>
+                          <td className={`px-4 py-2.5 text-right ${d.lowest.profit >= 0 ? "text-green-700" : "text-red-600"}`}>
+                            {d.lowest.margin.toFixed(2)}%
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
 
           {/* 按客户汇总 */}
           <div>
@@ -146,15 +203,9 @@ export default async function PriceAnalysisPage({
                     </tr>
                   )}
                   {analysis.byCustomer.map((r) => {
-                    const color = analysis.customerColors.find((c) => c.customer === r.customer)?.color ?? "#6b7280";
                     return (
                       <tr key={r.customer}>
-                        <td className="px-4 py-2.5">
-                          <span className="flex items-center gap-2 text-gray-900">
-                            <span className="inline-block h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: color }} />
-                            {r.customer}
-                          </span>
-                        </td>
+                        <td className="px-4 py-2.5 text-gray-900">{r.customer}</td>
                         <td className="px-4 py-2.5 text-right text-gray-600">{r.orderCount}</td>
                         <td className="px-4 py-2.5 text-right text-gray-900">{r.qty.toFixed(3)}</td>
                         <td className="px-4 py-2.5 text-right font-medium text-gray-900">¥{r.avgPrice.toFixed(2)}</td>

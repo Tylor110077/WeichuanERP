@@ -1,54 +1,67 @@
 "use client";
 
 import { useState, type MouseEvent } from "react";
-import type { ColoredPricePoint } from "@/lib/price-analysis";
-
-type ChartPoint = ColoredPricePoint;
+import type { DayStats, PricePoint } from "@/lib/price-analysis";
 
 const W = 960;
 const H = 300;
 const PAD = { l: 64, r: 20, t: 18, b: 30 };
+const DOT = "#6b7280"; // 售价点统一灰色（客户一多颜色不够用）
+const COST = "#f97316"; // 成本线
 
-/** 售价 × 成本散点折线图：售价点按客户着色，成本（快照）连成折线，虚线为参考售价。 */
+/** 售价 × 成本图：灰点为每笔实际售价；橙线为当日成本（数量加权）；
+ * 当日成本有高有低时，按最高/最低连线成着色波动区间。 */
 export function PriceChart({
   points,
-  customerColors,
+  byDay,
   refSalePrice,
 }: {
-  points: ChartPoint[];
-  customerColors: { customer: string; color: string }[];
+  points: PricePoint[];
+  byDay: DayStats[];
   refSalePrice: number;
 }) {
-  const [tip, setTip] = useState<{ left: number; top: number; p: ChartPoint } | null>(null);
+  const [tip, setTip] = useState<{ left: number; top: number; p: PricePoint } | null>(null);
 
-  if (points.length === 0) return null;
+  if (byDay.length === 0) return null;
 
-  const prices = points.flatMap((p) => [p.unitPrice, p.unitCost]).filter((v) => v > 0);
-  let min = Math.min(...prices);
-  let max = Math.max(...prices);
+  const values = [
+    ...points.map((p) => p.unitPrice),
+    ...byDay.flatMap((d) => [d.minCost, d.maxCost]),
+  ].filter((v) => v > 0);
+  let min = Math.min(...values);
+  let max = Math.max(...values);
   const span = max - min || Math.max(max * 0.1, 1);
   min = Math.max(min - span * 0.08, 0);
   max = max + span * 0.08;
 
-  const times = points.map((p) => p.ts);
-  const one = points.length === 1;
-  const t0 = one ? times[0] - 12 * 3600_000 : Math.min(...times);
-  const t1 = one ? times[0] + 12 * 3600_000 : Math.max(...times);
-  const tSpan = t1 - t0 || 1;
-
-  const xOf = (ts: number) => PAD.l + ((ts - t0) / tSpan) * (W - PAD.l - PAD.r);
+  const plotW = W - PAD.l - PAD.r;
+  const n = byDay.length;
+  const xOfDay = (i: number) => (n === 1 ? PAD.l + plotW / 2 : PAD.l + (i / (n - 1)) * plotW);
+  const dayIndex = new Map(byDay.map((d, i) => [d.dayTs, i]));
   const yOf = (v: number) => H - PAD.b - ((v - min) / (max - min || 1)) * (H - PAD.t - PAD.b);
 
   const fmtY = (v: number) => (v >= 1000 ? `¥${v.toFixed(0)}` : `¥${v.toFixed(2)}`);
   const showRef = refSalePrice > 0 && refSalePrice >= min && refSalePrice <= max;
 
-  function onDot(e: MouseEvent<SVGCircleElement>, p: ChartPoint) {
+  // 波动区间：上边界连每日最高成本，下边界倒序连每日最低成本
+  const bandPath =
+    n > 1
+      ? `M${byDay.map((d, i) => `${xOfDay(i)},${yOf(d.maxCost)}`).join(" L")} L${byDay
+          .map((d, i) => `${xOfDay(i)},${yOf(d.minCost)}`)
+          .reverse()
+          .join(" L")} Z`
+      : "";
+  const costLine = byDay.map((d, i) => `${xOfDay(i)},${yOf(d.avgCost)}`).join(" ");
+
+  function onDot(e: MouseEvent<SVGCircleElement>, p: PricePoint) {
     setTip({
       left: Math.min(e.clientX + 14, window.innerWidth - 240),
       top: e.clientY - 10,
       p,
     });
   }
+
+  const labelIdx = n === 1 ? [0] : [0, Math.floor((n - 1) / 2), n - 1];
 
   return (
     <div className="relative">
@@ -85,25 +98,27 @@ export function PriceChart({
           </g>
         )}
 
-        {/* 成本折线 */}
-        {points.length > 1 && (
-          <polyline
-            points={points.map((p) => `${xOf(p.ts).toFixed(1)},${yOf(p.unitCost).toFixed(1)}`).join(" ")}
-            fill="none"
-            stroke="#f97316"
-            strokeWidth="2"
-            strokeLinejoin="round"
-          />
+        {/* 当日成本波动区间（最高/最低成本连成着色区域） */}
+        {n > 1 && (
+          <path d={bandPath} fill={COST} opacity="0.14" stroke={COST} strokeOpacity="0.35" strokeWidth="1" />
         )}
 
-        {/* 售价散点（按客户着色） */}
+        {/* 基础折线：每日成本点（当日数量加权平均成本） */}
+        {n > 1 && <polyline points={costLine} fill="none" stroke={COST} strokeWidth="2" strokeLinejoin="round" />}
+
+        {/* 每日成本点 */}
+        {byDay.map((d, i) => (
+          <circle key={`c${i}`} cx={xOfDay(i)} cy={yOf(d.avgCost)} r="3" fill={COST} />
+        ))}
+
+        {/* 实际售价点（统一灰色，不按客户配色） */}
         {points.map((p, i) => (
           <circle
             key={i}
-            cx={xOf(p.ts)}
+            cx={xOfDay(dayIndex.get(p.dayTs) ?? 0)}
             cy={yOf(p.unitPrice)}
             r={tip?.p === p ? 6 : 4}
-            fill={p.color}
+            fill={DOT}
             stroke="#ffffff"
             strokeWidth="1.5"
             className="cursor-pointer"
@@ -114,36 +129,42 @@ export function PriceChart({
         ))}
 
         {/* X 轴日期（首/中/尾） */}
-        {[t0, t0 + tSpan / 2, t1].map((ts, i) => (
+        {labelIdx.map((i) => (
           <text
             key={i}
-            x={xOf(ts)}
+            x={xOfDay(i)}
             y={H - 6}
             fontSize="11"
             fill="#9ca3af"
-            textAnchor={i === 0 ? "start" : i === 2 ? "end" : "middle"}
+            textAnchor={i === 0 ? "start" : i === n - 1 ? "end" : "middle"}
           >
-            {new Date(ts).toLocaleDateString("zh-CN")}
+            {byDay[i].date}
           </text>
         ))}
       </svg>
 
       {/* 图例 */}
       <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 px-2 text-xs text-gray-600">
-        <span className="flex items-center gap-1.5">
-          <span className="inline-block h-0.5 w-5 rounded bg-[#f97316]" />
-          成本单价（快照）
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="inline-block h-2.5 w-2.5 rounded-full bg-gray-400" />
-          售价（按客户着色）：
-        </span>
-        {customerColors.map((c) => (
-          <span key={c.customer} className="flex items-center gap-1.5">
-            <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: c.color }} />
-            {c.customer}
+        {n > 1 && (
+          <span className="flex items-center gap-1.5">
+            <span className="inline-block h-3 w-5 rounded" style={{ background: COST, opacity: 0.15 }} />
+            当日成本波动区间（最高~最低）
           </span>
-        ))}
+        )}
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block h-0.5 w-5 rounded" style={{ background: COST }} />
+          当日成本（数量加权）
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: DOT }} />
+          实际售价（每单一点）
+        </span>
+        {showRef && (
+          <span className="flex items-center gap-1.5">
+            <span className="inline-block h-0 w-5 border-t-2 border-dashed border-[#94a3b8]" />
+            参考售价
+          </span>
+        )}
       </div>
 
       {/* 悬停提示 */}
@@ -162,7 +183,7 @@ export function PriceChart({
             <div>
               数量 {tip.p.qty.toFixed(3)} ・ 毛利率{" "}
               <span className={tip.p.profit >= 0 ? "text-green-700" : "text-red-600"}>
-                {tip.p.amount > 0 ? ((tip.p.profit / tip.p.amount) * 100).toFixed(1) : "0.0"}%
+                {tip.p.margin.toFixed(1)}%
               </span>
             </div>
           </div>
