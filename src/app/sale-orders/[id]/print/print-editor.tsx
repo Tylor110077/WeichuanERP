@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { rmbUpper } from "@/lib/rmb";
 
 export interface PrintOrderData {
@@ -45,6 +45,15 @@ export function PrintEditor({ data }: { data: PrintOrderData }) {
   const [hiddenCols, setHiddenCols] = useState<string[]>([]);
   const [showRmb, setShowRmb] = useState(true);
   const [showSign, setShowSign] = useState(true);
+  // 打印时间只能客户端生成（SSR 时钟与浏览器不一致会 hydration 失败），挂载后再填充
+  const [printTime, setPrintTime] = useState("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setPrintTime(new Date().toLocaleString("zh-CN"));
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
 
   const visibleCols = ALL_COLS.filter((c) => !hiddenCols.includes(c.key));
 
@@ -82,10 +91,9 @@ export function PrintEditor({ data }: { data: PrintOrderData }) {
           >
             🖨 打印
           </button>
-          <a
-            href={`/sale-orders/${data.orderNo ? "" : ""}`}
-            onClick={(e) => {
-              e.preventDefault();
+          <button
+            type="button"
+            onClick={() => {
               if (window.history.length > 1) {
                 window.history.back();
               } else {
@@ -95,7 +103,7 @@ export function PrintEditor({ data }: { data: PrintOrderData }) {
             className="text-sm text-gray-500 hover:underline"
           >
             返回
-          </a>
+          </button>
           <div className="ml-auto flex items-center gap-2">
             <label className="text-xs text-gray-600">单据标题：</label>
             <input
@@ -136,6 +144,13 @@ export function PrintEditor({ data }: { data: PrintOrderData }) {
             />
             签收栏
           </label>
+          <button
+            type="button"
+            onClick={addRow}
+            className="rounded-md border border-gray-300 px-2 py-1 font-medium text-gray-700 hover:bg-gray-100"
+          >
+            ＋ 添加行
+          </button>
         </div>
         <p className="text-xs text-gray-400">
           提示：直接点击单据中的文字即可编辑；行可添加/删除；调整满意后点「打印」。
@@ -339,7 +354,8 @@ export function PrintEditor({ data }: { data: PrintOrderData }) {
         )}
 
         <p className="mt-6 text-center text-xs text-gray-400">
-          玮川进销存 ・ {orderNo} ・ 打印时间 {new Date().toLocaleString("zh-CN")}
+          玮川进销存 ・ {orderNo}
+          {printTime ? ` ・ 打印时间 ${printTime}` : ""}
         </p>
       </div>
     </div>
