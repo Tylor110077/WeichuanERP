@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { rmbUpper } from "@/lib/rmb";
 
 export interface PrintOrderData {
@@ -82,14 +82,15 @@ export function PrintEditor({ data }: { data: PrintOrderData }) {
   return (
     <div className="mx-auto max-w-4xl p-6">
       {/* 工具栏（打印时隐藏） */}
-      <div className="print:hidden mb-4 space-y-3 rounded-xl border border-gray-200 bg-white p-4">
-        <div className="flex flex-wrap items-center gap-3">
+      <div className="print:hidden mb-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+        {/* 主操作行 */}
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={() => window.print()}
-            className="rounded-md bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            className="rounded-md bg-blue-600 px-5 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700"
           >
-            🖨 打印
+            打印
           </button>
           <button
             type="button"
@@ -100,60 +101,51 @@ export function PrintEditor({ data }: { data: PrintOrderData }) {
                 window.close();
               }
             }}
-            className="text-sm text-gray-500 hover:underline"
+            className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm text-gray-600 hover:bg-gray-50"
           >
             返回
           </button>
           <div className="ml-auto flex items-center gap-2">
-            <label className="text-xs text-gray-600">单据标题：</label>
+            <label className="text-xs text-gray-500">单据标题</label>
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-48 rounded-md border border-gray-300 px-2 py-1.5 text-sm text-gray-900"
+              className="w-48 rounded-md border border-gray-300 px-2 py-1.5 text-sm text-gray-900 focus:border-blue-400 focus:outline-none"
             />
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-3 text-xs text-gray-600">
-          <span>打印列：</span>
-          {ALL_COLS.map((c) => (
-            <label key={c.key} className="flex items-center gap-1 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={!hiddenCols.includes(c.key)}
-                onChange={() => toggleCol(c.key)}
-                className="h-3.5 w-3.5"
-              />
-              {c.label}
-            </label>
-          ))}
-          <label className="flex items-center gap-1 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={showRmb}
-              onChange={(e) => setShowRmb(e.target.checked)}
-              className="h-3.5 w-3.5"
-            />
-            大写金额
-          </label>
-          <label className="flex items-center gap-1 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={showSign}
-              onChange={(e) => setShowSign(e.target.checked)}
-              className="h-3.5 w-3.5"
-            />
-            签收栏
-          </label>
-          <button
-            type="button"
-            onClick={addRow}
-            className="rounded-md border border-gray-300 px-2 py-1 font-medium text-gray-700 hover:bg-gray-100"
-          >
-            ＋ 添加行
-          </button>
+
+        {/* 选项行：打印列 / 显示选项 / 添加行 */}
+        <div className="mt-3 space-y-2 border-t border-gray-100 pt-3">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="mr-1.5 text-xs font-medium text-gray-500">打印列</span>
+            {ALL_COLS.map((c) => (
+              <Chip key={c.key} on={!hiddenCols.includes(c.key)} onClick={() => toggleCol(c.key)}>
+                {c.label}
+              </Chip>
+            ))}
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="mr-1.5 text-xs font-medium text-gray-500">显示选项</span>
+            <Chip on={showRmb} onClick={() => setShowRmb((v) => !v)}>
+              大写金额
+            </Chip>
+            <Chip on={showSign} onClick={() => setShowSign((v) => !v)}>
+              签收栏
+            </Chip>
+            <button
+              type="button"
+              onClick={addRow}
+              className="ml-auto rounded-full border border-dashed border-gray-300 px-2.5 py-1 text-xs font-medium text-gray-600 hover:border-blue-300 hover:text-blue-600"
+            >
+              ＋ 添加行
+            </button>
+          </div>
         </div>
-        <p className="text-xs text-gray-400">
-          提示：直接点击单据中的文字即可编辑；行可添加/删除；调整满意后点「打印」。
+
+        {/* 提示行 */}
+        <p className="mt-3 border-t border-gray-100 pt-2.5 text-xs text-gray-400">
+          提示：直接点击单据中的文字即可编辑；行可添加 / 删除；调整满意后点「打印」。
         </p>
       </div>
 
@@ -359,5 +351,22 @@ export function PrintEditor({ data }: { data: PrintOrderData }) {
         </p>
       </div>
     </div>
+  );
+}
+
+/** 可点选的开关 chip：选中为蓝底，未选中为灰边淡字。 */
+function Chip({ on, onClick, children }: { on: boolean; onClick: () => void; children: ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
+        on
+          ? "border-blue-200 bg-blue-50 text-blue-700"
+          : "border-gray-200 bg-white text-gray-400 hover:border-gray-300 hover:text-gray-600"
+      }`}
+    >
+      {children}
+    </button>
   );
 }
