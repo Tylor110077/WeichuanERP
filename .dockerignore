@@ -1,0 +1,10 @@
+# 构建镜像时排除本机开发文件（macOS 的 node_modules 会覆盖容器内 Linux 依赖）
+node_modules
+.next
+.mysql
+.git
+backups
+.env
+.env.*
+*.tsbuildinfo
+.DS_Store
