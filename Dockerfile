@@ -23,7 +23,9 @@ COPY --from=build /app/.next/standalone ./
 COPY --from=build /app/.next/static ./.next/static
 COPY --from=build /app/public ./public
 COPY --from=build /app/prisma ./prisma
-COPY --from=build /app/node_modules/.bin ./node_modules/.bin
+# 全量 node_modules：standalone 裁剪版不含 prisma/tsx CLI，
+# 部署指南要求 `docker compose exec app npx prisma migrate deploy` / `npx tsx prisma/seed.ts`
+COPY --from=build /app/node_modules ./node_modules
 EXPOSE 3000
 USER node
 CMD ["node", "server.js"]
