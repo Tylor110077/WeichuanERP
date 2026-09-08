@@ -1,0 +1,66 @@
+name: 生产可用性监控
+
+# 外部存活监控（不占用服务器资源）：
+# - 每 5 分钟探测站点登录页与健康检查接口
+# - 异常时创建 GitHub Issue（仓库关注者会收到邮件通知）
+# - 恢复正常自动关闭 Issue
+# 说明：这是 P0 临时方案；长期建议在阿里云控制台再开「云监控-站点监控」（短信/邮件双通道）。
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 探测站点与备份状态
+        run: |
+          SITE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 http://47.108.181.80/login || echo "000")
+          HEALTH_BODY=$(curl -s --max-time 20 http://47.108.181.80/api/health || echo "{}")
+          HEALTH_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 http://47.108.181.80/api/health || echo "000")
+          echo "site=$SITE health_code=$HEALTH_CODE health=$HEALTH_BODY"
+          if [ "$SITE" != "200" ]; then echo "FAIL_SITE=$SITE" >> "$GITHUB_ENV"; fi
+          if [ "$HEALTH_CODE" != "200" ]; then echo "FAIL_HEALTH=$HEALTH_CODE $HEALTH_BODY" >> "$GITHUB_ENV"; fi
+
+      - name: 异常时创建告警 Issue
+        if: env.FAIL_SITE != '' || env.FAIL_HEALTH != ''
+        uses: actions/github-script@v7
+        env:
+          FAIL_SITE: ${{ env.FAIL_SITE }}
+          FAIL_HEALTH: ${{ env.FAIL_HEALTH }}
+        with:
+          script: |
+            const ts = new Date().toISOString();
+            const body = [
+              "生产环境探测失败，请尽快检查。",
+              "",
+              `- 站点 /login：${process.env.FAIL_SITE ? "❌ HTTP " + process.env.FAIL_SITE : "✅ 正常"}`,
+              `- 健康检查 /api/health：${process.env.FAIL_HEALTH ? "❌ " + process.env.FAIL_HEALTH : "✅ 正常"}`,
+              `- 探测时间：${ts}`,
+              "",
+              "处理提示：服务器 SSH（密钥 wcadmin）、`docker compose ps`、`docker compose logs --tail 50 app`。",
+            ].join("\n");
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `[告警] 生产环境异常 ${ts.slice(0, 16).replace("T", " ")} UTC`,
+              body,
+            });
+
+      - name: 恢复正常时自动关闭告警 Issue
+        if: env.FAIL_SITE == '' && env.FAIL_HEALTH == ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const open = await github.rest.issues.listForRepo({ owner, repo, state: "open", per_page: 50 });
+            for (const issue of open.data) {
+              if (!issue.title.startsWith("[告警] 生产环境异常")) continue;
+              await github.rest.issues.createComment({ owner, repo, issue_number: issue.number, body: "探测已恢复正常，自动关闭。" });
+              await github.rest.issues.update({ owner, repo, issue_number: issue.number, state: "closed" });
+            }
