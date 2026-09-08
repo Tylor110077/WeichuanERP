@@ -10,6 +10,9 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NODE_ENV=production
+# 低内存服务器（2G 左右）构建 Next.js 时需限制 V8 堆，避免 OOM/swap 抖动
+ARG NODE_BUILD_MEM=512
+ENV NODE_OPTIONS=--max-old-space-size=${NODE_BUILD_MEM}
 # 生成 Prisma Client（构建期不需要数据库连接）
 RUN npx prisma generate && npm run build
 
