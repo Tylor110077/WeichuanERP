@@ -130,6 +130,7 @@ model LoginLog {
 
   @@index([userId, success, createdAt])
   @@index([username, createdAt])
+  @@index([ip, createdAt]) // IP 级登录限流查询
   @@map("login_logs")
 }
 

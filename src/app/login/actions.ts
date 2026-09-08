@@ -12,6 +12,8 @@ import {
   getCurrentUser,
   getLockRemainingSeconds,
 } from "@/lib/auth/session";
+import { isLoginIpThrottled } from "@/lib/auth/login-throttle";
+import { getClientIp } from "@/lib/request-ip";
 import { writeAudit } from "@/lib/audit";
 
 const loginSchema = z.object({
@@ -33,19 +35,34 @@ export async function loginAction(
     return { error: parsed.error.issues[0]?.message ?? "输入有误" };
   }
   const { username, password } = parsed.data;
+  const ip = await getClientIp();
 
   // 已登录直接进系统
   if (await getCurrentUser()) {
     redirect("/dashboard");
   }
 
+  // IP 级限流：撞库/喷洒防护（早于账号查询，未知账号同样受限）
+  if (await isLoginIpThrottled(ip)) {
+    await writeAudit({
+      action: "login",
+      entityType: "login",
+      after: { throttled: true, ip },
+      ip,
+    });
+    await prisma.loginLog.create({
+      data: { userId: null, username, success: false, ip },
+    });
+    return { error: "尝试过于频繁，请 5 分钟后再试" };
+  }
+
   const user = await prisma.user.findUnique({ where: { username } });
 
   if (!user) {
     await consumeDummyVerify(); // 等时校验，防账号枚举
-    await writeAudit({ action: "login", entityType: "login", ip: null });
+    await writeAudit({ action: "login", entityType: "login", ip });
     await prisma.loginLog.create({
-      data: { userId: null, username, success: false },
+      data: { userId: null, username, success: false, ip },
     });
     return { error: "账号或密码错误" };
   }
@@ -57,9 +74,10 @@ export async function loginAction(
       action: "login",
       entityType: "login",
       after: { locked: true },
+      ip,
     });
     await prisma.loginLog.create({
-      data: { userId: user.id, username, success: false },
+      data: { userId: user.id, username, success: false, ip },
     });
     return {
       error: `账号已锁定，请 ${Math.ceil(lockSeconds / 60)} 分钟后再试`,
@@ -68,15 +86,18 @@ export async function loginAction(
 
   const ok = await verifyPassword(password, user.passwordHash);
   if (!ok) {
-    await writeAudit({ userId: user.id, action: "login", entityType: "login" });
+    await writeAudit({ userId: user.id, action: "login", entityType: "login", ip });
     await prisma.loginLog.create({
-      data: { userId: user.id, username, success: false },
+      data: { userId: user.id, username, success: false, ip },
     });
     return { error: "账号或密码错误" };
   }
 
   if (user.status !== 1) {
-    await writeAudit({ userId: user.id, action: "login", entityType: "login" });
+    await writeAudit({ userId: user.id, action: "login", entityType: "login", ip });
+    await prisma.loginLog.create({
+      data: { userId: user.id, username, success: false, ip },
+    });
     return { error: "账号已停用，请联系管理员" };
   }
 
@@ -85,11 +106,15 @@ export async function loginAction(
     data: { lastLoginAt: new Date() },
   });
   await createSession(user.id);
+  await prisma.loginLog.create({
+    data: { userId: user.id, username, success: true, ip },
+  });
   await writeAudit({
     userId: user.id,
     action: "login",
     entityType: "login",
     after: { username: user.username, success: true },
+    ip,
   });
   redirect("/dashboard");
 }
