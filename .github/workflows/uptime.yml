@@ -30,9 +30,6 @@ jobs:
       - name: 异常时创建告警 Issue
         if: env.FAIL_SITE != '' || env.FAIL_HEALTH != ''
         uses: actions/github-script@v7
-        env:
-          FAIL_SITE: ${{ env.FAIL_SITE }}
-          FAIL_HEALTH: ${{ env.FAIL_HEALTH }}
         with:
           script: |
             const ts = new Date().toISOString();
