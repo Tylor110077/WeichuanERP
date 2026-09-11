@@ -13,7 +13,7 @@ import { buildOrderNo, ORDER_NO_PREFIXES, todayCompact } from "@/lib/order-no";
 export type FormState = { error?: string; ok?: string } | null;
 
 const itemSchema = z.object({
-  productId: z.coerce.number().int().positive(),
+  productId: z.coerce.number().int().positive("请选择商品"),
   quantity: z.coerce.number().min(0.001, "数量必须大于 0").max(9_999_999.999),
   unitPrice: z.coerce.number().min(0).max(9_999_999_999.99), // 售价
   supplyPrice: z.coerce.number().min(0).max(9_999_999_999.99), // 自动补货进价
@@ -55,6 +55,11 @@ function parseCreatePayload(formData: FormData) {
   const items: unknown[] = [];
   let i = 0;
   while (formData.has(`item_${i}_productId`)) {
+    // 未选择商品的空行直接跳过（加行后未填写不应阻塞提交）
+    if (!String(formData.get(`item_${i}_productId`) || "").trim()) {
+      i++;
+      continue;
+    }
     items.push({
       productId: formData.get(`item_${i}_productId`),
       quantity: formData.get(`item_${i}_quantity`),

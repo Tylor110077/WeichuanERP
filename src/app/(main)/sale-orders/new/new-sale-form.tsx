@@ -990,6 +990,8 @@ export function NewSaleForm({
                 {row.productCode && (
                   <span className="shrink-0 text-xs text-gray-400">{row.productCode}</span>
                 )}
+                {/* 商品 ID 随表单提交（重新设计布局时漏掉过，务必保留） */}
+                <input type="hidden" name={`item_${i}_productId`} value={row.productId} />
                 <button
                   type="button"
                   onClick={() =>
