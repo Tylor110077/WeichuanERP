@@ -17,16 +17,12 @@ const NAV_GROUPS: {
     items: [{ href: "/dashboard", label: "工作台", roles: ALL_ROLES }],
   },
   {
-    // 退货入口集成在单据详情页的「单据操作」中，不再单列菜单
-    label: "进货",
-    items: [
-      { href: "/purchase-orders", label: "进货单", roles: ALL_ROLES },
-    ],
-  },
-  {
-    label: "销售",
+    // 单据一栏：售卖 / 进货 / 退货。退货以前只在单据详情页里能发起，列表没有入口
+    label: "单据",
     items: [
       { href: "/sale-orders", label: "售卖单", roles: ALL_ROLES },
+      { href: "/purchase-orders", label: "进货单", roles: ALL_ROLES },
+      { href: "/sale-returns", label: "退货单", roles: ALL_ROLES },
     ],
   },
   {
@@ -37,7 +33,9 @@ const NAV_GROUPS: {
     ],
   },
   {
-    label: "财务",
+    // 原名「财务」但里面 3/4 是分析报表，老板想"看赚了多少"不会去点财务；
+    // 改名为「财务分析」，涵盖钱与分析两类任务
+    label: "财务分析",
     items: [
       { href: "/receivables-payables", label: "应收应付", roles: ["admin", "boss"] },
       { href: "/sales-analysis", label: "销售分析", roles: ["admin", "boss"] },
@@ -46,7 +44,7 @@ const NAV_GROUPS: {
     ],
   },
   {
-    label: "基础资料",
+    label: "资料",
     items: [
       // 厂家档案已并入商品页：按厂家查看其商品
       { href: "/products", label: "商品与厂家", roles: ALL_ROLES },

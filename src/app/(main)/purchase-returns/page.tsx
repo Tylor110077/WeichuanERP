@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
+import { segActive, segIdle } from "@/lib/ui";
 import { ReturnListActions } from "./return-list-actions";
 
 export const metadata = { title: "进货退货单 - 玮川进销存" };
@@ -25,8 +27,15 @@ export default async function PurchaseReturnsPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-lg font-semibold text-gray-900">进货退货单</h1>
-        <span className="text-xs text-gray-500">从进货单详情页发起退货</span>
+        <h1 className="text-lg font-semibold text-gray-900">退货单</h1>
+        <div className="flex rounded-lg border border-gray-200 bg-gray-50 p-0.5 text-sm">
+          <Link href="/sale-returns" className={`px-4 py-1.5 ${segIdle}`}>
+            销售退货
+          </Link>
+          <Link href="/purchase-returns" className={`px-4 py-1.5 ${segActive}`}>
+            进货退货
+          </Link>
+        </div>
       </div>
       <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
         <table className="min-w-full divide-y divide-gray-200 text-sm">
