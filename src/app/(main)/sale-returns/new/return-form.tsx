@@ -32,7 +32,20 @@ export function ReturnForm({
   saleOrderId: number;
   rows: RowOption[];
 }) {
-  const [lines, setLines] = useState<Row[]>([]);
+  // 默认把原单里「还有可退数量」的行全部带出来（数量留空，避免误提交）：
+  // 用户是从那张单点「退货」进来的，不该再让他从下拉里挑一次商品。
+  const [lines, setLines] = useState<Row[]>(() =>
+    rows
+      .filter((r) => r.remaining > 0)
+      .map((r) => ({
+        orderItemId: String(r.orderItemId),
+        label: `${r.code} ${r.name}`,
+        unitName: r.unitName,
+        max: r.remaining,
+        quantity: "",
+        unitPrice: String(r.unitPrice),
+      }))
+  );
   const [state, formAction, pending] = useActionState<FormState, FormData>(
     createSaleReturnAction,
     null
