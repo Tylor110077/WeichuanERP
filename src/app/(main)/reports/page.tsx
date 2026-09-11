@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { FilterForm } from "@/components/filter-form";
 import { NoPermission } from "@/components/empty-state";
 import { btnSecondary } from "@/lib/ui";
 import Link from "next/link";
@@ -59,7 +60,7 @@ export default async function ReportsPage({
 
       <DateShortcuts basePath="/reports" extraQuery={{ tab }} />
 
-      <form className="flex flex-wrap items-end gap-3 rounded-xl border border-gray-200 bg-white p-4">
+      <FilterForm className="flex flex-wrap items-end gap-3 rounded-xl border border-gray-200 bg-white p-4">
         <div>
           <label htmlFor="from" className="block text-xs font-medium text-gray-600">
             开始日期（默认本月 1 日）
@@ -76,7 +77,7 @@ export default async function ReportsPage({
         <button type="submit" className={btnSecondary}>
           查询
         </button>
-      </form>
+      </FilterForm>
 
       <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
         <table className="min-w-full divide-y divide-gray-200 text-sm">

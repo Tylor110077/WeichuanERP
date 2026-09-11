@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { FilterForm } from "@/components/filter-form";
 import { EmptyState, NoPermission } from "@/components/empty-state";
 import { btnSecondary } from "@/lib/ui";
 import Link from "next/link";
@@ -73,7 +74,7 @@ export default async function StockMovementsPage({
 
       <DateShortcuts basePath="/stock-movements" extraQuery={{ productId: productId ? String(productId) : "", bizType: bizType ?? "" }} />
 
-      <form className="flex flex-wrap items-center gap-3 rounded-xl border border-gray-200 bg-white p-4">
+      <FilterForm className="flex flex-wrap items-center gap-3 rounded-xl border border-gray-200 bg-white p-4">
         <SearchSelect
           name="productId"
           options={products.map((p) => ({ value: String(p.id), label: `${p.code} ${p.name}` }))}
@@ -96,7 +97,7 @@ export default async function StockMovementsPage({
           筛选
         </button>
         <span className="text-xs text-gray-500">共 {total} 条</span>
-      </form>
+      </FilterForm>
 
       <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
         <table className="min-w-full divide-y divide-gray-200 text-sm">

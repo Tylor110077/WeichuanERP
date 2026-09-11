@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { FilterForm } from "@/components/filter-form";
 import { NoPermission } from "@/components/empty-state";
 import { btnSecondary } from "@/lib/ui";
 import Link from "next/link";
@@ -123,7 +124,7 @@ export default async function ReceivablesPage({
         basePath="/receivables-payables"
         extraQuery={{ view, counterId: params.counterId ?? "" }}
       />
-      <form className="flex flex-wrap items-end gap-3 rounded-xl border border-gray-200 bg-white p-4">
+      <FilterForm className="flex flex-wrap items-end gap-3 rounded-xl border border-gray-200 bg-white p-4">
         <div>
           <label htmlFor="from" className="block text-xs font-medium text-gray-600">开始日期</label>
           <input id="from" type="date" name="from" defaultValue={params.from} className="mt-1 rounded-md border border-gray-300 px-2 py-1.5 text-sm" />
@@ -145,7 +146,7 @@ export default async function ReceivablesPage({
         {(params.from || params.to || params.counterId) && (
           <Link href={`/receivables-payables?view=${view}`} className="text-xs text-blue-600 hover:underline">清除条件</Link>
         )}
-      </form>
+      </FilterForm>
 
       <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
         <div className="border-b border-gray-100 px-4 py-3 text-sm font-semibold text-gray-900">

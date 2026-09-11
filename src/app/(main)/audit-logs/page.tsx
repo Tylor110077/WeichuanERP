@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { FilterForm } from "@/components/filter-form";
 import { EmptyState, NoPermission } from "@/components/empty-state";
 import { btnSecondary } from "@/lib/ui";
 import Link from "next/link";
@@ -69,7 +70,7 @@ export default async function AuditLogsPage({
 
       <DateShortcuts basePath="/audit-logs" />
 
-      <form className="flex flex-wrap items-end gap-3 rounded-xl border border-gray-200 bg-white p-4">
+      <FilterForm className="flex flex-wrap items-end gap-3 rounded-xl border border-gray-200 bg-white p-4">
         <div>
           <label htmlFor="from" className="block text-xs font-medium text-gray-600">开始日期</label>
           <input id="from" type="date" name="from" defaultValue={params.from} className="mt-1 rounded-md border border-gray-300 px-2 py-1.5 text-sm" />
@@ -84,7 +85,7 @@ export default async function AuditLogsPage({
         {(params.from || params.to) && (
           <a href="/audit-logs" className="text-xs text-blue-600 hover:underline">清除日期</a>
         )}
-      </form>
+      </FilterForm>
 
       <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
         <table className="min-w-full divide-y divide-gray-200 text-sm">

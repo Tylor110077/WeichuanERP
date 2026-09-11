@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { FilterForm } from "@/components/filter-form";
 import { EmptyState } from "@/components/empty-state";
 import { btnPrimary, btnSecondary } from "@/lib/ui";
 import Link from "next/link";
@@ -116,7 +117,7 @@ export default async function PurchaseOrdersPage({
         }}
       />
 
-      <form className="flex flex-wrap items-center gap-3 rounded-xl border border-gray-200 bg-white p-4">
+      <FilterForm className="flex flex-wrap items-center gap-3 rounded-xl border border-gray-200 bg-white p-4">
         <input
           name="q"
           type="text"
@@ -153,7 +154,7 @@ export default async function PurchaseOrdersPage({
           筛选
         </button>
         <span className="text-xs text-gray-500">共 {total} 张</span>
-      </form>
+      </FilterForm>
 
       <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
         <table className="min-w-full divide-y divide-gray-200 text-sm">

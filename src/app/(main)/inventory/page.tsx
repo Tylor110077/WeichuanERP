@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { FilterForm } from "@/components/filter-form";
 import { EmptyState } from "@/components/empty-state";
 import { btnSecondary } from "@/lib/ui";
 import { getCurrentUser } from "@/lib/auth/session";
@@ -101,7 +102,7 @@ export default async function InventoryPage({
         )}
       </div>
 
-      <form className="flex flex-wrap items-center gap-3 rounded-xl border border-gray-200 bg-white p-4">
+      <FilterForm className="flex flex-wrap items-center gap-3 rounded-xl border border-gray-200 bg-white p-4">
         <input
           name="q"
           type="text"
@@ -116,7 +117,7 @@ export default async function InventoryPage({
         <button type="submit" className={btnSecondary}>
           筛选
         </button>
-      </form>
+      </FilterForm>
 
       <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
         <table className="min-w-full divide-y divide-gray-200 text-sm">

@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { FilterForm } from "@/components/filter-form";
 import { NoPermission } from "@/components/empty-state";
 import { btnSecondary } from "@/lib/ui";
 import Link from "next/link";
@@ -109,7 +110,7 @@ export default async function SupplierStatementPage({
 
       <DateShortcuts basePath="/supplier-statement" extraQuery={{ supplierId: String(effectiveSupplierId), status: status ?? "" }} />
 
-      <form className="flex flex-wrap items-end gap-3 rounded-xl border border-gray-200 bg-white p-4">
+      <FilterForm className="flex flex-wrap items-end gap-3 rounded-xl border border-gray-200 bg-white p-4">
         <div>
           <label htmlFor="supplierId" className="block text-xs font-medium text-gray-600">供应商</label>
           <SearchSelect
@@ -142,7 +143,7 @@ export default async function SupplierStatementPage({
         <span className="text-xs text-gray-500">
           共 {rows.length} 单 ｜ 应付 ¥{totalAmount.toFixed(2)} ｜ 已付 ¥{totalPaid.toFixed(2)} ｜ 未付 ¥{totalUnpaid.toFixed(2)}
         </span>
-      </form>
+      </FilterForm>
 
       <div className="space-y-3">
         {rows.length === 0 && (

@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { FilterForm } from "@/components/filter-form";
 import { NoPermission } from "@/components/empty-state";
 import { btnSecondary } from "@/lib/ui";
 import { getCurrentUser } from "@/lib/auth/session";
@@ -84,7 +85,7 @@ export default async function SalesAnalysisPage({
       <h1 className="text-lg font-semibold text-gray-900">销售分析</h1>
 
       <DateShortcuts basePath="/sales-analysis" />
-      <form className="flex flex-wrap items-end gap-3 rounded-xl border border-gray-200 bg-white p-4">
+      <FilterForm className="flex flex-wrap items-end gap-3 rounded-xl border border-gray-200 bg-white p-4">
         <div>
           <label htmlFor="from" className="block text-xs font-medium text-gray-600">自定义开始</label>
           <input id="from" type="date" name="from" defaultValue={params.from} className="mt-1 rounded-md border border-gray-300 px-2 py-1.5 text-sm" />
@@ -97,7 +98,7 @@ export default async function SalesAnalysisPage({
           查询
         </button>
         <span className="text-xs text-gray-500">{label} ・ {orders.length} 单</span>
-      </form>
+      </FilterForm>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <SummaryCard label="销售额" value={`¥${totalSales.toFixed(2)}`} />
