@@ -926,153 +926,166 @@ export function NewSaleForm({
 
         </div>
       )}
-      <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
-        <table className="min-w-full divide-y divide-gray-200 text-sm [&_td]:align-top [&_th]:whitespace-nowrap">
-          <thead className="bg-gray-50 text-left text-xs text-gray-500">
-            <tr>
-              <th className="min-w-64 px-4 py-3 font-medium">商品名称 *</th>
-              <th className="w-32 px-4 py-3 font-medium">售价 *</th>
-              <th className="w-28 px-4 py-3 font-medium">数量 *</th>
-              <th className="w-20 px-4 py-3 font-medium">单位</th>
-              <th className="w-20 px-4 py-3 font-medium">库存</th>
-              <th className="w-28 px-4 py-3 font-medium" title="本次使用现有库存的数量；库存部分成本按原移动加权成本，不可改价">
-                用库存
-              </th>
-              <th className="w-24 px-4 py-3 font-medium" title="需现场进货的数量（客户需求 − 用库存），成本按你填写的进价">
-                需进货
-              </th>
-              <th className="w-24 px-4 py-3 font-medium">进价</th>
-              <th className="w-24 px-4 py-3 font-medium">多补</th>
-              <th className="w-40 px-4 py-3 font-medium">备注</th>
-              <th className="w-28 px-4 py-3 text-right font-medium">金额</th>
-              <th className="w-14 px-4 py-3 font-medium"></th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {rows.map((row, i) => {
-              const used = usedStock(row);
-              const need = needPurchase(row);
-              const extra = extraRestock(row);
-              return (
-                <tr key={i}>
-                  {/* 商品名称（含厂家标签、编码小字） */}
-                  <td className="px-4 py-2">
-                    <div className="flex items-center gap-1.5">
-                      <input
-                        name={`item_${i}_productQuery`}
-                        type="text"
-                        autoComplete="off"
-                        placeholder="名称/型号/厂商/编码…"
-                        value={row.productQuery}
-                        onChange={(e) => onProductInputChange(i, "name", e.target.value)}
-                        onFocus={(e) => openProductPanel(e, i)}
-                        onBlur={() => setProductPanel(null)}
-                        className={`${inputCls} min-w-0 flex-1`}
-                      />
-                      {row.productId && (
-                        <span
-                          className={`shrink-0 rounded px-1.5 py-0.5 text-xs ${
-                            row.manufacturer ? "bg-blue-50 text-blue-700" : "bg-amber-50 text-amber-600"
-                          }`}
-                          title="厂家：缺货时自动向该厂家补货"
-                        >
-                          {row.manufacturer || "未填厂家"}
-                        </span>
-                      )}
+      {/* 商品清单：每个商品一张卡片，字段按 商品 / 交易 / 补货 / 备注 分组 */}
+      <div className="space-y-3">
+        {rows.map((row, i) => {
+          const used = usedStock(row);
+          const need = needPurchase(row);
+          const extra = extraRestock(row);
+          const qtyNum = Number(row.quantity) || 0;
+          const stockCap = Math.min(row.stockQty, qtyNum);
+          return (
+            <div key={i} className="rounded-xl border border-gray-200 bg-white p-4">
+              {/* ① 商品 */}
+              <div className="flex items-start gap-3">
+                <div className="min-w-0 flex-1">
+                  <label className="mb-1 block text-xs font-medium text-gray-500">
+                    商品 <span className="text-red-500">*</span>
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      name={`item_${i}_productQuery`}
+                      type="text"
+                      autoComplete="off"
+                      placeholder="名称 / 型号 / 厂商 / 编码"
+                      value={row.productQuery}
+                      onChange={(e) => onProductInputChange(i, "name", e.target.value)}
+                      onFocus={(e) => openProductPanel(e, i)}
+                      onBlur={() => setProductPanel(null)}
+                      className={`${inputCls} min-w-0 flex-1`}
+                    />
+                    {row.productId && (
+                      <span
+                        className={`shrink-0 rounded px-1.5 py-0.5 text-xs ${
+                          row.manufacturer ? "bg-blue-50 text-blue-700" : "bg-amber-50 text-amber-600"
+                        }`}
+                        title="厂家：缺货时自动向该厂家补货"
+                      >
+                        {row.manufacturer || "未填厂家"}
+                      </span>
+                    )}
+                  </div>
+                  <input type="hidden" name={`item_${i}_productId`} value={row.productId} />
+                  {row.productCode && (
+                    <div className="mt-1 text-xs text-gray-400">编码 {row.productCode}</div>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setRows((prev) => {
+                      const next = prev.filter((_, j) => j !== i);
+                      return next.length > 0 ? next : [emptyRow()];
+                    })
+                  }
+                  className="mt-6 shrink-0 rounded-md border border-red-200 px-2.5 py-1 text-xs text-red-600 hover:bg-red-50"
+                >
+                  删除本行
+                </button>
+              </div>
+
+              {/* ② 交易信息 */}
+              <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-500">
+                    数量 <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    name={`item_${i}_quantity`}
+                    type="number"
+                    min="0.001"
+                    step="0.001"
+                    inputMode="decimal"
+                    required
+                    value={row.quantity}
+                    onChange={(e) =>
+                      setRows((prev) => prev.map((r, j) => (j === i ? { ...r, quantity: e.target.value } : r)))
+                    }
+                    className={inputCls}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-500">单位</label>
+                  <div className="px-2 py-1.5 text-sm text-gray-700">{row.unitName || "—"}</div>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-500">当前库存</label>
+                  <div className="px-2 py-1.5 text-sm tabular-nums text-gray-700">
+                    {row.unitName ? row.stockQty.toFixed(3) : "—"}
+                  </div>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-500">
+                    售价 <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    name={`item_${i}_unitPrice`}
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    required
+                    value={row.unitPrice}
+                    onChange={(e) =>
+                      setRows((prev) => prev.map((r, j) => (j === i ? { ...r, unitPrice: e.target.value } : r)))
+                    }
+                    className={inputCls}
+                  />
+                  {row.productId && customerId && lastCustomerPrices[`${customerId}-${row.productId}`] != null && (
+                    <div className="mt-1 text-xs text-blue-500">
+                      上次（{selectedCustomer?.name ?? "该客户"}）：¥{lastCustomerPrices[`${customerId}-${row.productId}`].toFixed(2)}
                     </div>
-                    <input type="hidden" name={`item_${i}_productId`} value={row.productId} />
-                    {row.productCode && (
-                      <div className="mt-0.5 text-xs text-gray-400">{row.productCode}</div>
-                    )}
-                  </td>
-                  {/* 售价 */}
-                  <td className="px-4 py-2">
-                    <input
-                      name={`item_${i}_unitPrice`}
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      required
-                      value={row.unitPrice}
-                      onChange={(e) =>
-                        setRows((prev) =>
-                          prev.map((r, j) => (j === i ? { ...r, unitPrice: e.target.value } : r))
-                        )
-                      }
-                      className={inputCls}
-                    />
-                    {/* 价格参考放在输入框下方，不遮挡填写 */}
-                    {row.productId && customerId && lastCustomerPrices[`${customerId}-${row.productId}`] != null && (
-                      <div className="mt-1 text-xs text-blue-500">
-                        上次（{selectedCustomer?.name ?? "该客户"}）：¥{lastCustomerPrices[`${customerId}-${row.productId}`].toFixed(2)}
-                      </div>
-                    )}
-                    {row.productId && (!customerId || lastCustomerPrices[`${customerId}-${row.productId}`] == null) && row.lastGlobalSalePrice > 0 && (
-                      <div className="mt-1 text-xs text-gray-400">
-                        参考价 ¥{row.lastGlobalSalePrice.toFixed(2)}
-                      </div>
-                    )}
-                  </td>
-                  {/* 数量 */}
-                  <td className="px-4 py-2">
-                    <input
-                      name={`item_${i}_quantity`}
-                      type="number"
-                      min="0.001"
-                      step="0.001"
-                      inputMode="decimal"
-                      required
-                      value={row.quantity}
-                      onChange={(e) =>
-                        setRows((prev) =>
-                          prev.map((r, j) => (j === i ? { ...r, quantity: e.target.value } : r))
-                        )
-                      }
-                      className={inputCls}
-                    />
-                  </td>
-                  {/* 单位 */}
-                  <td className="px-4 py-2 text-gray-600">{row.unitName || "—"}</td>
-                  {/* 库存 */}
-                  <td className="px-4 py-2 text-gray-600">{row.unitName ? row.stockQty.toFixed(3) : "—"}</td>
-                  {/* 用库存（可编辑：留空＝尽量用库存；填 0＝全部现场进货） */}
-                  <td className="px-4 py-2">
+                  )}
+                  {row.productId && (!customerId || lastCustomerPrices[`${customerId}-${row.productId}`] == null) && row.lastGlobalSalePrice > 0 && (
+                    <div className="mt-1 text-xs text-gray-400">参考价 ¥{row.lastGlobalSalePrice.toFixed(2)}</div>
+                  )}
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-500">行金额</label>
+                  <div className="px-2 py-1.5 text-lg font-semibold tabular-nums text-gray-900">
+                    ¥{lineAmount(row).toFixed(2)}
+                  </div>
+                </div>
+              </div>
+
+              {/* ③ 补货信息：用库存 / 需现场进货 / 现场进价 / 多补 */}
+              <div className="mt-3 rounded-lg bg-gray-50 p-3">
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-gray-500">用库存</label>
                     <input
                       name={`item_${i}_stockUsed`}
                       type="number"
                       min="0"
                       step="0.001"
                       inputMode="decimal"
-                      placeholder={row.productId ? Math.min(row.stockQty, Number(row.quantity) || 0).toFixed(3) : "0"}
+                      placeholder={row.productId ? stockCap.toFixed(3) : "0"}
                       value={row.stockUsed}
                       onChange={(e) => {
                         const v = e.target.value;
-                        if (v.startsWith("-")) return; // 不允许负数
-                        setRows((prev) =>
-                          prev.map((r, j) => (j === i ? { ...r, stockUsed: v } : r))
-                        );
+                        if (v.startsWith("-")) return; // 多补与用库存均不允许负数
+                        setRows((prev) => prev.map((r, j) => (j === i ? { ...r, stockUsed: v } : r)));
                       }}
                       disabled={!row.productId}
                       title="使用现有库存的数量（成本按原移动加权成本，不可改价）；填 0 表示全部现场进货"
-                      className={`${inputCls} disabled:bg-gray-50 disabled:text-gray-400`}
+                      className={`${inputCls} disabled:bg-gray-100 disabled:text-gray-400`}
                     />
                     {row.productId && (
-                      <div className="mt-0.5 whitespace-nowrap text-xs text-gray-400">
-                        {used > 0 ? `用库存 ${used.toFixed(3)}` : "不用库存"}
+                      <div className="mt-1 text-xs text-gray-500">
+                        {used > 0 ? `用库存 ${used.toFixed(3)}` : "不用库存（全部现场进货）"}
                       </div>
                     )}
-                  </td>
-                  {/* 需进货（只读：客户需求 − 用库存） */}
-                  <td className="px-4 py-2">
-                    <span className={need > 0 ? "text-amber-600" : "text-gray-400"}>
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-gray-500">需现场进货</label>
+                    <div className={`px-2 py-1.5 text-sm tabular-nums ${need > 0 ? "font-medium text-amber-600" : "text-gray-400"}`}>
                       {row.productId ? need.toFixed(3) : "—"}
-                    </span>
+                    </div>
                     {need > 0 && !row.manufacturer && (
-                      <div className="mt-0.5 text-xs text-red-500">商品未填厂家，无法补货</div>
+                      <div className="mt-1 text-xs text-red-500">商品未填厂家，无法补货</div>
                     )}
-                  </td>
-                  {/* 进价（仅现场进货部分需要填：可自定义现场进价） */}
-                  <td className="px-4 py-2">
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-gray-500">现场进价</label>
                     <input
                       name={`item_${i}_supplyPrice`}
                       type="number"
@@ -1082,17 +1095,15 @@ export function NewSaleForm({
                       disabled={need <= 0}
                       value={row.supplyPrice}
                       onChange={(e) =>
-                        setRows((prev) =>
-                          prev.map((r, j) => (j === i ? { ...r, supplyPrice: e.target.value } : r))
-                        )
+                        setRows((prev) => prev.map((r, j) => (j === i ? { ...r, supplyPrice: e.target.value } : r)))
                       }
                       placeholder={need > 0 ? "" : "—"}
                       title="现场进货价（仅需进货部分适用；库存部分成本按原成本不变）"
-                      className={`${inputCls} disabled:bg-gray-50 disabled:text-gray-400`}
+                      className={`${inputCls} disabled:bg-gray-100 disabled:text-gray-400`}
                     />
-                  </td>
-                  {/* 多补（额外备货，留空＝不多补） */}
-                  <td className="px-4 py-2">
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-gray-500">多补（额外备货）</label>
                     <input
                       name={`item_${i}_extraQty`}
                       type="number"
@@ -1104,84 +1115,65 @@ export function NewSaleForm({
                       value={row.extraQty}
                       onChange={(e) => {
                         const v = e.target.value;
-                        // 多补不允许负数
-                        if (v.startsWith("-")) return;
-                        setRows((prev) =>
-                          prev.map((r, j) => (j === i ? { ...r, extraQty: v } : r))
-                        );
+                        if (v.startsWith("-")) return; // 不允许负数
+                        setRows((prev) => prev.map((r, j) => (j === i ? { ...r, extraQty: v } : r)));
                       }}
                       title="多补：在客户需求之外额外多进备货（不计入该客户的销售额与成本）"
-                      className={`${inputCls} border-blue-200 disabled:bg-gray-50 disabled:text-gray-400`}
+                      className={`${inputCls} border-blue-200 disabled:bg-gray-100 disabled:text-gray-400`}
                     />
                     {extra > 0 && (
-                      <div className="mt-0.5 whitespace-nowrap text-xs text-blue-600">
-                        补货共 {restockTotal(row).toFixed(3)}
-                      </div>
+                      <div className="mt-1 text-xs text-blue-600">补货共 {restockTotal(row).toFixed(3)}</div>
                     )}
-                  </td>
-                  {/* 行备注 */}
-                  <td className="px-4 py-2">
-                    <input
-                      name={`item_${i}_remark`}
-                      type="text"
-                      maxLength={200}
-                      placeholder="备注"
-                      value={row.remark}
-                      onChange={(e) =>
-                        setRows((prev) =>
-                          prev.map((r, j) => (j === i ? { ...r, remark: e.target.value } : r))
-                        )
-                      }
-                      className={inputCls}
-                    />
-                  </td>
-                  {/* 金额 */}
-                  <td className="px-4 py-2 text-right text-gray-900">{lineAmount(row).toFixed(2)}</td>
-                  <td className="px-4 py-2 text-right">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setRows((prev) => {
-                          const next = prev.filter((_, j) => j !== i);
-                          return next.length > 0 ? next : [emptyRow()];
-                        })
-                      }
-                      className="text-xs text-red-500 hover:underline"
-                    >
-                      删除
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 px-4 py-3">
-          <div className="flex flex-wrap items-center gap-3">
+                  </div>
+                </div>
+              </div>
+
+              {/* ④ 行备注 */}
+              <div className="mt-3">
+                <label className="mb-1 block text-xs font-medium text-gray-500">行备注</label>
+                <input
+                  name={`item_${i}_remark`}
+                  type="text"
+                  maxLength={200}
+                  placeholder="选填，如包装、交货要求"
+                  value={row.remark}
+                  onChange={(e) =>
+                    setRows((prev) => prev.map((r, j) => (j === i ? { ...r, remark: e.target.value } : r)))
+                  }
+                  className={inputCls}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* 清单操作与合计 */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setRows((prev) => [...prev, emptyRow()])}
+            className="rounded-md border border-blue-300 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50"
+          >
+            + 添加商品行
+          </button>
+          {canCreateProduct && (
             <button
               type="button"
-              onClick={() => setRows((prev) => [...prev, emptyRow()])}
-              className="text-sm text-blue-600 hover:underline"
+              onClick={() => {
+                setShowCreateProduct((v) => !v);
+                setProductMsg(null);
+              }}
+              className="rounded-md border border-blue-300 px-2.5 py-1.5 text-xs text-blue-600 hover:bg-blue-50"
             >
-              + 添加商品行
+              {showCreateProduct ? "收起" : "+ 新建商品"}
             </button>
-            {canCreateProduct && (
-              <button
-                type="button"
-                onClick={() => {
-                  setShowCreateProduct((v) => !v);
-                  setProductMsg(null);
-                }}
-                className="rounded-md border border-blue-300 px-2.5 py-1.5 text-xs text-blue-600 hover:bg-blue-50"
-              >
-                {showCreateProduct ? "收起" : "+ 新建商品"}
-              </button>
-            )}
-          </div>
-          <div className="text-sm text-gray-600">
-            合计：
-            <span className="text-base font-semibold text-gray-900">¥{total.toFixed(2)}</span>
-          </div>
+          )}
+        </div>
+        <div className="text-sm text-gray-600">
+          合计：
+          <span className="text-lg font-semibold tabular-nums text-gray-900">¥{total.toFixed(2)}</span>
         </div>
       </div>
 

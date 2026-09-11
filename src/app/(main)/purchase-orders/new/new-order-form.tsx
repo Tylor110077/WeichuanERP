@@ -111,105 +111,115 @@ export function NewOrderForm({
           </span>
         </summary>
         <div className="space-y-4 border-t border-gray-100 p-5">
-      <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
-        <table className="min-w-full divide-y divide-gray-200 text-sm [&_td]:align-top [&_th]:whitespace-nowrap">
-          <thead className="bg-gray-50 text-left text-xs text-gray-500">
-            <tr>
-              <th className="px-4 py-3 font-medium">商品 *</th>
-              <th className="w-32 px-4 py-3 font-medium">数量 *</th>
-              <th className="w-24 px-4 py-3 font-medium">单位</th>
-              <th className="w-36 px-4 py-3 font-medium">进价 *</th>
-              <th className="w-40 px-4 py-3 font-medium">备注</th>
-              <th className="w-32 px-4 py-3 text-right font-medium">金额</th>
-              <th className="w-16 px-4 py-3 font-medium"></th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {rows.map((row, i) => (
-              <tr key={i}>
-                <td className="px-4 py-2">
-                  <SearchSelect
-                    key={`po-prod-${i}-${row.productId}`}
-                    name={`item_${i}_productId`}
-                    options={products.map((p) => ({ value: String(p.id), label: p.label }))}
-                    defaultValue={row.productId}
-                    noneLabel="请选择商品"
-                    placeholder="商品（可搜索）"
-                    onChange={(v) => onProductChange(i, v)}
-                  />
-                </td>
-                <td className="px-4 py-2">
-                  <input
-                    name={`item_${i}_quantity`}
-                    type="number"
-                    min="0.001"
-                    step="0.001"
-                    required
-                    value={row.quantity}
-                    onChange={(e) =>
-                      setRows((prev) =>
-                        prev.map((r, j) => (j === i ? { ...r, quantity: e.target.value } : r))
-                      )
-                    }
-                    className={inputCls}
-                  />
-                </td>
-                <td className="px-4 py-2 text-gray-600">{row.unitName || "—"}</td>
-                <td className="px-4 py-2">
-                  <input
-                    name={`item_${i}_unitPrice`}
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    required
-                    value={row.unitPrice}
-                    onChange={(e) =>
-                      setRows((prev) =>
-                        prev.map((r, j) => (j === i ? { ...r, unitPrice: e.target.value } : r))
-                      )
-                    }
-                    className={inputCls}
-                  />
-                </td>
-                <td className="px-4 py-2">
-                  <input
-                    name={`item_${i}_remark`}
-                    type="text"
-                    maxLength={200}
-                    placeholder="备注"
-                    value={row.remark}
-                    onChange={(e) =>
-                      setRows((prev) =>
-                        prev.map((r, j) => (j === i ? { ...r, remark: e.target.value } : r))
-                      )
-                    }
-                    className={inputCls}
-                  />
-                </td>
-                <td className="px-4 py-2 text-right text-gray-900">
-                  {lineAmount(row).toFixed(2)}
-                </td>
-                <td className="px-4 py-2 text-right">
-                  <button
-                    type="button"
-                    onClick={() => setRows((prev) => (prev.length > 1 ? prev.filter((_, j) => j !== i) : prev))}
-                    className="text-xs text-red-500 hover:underline"
-                  >
-                    删除
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <div className="border-t border-gray-100 px-4 py-3">
-          <button
-            type="button"
-            onClick={() => setRows((prev) => [...prev, emptyRow()])}
-            className="text-sm text-blue-600 hover:underline"
-          >
-            + 添加商品行
-          </button>
+      {/* 商品清单：每个商品一张卡片，字段按 商品 / 数量单价 / 行备注 分组 */}
+      <div className="space-y-3">
+        {rows.map((row, i) => (
+          <div key={i} className="rounded-xl border border-gray-200 bg-white p-4">
+            {/* ① 商品 */}
+            <div className="flex items-start gap-3">
+              <div className="min-w-0 flex-1">
+                <label className="mb-1 block text-xs font-medium text-gray-500">
+                  商品 <span className="text-red-500">*</span>
+                </label>
+                <SearchSelect
+                  key={`po-prod-${i}-${row.productId}`}
+                  name={`item_${i}_productId`}
+                  options={products.map((p) => ({ value: String(p.id), label: p.label }))}
+                  defaultValue={row.productId}
+                  noneLabel="请选择商品"
+                  placeholder="商品（可搜索名称 / 编码）"
+                  onChange={(v) => onProductChange(i, v)}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => setRows((prev) => (prev.length > 1 ? prev.filter((_, j) => j !== i) : prev))}
+                className="mt-6 shrink-0 rounded-md border border-red-200 px-2.5 py-1 text-xs text-red-600 hover:bg-red-50"
+              >
+                删除本行
+              </button>
+            </div>
+
+            {/* ② 数量 / 单位 / 进价 / 金额 */}
+            <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-500">
+                  数量 <span className="text-red-500">*</span>
+                </label>
+                <input
+                  name={`item_${i}_quantity`}
+                  type="number"
+                  min="0.001"
+                  step="0.001"
+                  inputMode="decimal"
+                  required
+                  value={row.quantity}
+                  onChange={(e) =>
+                    setRows((prev) => prev.map((r, j) => (j === i ? { ...r, quantity: e.target.value } : r)))
+                  }
+                  className={inputCls}
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-500">单位</label>
+                <div className="px-2 py-1.5 text-sm text-gray-700">{row.unitName || "—"}</div>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-500">
+                  进价 <span className="text-red-500">*</span>
+                </label>
+                <input
+                  name={`item_${i}_unitPrice`}
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  required
+                  value={row.unitPrice}
+                  onChange={(e) =>
+                    setRows((prev) => prev.map((r, j) => (j === i ? { ...r, unitPrice: e.target.value } : r)))
+                  }
+                  className={inputCls}
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-500">行金额</label>
+                <div className="px-2 py-1.5 text-lg font-semibold tabular-nums text-gray-900">
+                  ¥{lineAmount(row).toFixed(2)}
+                </div>
+              </div>
+            </div>
+
+            {/* ③ 行备注 */}
+            <div className="mt-3">
+              <label className="mb-1 block text-xs font-medium text-gray-500">行备注</label>
+              <input
+                name={`item_${i}_remark`}
+                type="text"
+                maxLength={200}
+                placeholder="选填，如包装、交货要求"
+                value={row.remark}
+                onChange={(e) =>
+                  setRows((prev) => prev.map((r, j) => (j === i ? { ...r, remark: e.target.value } : r)))
+                }
+                className={inputCls}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* 清单操作与合计 */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3">
+        <button
+          type="button"
+          onClick={() => setRows((prev) => [...prev, emptyRow()])}
+          className="rounded-md border border-blue-300 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50"
+        >
+          + 添加商品行
+        </button>
+        <div className="text-sm text-gray-600">
+          合计：
+          <span className="text-lg font-semibold tabular-nums text-gray-900">¥{total.toFixed(2)}</span>
         </div>
       </div>
 
