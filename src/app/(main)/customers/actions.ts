@@ -97,7 +97,6 @@ export async function saveCustomerAction(_prev: FormState, formData: FormData): 
     });
   }
   revalidatePath("/customers");
-  revalidatePath("/customer-groups");
   redirect(id ? `/customers` : "/customers");
 }
 
@@ -215,7 +214,6 @@ export async function createQuickCustomerGroupAction(data: { name: string }): Pr
     entityId: group.id,
     after: { name: group.name },
   });
-  revalidatePath("/customer-groups");
   return { id: group.id, name: group.name };
 }
 
@@ -234,7 +232,6 @@ export async function createQuickCustomerTagAction(data: { name: string }): Prom
     entityId: tag.id,
     after: { name: tag.name },
   });
-  revalidatePath("/customer-tags");
   return { id: tag.id, name: tag.name };
 }
 
@@ -259,7 +256,6 @@ export async function deleteCustomerGroupAction(_prev: FormState, formData: Form
     entityId: id,
     before: { name: group.name },
   });
-  revalidatePath("/customer-groups");
   return { ok: "已删除" };
 }
 
@@ -284,7 +280,6 @@ export async function deleteCustomerTagAction(_prev: FormState, formData: FormDa
     entityId: id,
     before: { name: tag.name },
   });
-  revalidatePath("/customer-tags");
   return { ok: "已删除" };
 }
 
@@ -320,7 +315,6 @@ export async function saveCustomerGroupAction(_prev: FormState, formData: FormDa
       after: { name: group.name },
     });
   }
-  revalidatePath("/customer-groups");
   return { ok: id ? "已更新" : "组织创建成功" };
 }
 
@@ -341,7 +335,6 @@ export async function toggleCustomerGroupStatusAction(_prev: FormState, formData
     before: { name: group.name, status: group.status },
     after: { name: group.name, status: next },
   });
-  revalidatePath("/customer-groups");
   return { ok: next === 1 ? "已启用" : "已停用" };
 }
 
@@ -377,7 +370,6 @@ export async function saveCustomerTagAction(_prev: FormState, formData: FormData
       after: { name: tag.name },
     });
   }
-  revalidatePath("/customer-tags");
   return { ok: id ? "已更新" : "标签创建成功" };
 }
 
@@ -398,7 +390,6 @@ export async function toggleCustomerTagStatusAction(_prev: FormState, formData: 
     before: { name: tag.name, status: tag.status },
     after: { name: tag.name, status: next },
   });
-  revalidatePath("/customer-tags");
   return { ok: next === 1 ? "已启用" : "已停用" };
 }
 
