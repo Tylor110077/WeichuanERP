@@ -108,7 +108,10 @@ export default async function PurchaseOrderDetailPage({
               退货
             </Link>
           )}
-          <Link href="/purchase-orders" className="ml-1 text-sm text-blue-600 hover:underline">
+          <Link
+            href="/purchase-orders"
+            className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+          >
             ← 返回列表
           </Link>
         </div>

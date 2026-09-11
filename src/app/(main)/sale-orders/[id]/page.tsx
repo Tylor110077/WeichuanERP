@@ -104,7 +104,10 @@ export default async function SaleOrderDetailPage({
             </Link>
           )}
           {canVoid && <DetailActions orderId={order.id} status={order.status} />}
-          <Link href="/sale-orders" className="ml-1 text-sm text-blue-600 hover:underline">
+          <Link
+            href="/sale-orders"
+            className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+          >
             ← 返回列表
           </Link>
         </div>

@@ -19,7 +19,7 @@ export function DetailActions({ orderId, status }: { orderId: number; status: st
           <button
             type="button"
             onClick={() => setShowVoidInput((v) => !v)}
-            className="rounded-md border border-red-300 px-4 py-1.5 text-sm text-red-600 hover:bg-red-50"
+            className="rounded-md border border-red-300 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50"
           >
             作废
           </button>
@@ -39,7 +39,7 @@ export function DetailActions({ orderId, status }: { orderId: number; status: st
           <button
             type="submit"
             disabled={voidPending}
-            className="rounded-md bg-red-600 px-4 py-1.5 text-sm text-white hover:bg-red-700 disabled:opacity-50"
+            className="rounded-md bg-red-600 px-3 py-1.5 text-sm text-white hover:bg-red-700 disabled:opacity-50"
           >
             {voidPending ? "处理中…" : "确认作废"}
           </button>
