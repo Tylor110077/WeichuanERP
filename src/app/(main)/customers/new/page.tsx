@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { NoPermission } from "@/components/empty-state";
 import Link from "next/link";
+import { btnSecondary } from "@/lib/ui";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { EntityForm } from "@/components/entity-form";
@@ -24,7 +25,12 @@ export default async function NewCustomerPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-lg font-semibold text-gray-900">新建客户</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-lg font-semibold text-gray-900">新建客户</h1>
+        <Link href="/customers" className={btnSecondary}>
+          ← 返回客户列表
+        </Link>
+      </div>
       <EntityForm
         fields={[
           { name: "name", label: "客户名称 *", required: true, maxLength: 100 },
@@ -44,9 +50,6 @@ export default async function NewCustomerPage() {
         saveAction={saveCustomerAction}
         submitLabel="创建客户"
       />
-      <Link href="/customers" className="text-sm text-gray-500 hover:underline">
-        ← 返回客户列表
-      </Link>
     </div>
   );
 }

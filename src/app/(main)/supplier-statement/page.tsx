@@ -104,7 +104,7 @@ export default async function SupplierStatementPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-lg font-semibold text-gray-900">厂家对账</h1>
       </div>
 

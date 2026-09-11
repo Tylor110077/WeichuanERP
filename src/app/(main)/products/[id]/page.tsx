@@ -1,6 +1,7 @@
 import { redirect, notFound } from "next/navigation";
 import { NoPermission } from "@/components/empty-state";
 import Link from "next/link";
+import { btnSecondary } from "@/lib/ui";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { EntityForm } from "@/components/entity-form";
@@ -37,9 +38,14 @@ export default async function EditProductPage({
 
   return (
     <div className="space-y-6">
-      <h1 className="text-lg font-semibold text-gray-900">
-        编辑商品（{product.code}）
-      </h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-lg font-semibold text-gray-900">
+          编辑商品（{product.code}）
+        </h1>
+        <Link href="/products" className={btnSecondary}>
+          ← 返回商品列表
+        </Link>
+      </div>
       <EntityForm
         fields={[
           { name: "name", label: "商品名称（完整名称，含规格）*", required: true, maxLength: 100 },
@@ -80,9 +86,6 @@ export default async function EditProductPage({
         manufacturerSuppliers={suppliers.map((x) => ({ id: x.id, name: x.name }))}
         onQuickCreateSupplier={createQuickSupplierAction}
       />
-      <Link href="/products" className="text-sm text-gray-500 hover:underline">
-        ← 返回商品列表
-      </Link>
     </div>
   );
 }

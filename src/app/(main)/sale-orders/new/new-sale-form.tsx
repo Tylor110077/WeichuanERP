@@ -726,7 +726,7 @@ export function NewSaleForm({
                   type="button"
                   onClick={onCreateCustomer}
                   disabled={createPending}
-                  className="rounded-md bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                  className={btnSmallSolid}
                 >
                   {createPending ? "创建中…" : "创建并选用"}
                 </button>
@@ -926,7 +926,7 @@ export function NewSaleForm({
                   type="button"
                   onClick={onCreateProduct}
                   disabled={productPending}
-                  className="rounded-md bg-blue-600 px-4 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                  className={btnSmallSolid}
                 >
                   {productPending ? "创建中…" : "创建商品并加行"}
                 </button>

@@ -93,7 +93,7 @@ export default async function InventoryPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-lg font-semibold text-gray-900">库存查询</h1>
         {warningCount > 0 && (
           <span className="rounded-full bg-amber-50 px-3 py-1 text-xs text-amber-700">

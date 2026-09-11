@@ -24,7 +24,7 @@ export default async function PurchaseReturnsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-lg font-semibold text-gray-900">进货退货单</h1>
         <span className="text-xs text-gray-500">从进货单详情页发起退货</span>
       </div>

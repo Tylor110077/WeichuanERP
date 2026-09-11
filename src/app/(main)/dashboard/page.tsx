@@ -126,7 +126,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-lg font-semibold text-gray-900">
           工作台
           <span className="ml-3 text-sm font-normal text-gray-500">你好，{user?.displayName}</span>

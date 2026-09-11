@@ -1,4 +1,5 @@
 "use client";
+import { btnPrimary } from "@/lib/ui";
 
 import { useActionState } from "react";
 import { loginAction, type LoginState } from "./actions";
@@ -49,7 +50,7 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={pending}
-        className="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+        className={`w-full ${btnPrimary}`}
       >
         {pending ? "登录中…" : "登录"}
       </button>

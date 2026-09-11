@@ -1,6 +1,7 @@
 import { redirect, notFound } from "next/navigation";
 import { NoPermission } from "@/components/empty-state";
 import Link from "next/link";
+import { btnSecondary } from "@/lib/ui";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { EntityForm } from "@/components/entity-form";
@@ -30,7 +31,12 @@ export default async function EditSupplierPage({
 
   return (
     <div className="space-y-6">
-      <h1 className="text-lg font-semibold text-gray-900">编辑厂家</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-lg font-semibold text-gray-900">编辑厂家</h1>
+        <Link href="/suppliers" className={btnSecondary}>
+          ← 返回厂家列表
+        </Link>
+      </div>
       <EntityForm
         fields={[
           { name: "name", label: "厂家名称 *", required: true, maxLength: 100 },
@@ -50,9 +56,6 @@ export default async function EditSupplierPage({
         saveAction={saveSupplierAction}
         submitLabel="保存修改"
       />
-      <Link href="/suppliers" className="text-sm text-gray-500 hover:underline">
-        ← 返回厂家列表
-      </Link>
     </div>
   );
 }

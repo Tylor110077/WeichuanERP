@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import { btnSecondary } from "@/lib/ui";
+import { btnPrimary, btnSecondary } from "@/lib/ui";
 import { rmbUpper } from "@/lib/rmb";
 
 export interface PrintOrderData {
@@ -89,7 +89,7 @@ export function PrintEditor({ data }: { data: PrintOrderData }) {
           <button
             type="button"
             onClick={() => window.print()}
-            className="rounded-md bg-blue-600 px-5 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700"
+            className={`${btnPrimary} shadow-sm`}
           >
             打印
           </button>

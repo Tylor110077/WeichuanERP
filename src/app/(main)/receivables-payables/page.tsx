@@ -102,7 +102,7 @@ export default async function ReceivablesPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-lg font-semibold text-gray-900">应收应付</h1>
         <div className="flex rounded-lg border border-gray-200 bg-gray-50 p-0.5 text-sm">
           <a

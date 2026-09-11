@@ -1,4 +1,5 @@
 "use client";
+import { btnPrimary } from "@/lib/ui";
 
 import { useActionState, useEffect } from "react";
 import { createUserAction, type FormState } from "./actions";
@@ -84,7 +85,7 @@ export function CreateUserForm() {
       <button
         type="submit"
         disabled={pending}
-        className="mt-3 rounded-md bg-blue-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+        className={`mt-3 ${btnPrimary}`}
       >
         {pending ? "创建中…" : "创建用户"}
       </button>
