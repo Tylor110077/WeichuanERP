@@ -163,7 +163,7 @@ export default async function SaleOrderDetailPage({
           商品明细
           <span className="ml-2 text-xs font-normal text-gray-400">{order.items.length} 行</span>
         </div>
-        <table className="min-w-full divide-y divide-gray-200 text-sm">
+        <table className="min-w-full divide-y divide-gray-200 text-sm [&_td]:align-top [&_th]:whitespace-nowrap">
           <thead className="bg-gray-50 text-left text-xs text-gray-500">
             <tr>
               <th className="px-4 py-3 font-medium">编码</th>

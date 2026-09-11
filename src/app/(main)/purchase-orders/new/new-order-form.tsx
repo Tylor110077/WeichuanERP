@@ -112,7 +112,7 @@ export function NewOrderForm({
         </summary>
         <div className="space-y-4 border-t border-gray-100 p-5">
       <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
-        <table className="min-w-full divide-y divide-gray-200 text-sm">
+        <table className="min-w-full divide-y divide-gray-200 text-sm [&_td]:align-top [&_th]:whitespace-nowrap">
           <thead className="bg-gray-50 text-left text-xs text-gray-500">
             <tr>
               <th className="px-4 py-3 font-medium">商品 *</th>

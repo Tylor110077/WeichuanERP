@@ -927,13 +927,13 @@ export function NewSaleForm({
         </div>
       )}
       <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
-        <table className="min-w-full divide-y divide-gray-200 text-sm">
+        <table className="min-w-full divide-y divide-gray-200 text-sm [&_td]:align-top [&_th]:whitespace-nowrap">
           <thead className="bg-gray-50 text-left text-xs text-gray-500">
             <tr>
               <th className="min-w-64 px-4 py-3 font-medium">商品名称 *</th>
               <th className="w-32 px-4 py-3 font-medium">售价 *</th>
               <th className="w-28 px-4 py-3 font-medium">数量 *</th>
-              <th className="w-16 px-4 py-3 font-medium">单位</th>
+              <th className="w-20 px-4 py-3 font-medium">单位</th>
               <th className="w-20 px-4 py-3 font-medium">库存</th>
               <th className="w-28 px-4 py-3 font-medium" title="本次使用现有库存的数量；库存部分成本按原移动加权成本，不可改价">
                 用库存
