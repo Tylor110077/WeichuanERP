@@ -8,6 +8,7 @@ import { buildPriceAnalysis } from "@/lib/price-analysis";
 import { PriceChart } from "./price-chart";
 import { ProductPicker } from "./product-picker";
 import Link from "next/link";
+import { RelatedLinks } from "@/components/related-links";
 
 export const metadata = { title: "价格分析 - 玮川进销存" };
 
@@ -51,6 +52,12 @@ export default async function PriceAnalysisPage({
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-lg font-semibold text-gray-900">价格分析</h1>
+        <RelatedLinks
+          links={[
+            { href: "/sales-analysis", label: "销售分析（看量）" },
+            { href: "/reports", label: "报表中心（可导出）" },
+          ]}
+        />
         <div className="flex items-center gap-3">
           {productId ? (
             <>

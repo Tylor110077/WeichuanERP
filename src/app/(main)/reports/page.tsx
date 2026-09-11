@@ -6,6 +6,7 @@ import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { buildReport, REPORT_TABS, type ReportTabKey } from "@/lib/reports";
 import { DateShortcuts } from "@/components/date-shortcuts";
+import { RelatedLinks } from "@/components/related-links";
 
 export const metadata = { title: "报表中心 - 玮川进销存" };
 
@@ -35,7 +36,16 @@ export default async function ReportsPage({
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-lg font-semibold text-gray-900">报表中心</h1>
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-lg font-semibold text-gray-900">报表中心</h1>
+          <RelatedLinks
+            links={[
+              { href: "/sales-analysis", label: "销售分析" },
+              { href: "/receivables-payables", label: "应收应付" },
+              { href: "/inventory", label: "库存查询" },
+            ]}
+          />
+        </div>
         <Link
           href={`/reports/export?${exportParams.toString()}`}
           className={btnSuccess}

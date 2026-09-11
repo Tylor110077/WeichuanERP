@@ -5,6 +5,7 @@ import { btnSecondary } from "@/lib/ui";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { DateShortcuts } from "@/components/date-shortcuts";
+import { RelatedLinks } from "@/components/related-links";
 
 export const metadata = { title: "销售分析 - 玮川进销存" };
 
@@ -82,7 +83,16 @@ export default async function SalesAnalysisPage({
 
   return (
     <div className="space-y-6">
-      <h1 className="text-lg font-semibold text-gray-900">销售分析</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-lg font-semibold text-gray-900">销售分析</h1>
+        <RelatedLinks
+          links={[
+            { href: "/price-analysis", label: "价格分析（看价）" },
+            { href: "/customer-profile", label: "客户画像" },
+            { href: "/reports", label: "报表中心（可导出）" },
+          ]}
+        />
+      </div>
 
       <DateShortcuts basePath="/sales-analysis" />
       <FilterForm className="flex flex-wrap items-end gap-3 rounded-xl border border-gray-200 bg-white p-4">

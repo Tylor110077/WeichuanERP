@@ -5,6 +5,7 @@ import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { buildCustomerProfile } from "@/lib/customer-profile";
 import { DateShortcuts } from "@/components/date-shortcuts";
+import { RelatedLinks } from "@/components/related-links";
 
 export const metadata = { title: "客户画像 - 玮川进销存" };
 
@@ -51,6 +52,12 @@ export default async function CustomerProfilePage({
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-lg font-semibold text-gray-900">客户画像</h1>
+        <RelatedLinks
+          links={[
+            { href: "/sales-analysis", label: "销售分析" },
+            { href: "/receivables-payables?view=receivable", label: "看谁还欠钱" },
+          ]}
+        />
         <form className="flex items-end gap-2">
           <div>
             <label htmlFor="from" className="block text-xs font-medium text-gray-600">开始</label>
