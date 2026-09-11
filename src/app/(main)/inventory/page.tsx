@@ -160,16 +160,33 @@ export default async function InventoryPage({
                 </td>
                 <td className="px-4 py-2.5 text-right text-gray-600 tabular-nums">{minStock.toFixed(3)}</td>
                 <td className="px-4 py-2.5">
-                  <Link
-                    href={`/inventory?${new URLSearchParams({
-                      ...(q ? { q } : {}),
-                      ...(warnOnly ? { warnOnly: "1" } : {}),
-                      batch: String(p.id),
-                    }).toString()}`}
-                    className="text-xs text-blue-600 hover:underline"
-                  >
-                    批次
-                  </Link>
+                  <div className="flex items-center gap-2 whitespace-nowrap">
+                    <Link
+                      href={`/inventory?${new URLSearchParams({
+                        ...(q ? { q } : {}),
+                        ...(warnOnly ? { warnOnly: "1" } : {}),
+                        batch: String(p.id),
+                      }).toString()}`}
+                      className="text-xs text-blue-600 hover:underline"
+                      title="看这个商品的每一笔进货批次与进价"
+                    >
+                      批次
+                    </Link>
+                    <Link
+                      href={`/stock-movements?productId=${p.id}`}
+                      className="text-xs text-blue-600 hover:underline"
+                      title="看这个商品的库存变动记录"
+                    >
+                      流水
+                    </Link>
+                    <Link
+                      href={`/price-analysis?productId=${p.id}`}
+                      className="text-xs text-blue-600 hover:underline"
+                      title="看这个商品的售价与成本随时间的走势"
+                    >
+                      价格
+                    </Link>
+                  </div>
                 </td>
                 <td className="px-4 py-2.5">
                   {warning && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800">预警</span>}
@@ -198,15 +215,29 @@ export default async function InventoryPage({
                 {batchProduct.unit.name} ・ 仅统计未作废进货单
               </span>
             </div>
-            <Link
-              href={`/inventory?${new URLSearchParams({
-                ...(q ? { q } : {}),
-                ...(warnOnly ? { warnOnly: "1" } : {}),
-              }).toString()}`}
-              className="text-xs text-blue-600 hover:underline"
-            >
-              收起
-            </Link>
+            <div className="flex items-center gap-3">
+              <Link
+                href={`/stock-movements?productId=${batchProduct.id}`}
+                className="text-xs text-blue-600 hover:underline"
+              >
+                看库存流水
+              </Link>
+              <Link
+                href={`/price-analysis?productId=${batchProduct.id}`}
+                className="text-xs text-blue-600 hover:underline"
+              >
+                看价格走势
+              </Link>
+              <Link
+                href={`/inventory?${new URLSearchParams({
+                  ...(q ? { q } : {}),
+                  ...(warnOnly ? { warnOnly: "1" } : {}),
+                }).toString()}`}
+                className="text-xs text-blue-600 hover:underline"
+              >
+                收起
+              </Link>
+            </div>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 text-sm [&_td]:align-top [&_th]:whitespace-nowrap">

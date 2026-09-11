@@ -87,7 +87,27 @@ export default async function StockMovementsPage({
 
   return (
     <div className="space-y-6">
-      <h1 className="text-lg font-semibold text-gray-900">库存流水</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-lg font-semibold text-gray-900">
+          库存流水
+          {productId ? <span className="ml-2 text-xs font-normal text-gray-400">已筛选单个商品</span> : null}
+        </h1>
+        <div className="flex items-center gap-3">
+          {productId ? (
+            <>
+              <Link href={`/inventory?batch=${productId}`} className="text-xs text-blue-600 hover:underline">
+                ← 回库存看批次
+              </Link>
+              <Link href={`/price-analysis?productId=${productId}`} className="text-xs text-blue-600 hover:underline">
+                看价格走势
+              </Link>
+            </>
+          ) : null}
+          <Link href="/inventory" className={btnSecondary}>
+            ← 回库存查询
+          </Link>
+        </div>
+      </div>
 
       <DateShortcuts basePath="/stock-movements" extraQuery={{ productId: productId ? String(productId) : "", bizType: bizType ?? "" }} />
 

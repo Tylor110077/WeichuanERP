@@ -7,6 +7,7 @@ import { DateShortcuts } from "@/components/date-shortcuts";
 import { buildPriceAnalysis } from "@/lib/price-analysis";
 import { PriceChart } from "./price-chart";
 import { ProductPicker } from "./product-picker";
+import Link from "next/link";
 
 export const metadata = { title: "价格分析 - 玮川进销存" };
 
@@ -48,7 +49,24 @@ export default async function PriceAnalysisPage({
 
   return (
     <div className="space-y-6">
-      <h1 className="text-lg font-semibold text-gray-900">价格分析</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-lg font-semibold text-gray-900">价格分析</h1>
+        <div className="flex items-center gap-3">
+          {productId ? (
+            <>
+              <Link href={`/inventory?batch=${productId}`} className="text-xs text-blue-600 hover:underline">
+                ← 回库存看批次
+              </Link>
+              <Link href={`/stock-movements?productId=${productId}`} className="text-xs text-blue-600 hover:underline">
+                看库存流水
+              </Link>
+            </>
+          ) : null}
+          <Link href="/inventory" className={btnSecondary}>
+            ← 回库存查询
+          </Link>
+        </div>
+      </div>
 
       {/* 筛选：商品（即选即筛） + 日期（GET 表单） */}
       <div className="space-y-3 rounded-xl border border-gray-200 bg-white p-4">
