@@ -182,7 +182,21 @@ export default async function SaleOrderDetailPage({
               <tr key={item.id}>
                 <td className="px-4 py-2.5 text-gray-600">{item.product.code}</td>
                 <td className="px-4 py-2.5 text-gray-900">{item.product.name}</td>
-                <td className="px-4 py-2.5 text-gray-900">{Number(item.quantity).toFixed(3)}</td>
+                <td className="px-4 py-2.5 text-gray-900">
+                  <div>{Number(item.quantity).toFixed(3)}</div>
+                  {(() => {
+                    const used = Number(item.stockQtyUsed);
+                    const qty = Number(item.quantity);
+                    if (used <= 0) return <div className="text-xs text-blue-600">全部现场进货</div>;
+                    if (used < qty)
+                      return (
+                        <div className="text-xs text-gray-500">
+                          用库存 {used.toFixed(3)} + 现场进 {(qty - used).toFixed(3)}
+                        </div>
+                      );
+                    return null;
+                  })()}
+                </td>
                 <td className="px-4 py-2.5 text-gray-600">{item.unit.name}</td>
                 <td className="px-4 py-2.5 text-gray-600">¥{Number(item.unitPrice).toFixed(2)}</td>
                 <td className="px-4 py-2.5 text-right text-gray-900">¥{Number(item.amount).toFixed(2)}</td>

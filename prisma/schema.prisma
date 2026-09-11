@@ -392,6 +392,9 @@ model SaleOrderItem {
   unitPrice   Decimal   @map("unit_price") @db.Decimal(12, 2)
   amount      Decimal   @db.Decimal(14, 2)
   costAmount  Decimal   @map("cost_amount") @db.Decimal(14, 2) // 开单时成本快照 = 数量 × 当时 avg_cost
+  // 本次销售中用现有库存的数量（其余为现场进货）；库存部分成本按当时移动加权成本，
+  // 现场进货部分成本按开单时填写的进价，成本快照为两者之和。
+  stockQtyUsed Decimal   @default(0) @map("stock_qty_used") @db.Decimal(12, 3)
   remark      String?   @db.VarChar(200) // 行备注（如包装、交货要求）
 
   returnItems SaleReturnItem[]

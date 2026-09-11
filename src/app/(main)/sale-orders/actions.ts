@@ -21,6 +21,14 @@ const itemSchema = z.object({
   // 多补：在自动补足缺口之外额外多进的备货量（不允许负数）；不填＝不多补
   extraQty: z.coerce.number().min(0).max(9_999_999.999).optional().default(0),
   remark: z.string().trim().max(200).optional().default(""), // 行备注
+  // 本次使用的现有库存数量（留空＝尽量用库存；填 0＝全部现场进货）
+  // 注意：空字符串必须先转 undefined，否则 z.coerce.number() 会把它变成 0
+  stockUsed: z
+    .preprocess(
+      (v) => (v === "" || v == null ? undefined : v),
+      z.coerce.number().min(0).max(9_999_999.999)
+    )
+    .optional(),
 });
 
 const createSchema = z.object({
@@ -55,6 +63,7 @@ function parseCreatePayload(formData: FormData) {
       supplierId: formData.get(`item_${i}_supplierId`) || undefined,
       extraQty: formData.get(`item_${i}_extraQty`) || 0,
       remark: formData.get(`item_${i}_remark`) || "",
+      stockUsed: formData.get(`item_${i}_stockUsed`) ?? undefined,
     });
     i++;
   }
@@ -177,9 +186,24 @@ export async function createSaleOrderAction(
           costAmount: number;
           avgCost: number;
           remark: string;
+          stockQtyUsed: number;
         }[] = [];
 
-        // ① 缺货行：生成自动补货单（按供应商聚合并即时入库）
+        // ① 逐行计划：本次用多少现有库存、现场进货多少
+        //    库存部分成本＝入库前移动加权成本（不可改）；现场进货部分成本＝开单时填写的进价（可自定）
+        interface LinePlan {
+          productId: number;
+          qty: number; // 客户需求数量
+          stockUsed: number; // 使用现有库存的数量
+          purchaseQty: number; // 现场进货的数量（客户需求部分）
+          extraQty: number; // 额外多补（备货，不计入该客户）
+          restockTotal: number; // 补货单数量 = 现场进货 + 多补
+          supplyPrice: number;
+          unitId: number;
+          remark: string;
+          stockCost: number;
+          purchaseCost: number;
+        }
         interface AutoItem {
           productId: number;
           quantity: number; // 本次补货总量（含备货）
@@ -188,11 +212,20 @@ export async function createSaleOrderAction(
           unitId: number;
         }
         const autoGroups = new Map<number, AutoItem[]>();
+        const plans: LinePlan[] = [];
         for (const it of items) {
           const product = productMap.get(it.productId)!;
-          const stock = Number(product.stockQty);
-          const shortfall = round3(Math.max(it.quantity - stock, 0));
-          if (shortfall > 0) {
+          const qty = round3(it.quantity);
+          const stock = Math.max(Number(product.stockQty), 0);
+          // 用库存量：留空＝尽量用库存；可改小甚至填 0（全部现场进货），上限为库存与需求量
+          const requested =
+            it.stockUsed == null ? Math.min(stock, qty) : Math.max(Number(it.stockUsed), 0);
+          const stockUsed = round3(Math.min(requested, stock, qty));
+          const purchaseQty = round3(Math.max(qty - stockUsed, 0));
+          const extraQty = round3(Math.max(it.extraQty ?? 0, 0));
+          const restockTotal = round3(purchaseQty + extraQty);
+
+          if (restockTotal > 0) {
             // 供应商：行内指定优先，否则用厂商匹配到的供应商（事务前已兜底建档）
             const supplierId =
               it.supplierId ??
@@ -200,22 +233,31 @@ export async function createSaleOrderAction(
                 ? supplierByMfr.get(product.manufacturer.trim())
                 : undefined);
             if (supplierId == null) {
-              throw new Error(`商品 #${product.id} 缺货且无法确定补货供应商`);
+              throw new Error(`商品 #${product.id} 需现场进货但无法确定供应商`);
             }
-            // 补货量 = 自动补足缺口 + 多补备货；多补为客户需求之外的额外进货，不计入该客户。
-            const extraQty = round3(Math.max(it.extraQty ?? 0, 0));
-            const restockTotal = round3(shortfall + extraQty);
-            const stockExtra = extraQty;
             const g = autoGroups.get(supplierId) ?? [];
             g.push({
               productId: it.productId,
               quantity: restockTotal,
-              stockExtra,
+              stockExtra: extraQty,
               supplyPrice: round2(it.supplyPrice),
               unitId: product.unitId,
             });
             autoGroups.set(supplierId, g);
           }
+          plans.push({
+            productId: it.productId,
+            qty,
+            stockUsed,
+            purchaseQty,
+            extraQty,
+            restockTotal,
+            supplyPrice: round2(it.supplyPrice),
+            unitId: product.unitId,
+            remark: it.remark ?? "",
+            stockCost: 0,
+            purchaseCost: 0,
+          });
         }
         const saleOrder = await tx.saleOrder.create({
           data: {
@@ -228,6 +270,36 @@ export async function createSaleOrderAction(
           },
           select: { id: true },
         });
+
+        // ①-a 先扣「使用现有库存」的部分：成本取入库前的移动加权成本（库存成本不可改）
+        for (const p of plans) {
+          if (p.stockUsed <= 0) continue;
+          const now = await tx.product.findUnique({
+            where: { id: p.productId },
+            select: { stockQty: true, stockAmount: true, avgCost: true },
+          });
+          if (!now) throw new Error(`商品 #${p.productId} 不存在`);
+          const cur = { qty: Number(now.stockQty), amount: Number(now.stockAmount), avgCost: Number(now.avgCost) };
+          if (cur.qty < p.stockUsed) throw new Error(`商品 #${p.productId} 库存不足（${cur.qty} < ${p.stockUsed}）`);
+          p.stockCost = round2(p.stockUsed * cur.avgCost);
+          const next = applyStockChange(cur, -p.stockUsed, cur.avgCost);
+          await tx.product.update({
+            where: { id: p.productId },
+            data: { stockQty: next.qty, stockAmount: next.amount, avgCost: next.avgCost },
+          });
+          await tx.stockMovement.create({
+            data: {
+              productId: p.productId,
+              changeQty: -p.stockUsed,
+              beforeQty: cur.qty,
+              afterQty: next.qty,
+              unitCost: cur.avgCost,
+              bizType: "sale_out",
+              bizOrderNo: saleOrderNo,
+              operatorId: user.id,
+            },
+          });
+        }
 
         for (const [supplierId, autoItems] of autoGroups) {
           const poSeq = await nextSeqOf(tx, "purchaseOrder", ORDER_NO_PREFIXES.PO);
@@ -301,26 +373,28 @@ export async function createSaleOrderAction(
           });
         }
 
-        // ② 扣库存 + 成本快照（此时 avg_cost 已含补货入库）
-        for (const it of items) {
-          const qty = round3(it.quantity);
-          // 补货后库存 = 原库存 + shortfall（>= quantity）；重读一次以确保事务内一致性
+        // ② 再扣「现场进货」的部分：此时均价已含本次进货（由开单时填写的进价决定）
+        for (const p of plans) {
+          if (p.purchaseQty <= 0) continue;
           const now = await tx.product.findUnique({
-            where: { id: it.productId },
+            where: { id: p.productId },
             select: { stockQty: true, stockAmount: true, avgCost: true },
           });
-          if (!now) throw new Error(`商品 #${it.productId} 不存在`);
+          if (!now) throw new Error(`商品 #${p.productId} 不存在`);
           const cur = { qty: Number(now.stockQty), amount: Number(now.stockAmount), avgCost: Number(now.avgCost) };
-          if (cur.qty < qty) throw new Error(`商品 #${it.productId} 库存不足（${cur.qty} < ${qty}）`);
-          const next = applyStockChange(cur, -qty, cur.avgCost);
+          if (cur.qty < p.purchaseQty) throw new Error(`商品 #${p.productId} 库存不足（${cur.qty} < ${p.purchaseQty}）`);
+          // 现场进货部分的成本按「开单时填写的进价」计入客户成本（客户为这批货实际支付的价格）；
+          // 库存扣减仍走移动加权，保证库存账金额一致。
+          p.purchaseCost = round2(p.purchaseQty * p.supplyPrice);
+          const next = applyStockChange(cur, -p.purchaseQty, cur.avgCost);
           await tx.product.update({
-            where: { id: it.productId },
+            where: { id: p.productId },
             data: { stockQty: next.qty, stockAmount: next.amount, avgCost: next.avgCost },
           });
           await tx.stockMovement.create({
             data: {
-              productId: it.productId,
-              changeQty: -qty,
+              productId: p.productId,
+              changeQty: -p.purchaseQty,
               beforeQty: cur.qty,
               afterQty: next.qty,
               unitCost: cur.avgCost,
@@ -329,13 +403,20 @@ export async function createSaleOrderAction(
               operatorId: user.id,
             },
           });
+        }
+
+        // 成本快照 = 库存部分成本（原移动加权）+ 现场进货部分成本（现场进价），两部分分开计算
+        for (let i = 0; i < plans.length; i++) {
+          const p = plans[i];
+          const costAmount = round2(p.stockCost + p.purchaseCost);
           rowsItem.push({
-            productId: it.productId,
-            quantity: qty,
-            unitPrice: round2(it.unitPrice),
-            costAmount: round2(qty * cur.avgCost),
-            avgCost: cur.avgCost,
-            remark: it.remark ?? "",
+            productId: p.productId,
+            quantity: p.qty,
+            unitPrice: round2(items[i].unitPrice),
+            costAmount,
+            avgCost: p.qty > 0 ? round2(costAmount / p.qty) : 0,
+            remark: p.remark,
+            stockQtyUsed: p.stockUsed,
           });
         }
 
@@ -351,6 +432,7 @@ export async function createSaleOrderAction(
               unitPrice: r.unitPrice,
               amount: round2(r.quantity * r.unitPrice),
               costAmount: r.costAmount,
+              stockQtyUsed: r.stockQtyUsed,
               remark: r.remark || null,
             },
           });
