@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { MasterDataManager } from "@/components/master-data-manager";
 import { AutoFilterForm } from "@/components/auto-filter-form";
+import { EmptyState } from "@/components/empty-state";
 import { buildCustomerProfile } from "@/lib/customer-profile";
 import { CustomerManager } from "./customer-manager";
 import {
@@ -188,7 +189,13 @@ export default async function CustomersPage({
               <tbody className="divide-y divide-gray-100">
                 {profileRows.length === 0 && (
                   <tr>
-                    <td colSpan={9} className="px-4 py-8 text-center text-gray-400">暂无成交客户（开售卖单后自动统计）</td>
+                    <td colSpan={9}>
+                      <EmptyState
+                        title="暂无成交客户"
+                        hint="开出第一张售卖单后自动统计"
+                        action={{ href: "/sale-orders/new", label: "+ 去开售卖单" }}
+                      />
+                    </td>
                   </tr>
                 )}
                 {profileRows.map((r) => (

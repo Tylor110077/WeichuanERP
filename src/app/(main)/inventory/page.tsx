@@ -225,8 +225,12 @@ export default async function InventoryPage({
                 {batches.length === 0 && (
                   <tr>
                     <td colSpan={7}>
-                  <EmptyState title="还没有商品" hint="先到「商品与厂家」建立商品档案" action={{ href: "/products", label: "去建立商品" }} />
-                </td>
+                      <EmptyState
+                        title="该商品还没有进货批次"
+                        hint="进货入库后，这里会按批次列出每一笔进价"
+                        action={{ href: "/purchase-orders/new", label: "+ 去开进货单" }}
+                      />
+                    </td>
                   </tr>
                 )}
                 {batches.map((b) => (

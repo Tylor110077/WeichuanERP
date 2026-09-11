@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { FilterForm } from "@/components/filter-form";
-import { NoPermission } from "@/components/empty-state";
+import { EmptyState, NoPermission } from "@/components/empty-state";
 import { btnSecondary } from "@/lib/ui";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
@@ -93,8 +93,8 @@ export default async function ReportsPage({
           <tbody className="divide-y divide-gray-100">
             {result.rows.length === 0 && (
               <tr>
-                <td colSpan={result.columns.length} className="px-4 py-8 text-center text-gray-400">
-                  期间内无数据
+                <td colSpan={result.columns.length}>
+                  <EmptyState title="该期间无数据" hint="换个报表类型或时间范围试试" />
                 </td>
               </tr>
             )}

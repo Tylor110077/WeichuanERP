@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { FilterForm } from "@/components/filter-form";
-import { NoPermission } from "@/components/empty-state";
+import { EmptyState, NoPermission } from "@/components/empty-state";
 import { btnSecondary } from "@/lib/ui";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
@@ -171,8 +171,11 @@ export default async function ReceivablesPage({
           <tbody className="divide-y divide-gray-100">
             {unpaidOrders.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-gray-400">
-                  当前筛选条件下单据已全部结清
+                <td colSpan={8}>
+                  <EmptyState
+                    title="当前筛选条件下单据已全部结清"
+                    hint="调整上方筛选条件可查看其他单据"
+                  />
                 </td>
               </tr>
             )}

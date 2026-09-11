@@ -103,7 +103,7 @@ export default async function AuditLogsPage({
             {logs.length === 0 && (
               <tr>
                 <td colSpan={6}>
-                  <EmptyState title="该条件下没有记录" />
+                  <EmptyState title="该条件下没有操作记录" hint="换个操作人或时间范围试试" />
                 </td>
               </tr>
             )}

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { FilterForm } from "@/components/filter-form";
-import { NoPermission } from "@/components/empty-state";
+import { EmptyState, NoPermission } from "@/components/empty-state";
 import { btnSecondary } from "@/lib/ui";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
@@ -85,8 +85,8 @@ export default async function LoginLogsPage({
           <tbody className="divide-y divide-gray-100">
             {logs.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-gray-400">
-                  该期间无登录记录
+                <td colSpan={5}>
+                  <EmptyState title="该期间无登录记录" hint="换个时间范围试试" />
                 </td>
               </tr>
             )}

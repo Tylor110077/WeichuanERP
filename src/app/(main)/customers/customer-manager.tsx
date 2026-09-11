@@ -138,8 +138,12 @@ export function CustomerManager({
           {customers.length === 0 && (
             <tr>
               <td colSpan={7}>
-                  <EmptyState title="还没有客户" hint="点右上角「新建客户」添加" action={{ href: "/customers/new", label: "+ 新建客户" }} />
-                </td>
+                <EmptyState
+                  title="还没有客户"
+                  hint="点右上角「新建客户」添加"
+                  action={{ href: "/customers/new", label: "+ 新建客户" }}
+                />
+              </td>
             </tr>
           )}
           {customers.map((c) => (

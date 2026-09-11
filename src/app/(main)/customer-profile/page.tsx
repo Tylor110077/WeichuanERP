@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { NoPermission } from "@/components/empty-state";
+import { EmptyState, NoPermission } from "@/components/empty-state";
 import { btnSecondary } from "@/lib/ui";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
@@ -167,8 +167,12 @@ export default async function CustomerProfilePage({
           <tbody className="divide-y divide-gray-100">
             {profileRows.length === 0 && (
               <tr>
-                <td colSpan={9} className="px-4 py-8 text-center text-gray-400">
-                  该期间无销售数据
+                <td colSpan={9}>
+                  <EmptyState
+                    title="该期间无销售数据"
+                    hint="换个时间范围，或先开一张售卖单"
+                    action={{ href: "/sale-orders/new", label: "+ 去开售卖单" }}
+                  />
                 </td>
               </tr>
             )}
