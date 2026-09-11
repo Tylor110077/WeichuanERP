@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { btnDanger, btnDangerSolid, btnSecondary } from "@/lib/ui";
 import { voidSaleOrderAction, type FormState } from "../actions";
+import { FormStateAlert } from "@/components/form-alert";
 
 export function DetailActions({ orderId, status }: { orderId: number; status: string }) {
   const [showVoidInput, setShowVoidInput] = useState(false);
@@ -53,8 +54,7 @@ export function DetailActions({ orderId, status }: { orderId: number; status: st
           </button>
         </form>
       )}
-      {voidState?.error && <p className="text-sm text-red-600">{voidState.error}</p>}
-      {voidState?.ok && <p className="text-sm text-green-600">{voidState.ok}</p>}
+      <FormStateAlert state={voidState} />
     </div>
   );
 }

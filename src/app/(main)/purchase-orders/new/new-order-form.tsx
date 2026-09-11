@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { btnPrimary, btnSmallPrimary } from "@/lib/ui";
 import { SearchSelect } from "@/components/search-select";
 import { createPurchaseOrderAction, type FormState } from "../actions";
+import { FormStateAlert } from "@/components/form-alert";
 
 interface SupplierOption {
   id: number;
@@ -250,8 +251,7 @@ export function NewOrderForm({
         {!supplierId && (
           <span className="text-sm text-amber-600">请先在上方选择厂家，再提交单据</span>
         )}
-        {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
-        {state?.ok && <p className="text-sm text-green-600">{state.ok}</p>}
+        <FormStateAlert state={state} />
       </div>
     </form>
   );

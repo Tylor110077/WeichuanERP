@@ -15,6 +15,7 @@ import { createQuickProductAction, type QuickProductResult } from "../../product
 import { createQuickCategoryAction, type QuickCategoryResult } from "../../categories/actions";
 import { createQuickUnitAction, type QuickUnitResult } from "../../units/actions";
 import { createQuickSupplierAction } from "../../suppliers/actions";
+import { FormStateAlert } from "@/components/form-alert";
 
 interface CustomerOption {
   id: number;
@@ -730,8 +731,7 @@ export function NewSaleForm({
                 >
                   {createPending ? "创建中…" : "创建并选用"}
                 </button>
-                {createCustomerMsg?.ok && <span className="text-xs text-green-600">{createCustomerMsg.ok}</span>}
-                {createCustomerMsg?.error && <span className="text-xs text-red-600">{createCustomerMsg.error}</span>}
+                <FormStateAlert state={createCustomerMsg} compact className="flex-1" />
               </div>
             </div>
           )}
@@ -931,11 +931,7 @@ export function NewSaleForm({
                   {productPending ? "创建中…" : "创建商品并加行"}
                 </button>
               </div>
-              {(productMsg?.ok || productMsg?.error) && (
-                <p className={`col-span-full text-xs ${productMsg.ok ? "text-green-600" : "text-red-600"}`}>
-                  {productMsg.ok ?? productMsg.error}
-                </p>
-              )}
+              <FormStateAlert state={productMsg} compact className="col-span-full" />
             </div>
 
         </div>
@@ -1262,8 +1258,7 @@ export function NewSaleForm({
         {!customerId && (
           <span className="text-sm text-amber-600">请先在上方选择客户，再提交单据</span>
         )}
-        {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
-        {state?.ok && <p className="text-sm text-green-600">{state.ok}</p>}
+        <FormStateAlert state={state} />
       </div>
     </form>
   );

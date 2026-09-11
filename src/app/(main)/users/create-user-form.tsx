@@ -3,6 +3,7 @@ import { btnPrimary } from "@/lib/ui";
 
 import { useActionState, useEffect } from "react";
 import { createUserAction, type FormState } from "./actions";
+import { FormStateAlert } from "@/components/form-alert";
 
 export function CreateUserForm() {
   const [state, formAction, pending] = useActionState<FormState, FormData>(
@@ -79,8 +80,7 @@ export function CreateUserForm() {
         </div>
       </div>
       <div className="mt-3 space-y-1">
-        {state?.error && <p className="text-xs text-red-600">{state.error}</p>}
-        {state?.ok && <p className="text-xs text-green-600">{state.ok}</p>}
+        <FormStateAlert state={state} compact />
       </div>
       <button
         type="submit"

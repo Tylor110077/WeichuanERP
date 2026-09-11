@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { btnSmallDanger } from "@/lib/ui";
 import { voidPaymentAction, type FormState } from "./actions";
+import { FormStateAlert } from "@/components/form-alert";
 
 export function VoidPaymentButton({ id, status }: { id: number; status: string }) {
   const [showInput, setShowInput] = useState(false);
@@ -53,8 +54,7 @@ export function VoidPaymentButton({ id, status }: { id: number; status: string }
           </div>
         </form>
       )}
-      {state?.error && <p className="text-xs text-red-600">{state.error}</p>}
-      {state?.ok && <p className="text-xs text-green-600">{state.ok}</p>}
+      <FormStateAlert state={state} compact className="mt-1" />
     </div>
   );
 }

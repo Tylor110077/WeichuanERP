@@ -7,6 +7,7 @@ import {
   voidPurchaseOrderAction,
   type FormState,
 } from "../actions";
+import { FormAlert } from "@/components/form-alert";
 
 export function DetailActions({
   orderId,
@@ -90,15 +91,9 @@ export function DetailActions({
       )}
 
       {receiveMsg && (
-        <p className={`text-sm ${receiveState?.ok ? "text-green-600" : "text-red-600"}`}>
-          {receiveMsg}
-        </p>
+        <FormAlert kind={receiveState?.ok ? "ok" : "error"} text={receiveMsg} />
       )}
-      {voidMsg && (
-        <p className={`text-sm ${voidState?.ok ? "text-green-600" : "text-red-600"}`}>
-          {voidMsg}
-        </p>
-      )}
+      {voidMsg && <FormAlert kind={voidState?.ok ? "ok" : "error"} text={voidMsg} />}
     </div>
   );
 }

@@ -14,6 +14,7 @@ import {
   type FormState,
   type QuickResult,
 } from "./actions";
+import { FormStateAlert } from "@/components/form-alert";
 
 export interface CustomerRowData {
   id: number;
@@ -198,10 +199,7 @@ export function CustomerManager({
                       </button>
                     </form>
                   </div>
-                  {toggleState?.error && <p className="text-xs text-red-600">{toggleState.error}</p>}
-                  {deleteState?.error && <p className="text-xs text-red-600">{deleteState.error}</p>}
-                  {deleteState?.ok && <p className="text-xs text-green-600">{deleteState.ok}</p>}
-                  {toggleState?.ok && <p className="text-xs text-green-600">{toggleState.ok}</p>}
+                  <FormStateAlert state={toggleState ?? deleteState} compact className="mt-1" />
                 </td>
               )}
             </tr>
@@ -353,7 +351,7 @@ export function CustomerManager({
               </>
             )}
           </div>
-          {quickMsg?.error && <p className="mt-1 text-xs text-red-600">{quickMsg.error}</p>}
+          <FormStateAlert state={quickMsg} compact className="mt-1" />
         </div>
 
         <div className="mt-3 flex items-center gap-3">
@@ -370,8 +368,7 @@ export function CustomerManager({
               取消
             </button>
           )}
-          {saveState?.error && <p className="text-sm text-red-600">{saveState.error}</p>}
-          {saveState?.ok && <p className="text-sm text-green-600">{saveState.ok}</p>}
+          <FormStateAlert state={saveState} />
         </div>
       </form>
 

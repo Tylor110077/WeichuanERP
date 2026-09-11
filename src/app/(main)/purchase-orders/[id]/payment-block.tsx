@@ -7,6 +7,7 @@ import {
   voidPaymentAction,
   type FormState,
 } from "../../receivables-payables/actions";
+import { FormAlert } from "@/components/form-alert";
 
 const METHOD_LABELS: Record<string, string> = {
   cash: "现金",
@@ -176,9 +177,11 @@ export function PaymentBlock({
       </div>
 
       {message && (
-        <p className={`mt-3 text-sm ${payState?.ok || voidState?.ok ? "text-green-600" : "text-red-600"}`}>
-          {message}
-        </p>
+        <FormAlert
+          kind={payState?.ok || voidState?.ok ? "ok" : "error"}
+          text={message}
+          className="mt-3"
+        />
       )}
     </div>
   );

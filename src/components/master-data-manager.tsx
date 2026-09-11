@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { btnPrimary, btnSecondary } from "@/lib/ui";
 import { useActionState, useState, type ReactNode } from "react";
+import { FormStateAlert } from "@/components/form-alert";
 
 export interface FieldDef {
   name: string;
@@ -226,8 +227,7 @@ export function MasterDataManager({
               取消
             </button>
           )}
-          {saveState?.error && <p className="text-xs text-red-600">{saveState.error}</p>}
-          {saveState?.ok && <p className="text-xs text-green-600">{saveState.ok}</p>}
+          <FormStateAlert state={saveState} compact />
         </div>
       </form>
 

@@ -4,6 +4,7 @@ import { useState, useTransition, useActionState } from "react";
 import type { FieldDef, FormState } from "./master-data-manager";
 import { SearchSelect } from "./search-select";
 import { btnPrimary } from "@/lib/ui";
+import { FormStateAlert } from "@/components/form-alert";
 
 const inputCls = "mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm text-gray-900";
 
@@ -150,7 +151,7 @@ export function EntityForm({
         >
           {pending ? "提交中…" : submitLabel}
         </button>
-        {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
+        <FormStateAlert state={state} />
       </div>
     </form>
   );
