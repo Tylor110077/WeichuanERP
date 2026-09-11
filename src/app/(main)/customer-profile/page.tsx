@@ -83,7 +83,7 @@ export default async function CustomerProfilePage({
             {selected.tagNames.map((t) => (
               <span key={t} className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">{t}</span>
             ))}
-            <Link href="/customer-profile" className="ml-auto text-sm text-blue-600 hover:underline">
+            <Link href="/customer-profile" className="ml-auto text-sm text-gray-500 hover:underline">
               ← 返回全部客户
             </Link>
           </div>

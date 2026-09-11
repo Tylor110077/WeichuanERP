@@ -86,7 +86,7 @@ export default async function NewSaleReturnPage({
         <h1 className="text-lg font-semibold text-gray-900">
           销售退货 ｜ 原单 {order.orderNo}（{order.customer.name}）
         </h1>
-        <Link href={`/sale-orders/${order.id}`} className="text-sm text-blue-600 hover:underline">
+        <Link href={`/sale-orders/${order.id}`} className="text-sm text-gray-500 hover:underline">
           ← 返回原单
         </Link>
       </div>
