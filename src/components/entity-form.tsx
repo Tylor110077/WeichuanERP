@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useActionState } from "react";
 import type { FieldDef, FormState } from "./master-data-manager";
+import { SearchSelect } from "./search-select";
 
 const inputCls = "mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm text-gray-900";
 
@@ -87,6 +88,21 @@ export function EntityForm({
                   </div>
                 </div>
               );
+          }
+          if (f.type === "searchselect" && f.options) {
+            return (
+              <div key={f.name}>
+                <label className="block text-xs font-medium text-gray-600">{f.label}</label>
+                <SearchSelect
+                  name={f.name}
+                  options={f.options}
+                  defaultValue={value}
+                  noneLabel={f.noneLabel}
+                  emptyHint={f.placeholder ? `无匹配项（可先到列表页新建）` : "无匹配项"}
+                  className="mt-1"
+                />
+              </div>
+            );
           }
           if (f.options && f.options.length > 0) {
             return (

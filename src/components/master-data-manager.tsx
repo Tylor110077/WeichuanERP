@@ -10,9 +10,11 @@ export interface FieldDef {
   maxLength?: number;
   step?: string;
   placeholder?: string;
-  /** "select"/"multiselect" 通过 options 提供候选；缺省为文本 */
-  type?: "text" | "number" | "select" | "multiselect" | "manufacturer";
+  /** "select"/"multiselect" 通过 options 提供候选；"searchselect" 为可搜索下拉（选项多时）；缺省为文本 */
+  type?: "text" | "number" | "select" | "multiselect" | "searchselect" | "manufacturer";
   options?: { value: string; label: string }[];
+  /** searchselect：值为空时的候选标签（如「未分组」） */
+  noneLabel?: string;
   /** 新建时的默认值 */
   defaultValue?: string;
 }

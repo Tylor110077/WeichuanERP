@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState, useTransition } from "react";
+import { SearchSelect } from "@/components/search-select";
 import { createSaleOrderAction, type FormState } from "../actions";
 import {
   createQuickCustomerAction,
@@ -582,18 +583,19 @@ export function NewSaleForm({
                 />
               </div>
 
-              {/* 组织选择 + 快捷新建 */}
+              {/* 组织选择（可搜索）+ 快捷新建 */}
               <div className="flex items-center gap-2">
-                <select
-                  value={newCustomerGroupId}
-                  onChange={(e) => setNewCustomerGroupId(e.target.value)}
-                  className="w-full rounded-md border border-blue-200 px-2 py-1.5 text-sm text-gray-900"
-                >
-                  <option value="">所属组织（可选）</option>
-                  {quickGroupOptions.map((g) => (
-                    <option key={g.id} value={g.id}>{g.name}</option>
-                  ))}
-                </select>
+                <SearchSelect
+                  key={`qc-grp-${newCustomerGroupId}-${quickGroupOptions.length}`}
+                  name="newCustomerGroupId"
+                  options={quickGroupOptions.map((g) => ({ value: String(g.id), label: g.name }))}
+                  defaultValue={newCustomerGroupId}
+                  noneLabel="所属组织（可选）"
+                  placeholder="输入关键词搜索组织…"
+                  emptyHint="无匹配组织，可点右侧「+ 组织」新建"
+                  className="flex-1"
+                  onChange={setNewCustomerGroupId}
+                />
                 <button
                   type="button"
                   onClick={() => { setShowQuickGroup((v) => !v); setShowQuickTag(false); setQuickOrgName(""); }}

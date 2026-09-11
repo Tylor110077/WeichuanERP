@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useActionState, useState, useTransition } from "react";
+import { SearchSelect } from "@/components/search-select";
 import {
   saveCustomerAction,
   toggleCustomerStatusAction,
@@ -256,21 +257,22 @@ export function CustomerManager({
               onChange={(e) => setForm((f) => ({ ...f, remark: e.target.value }))} className={inputCls} />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600">所属组织</label>
+            <label className="block text-xs font-medium text-gray-600">所属组织（可搜索）</label>
             <div className="mt-1 flex items-center gap-1">
-              <select
+              <SearchSelect
+                key={`grp-${form.groupId}-${groupOptions.length}`}
                 name="groupId"
-                value={form.groupId}
-                onChange={(e) => setForm((f) => ({ ...f, groupId: e.target.value }))}
-                className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm text-gray-900"
-              >
-                <option value="">未分组</option>
-                {groupOptions.map((g) => (
-                  <option key={g.id} value={g.id}>
-                    {g.status === 1 ? g.name : `${g.name}（停用）`}
-                  </option>
-                ))}
-              </select>
+                options={groupOptions.map((g) => ({
+                  value: String(g.id),
+                  label: g.status === 1 ? g.name : `${g.name}（停用）`,
+                }))}
+                defaultValue={form.groupId}
+                noneLabel="未分组"
+                placeholder="输入关键词搜索组织…"
+                emptyHint="无匹配组织，可点右侧「+ 组织」新建"
+                className="flex-1"
+                onChange={(v) => setForm((f) => ({ ...f, groupId: v }))}
+              />
               <button
                 type="button"
                 onClick={() => { setShowCreateGroup((v) => !v); setShowCreateTag(false); setQuickName(""); }}
