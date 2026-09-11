@@ -67,7 +67,10 @@ export default async function CustomerProfilePage({
         </form>
       </div>
 
-      <DateShortcuts basePath="/customer-profile" />
+      <DateShortcuts
+        basePath="/customer-profile"
+        extraQuery={{ customerId: customerId != null ? String(customerId) : "" }}
+      />
 
       {selected !== undefined && (
         <div className="rounded-xl border border-gray-200 bg-white p-5">

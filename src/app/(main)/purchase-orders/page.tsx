@@ -76,7 +76,14 @@ export default async function PurchaseOrdersPage({
         )}
       </div>
 
-      <DateShortcuts basePath="/purchase-orders" />
+      <DateShortcuts
+        basePath="/purchase-orders"
+        extraQuery={{
+          supplierId: supplierId != null ? String(supplierId) : "",
+          q: q ?? "",
+          status: status ?? "",
+        }}
+      />
 
       <form className="flex flex-wrap items-center gap-3 rounded-xl border border-gray-200 bg-white p-4">
         <input
