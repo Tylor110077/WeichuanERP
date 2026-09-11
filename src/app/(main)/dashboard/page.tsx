@@ -85,13 +85,13 @@ export default async function DashboardPage() {
     {
       label: "应收总额",
       value: `¥${receivableTotal.toFixed(2)}`,
-      note: "客户未收合计（含已开单未收）",
+      note: "全部时间的客户未收合计",
       href: canViewFinance ? "/receivables-payables?view=receivable" : undefined,
     },
     {
       label: "应付总额",
       value: `¥${payableTotal.toFixed(2)}`,
-      note: "厂家未付合计",
+      note: "全部时间的厂家未付合计",
       href: canViewFinance ? "/receivables-payables?view=payable" : undefined,
     },
   ];

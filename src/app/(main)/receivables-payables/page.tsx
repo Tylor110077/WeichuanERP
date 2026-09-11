@@ -4,6 +4,7 @@ import { EmptyState, NoPermission } from "@/components/empty-state";
 import { btnSecondary, segActive, segIdle } from "@/lib/ui";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { DateShortcuts } from "@/components/date-shortcuts";
 import { SearchSelect } from "@/components/search-select";
@@ -58,27 +59,46 @@ export default async function ReceivablesPage({
         take: 200,
       });
 
-  // 汇总：合计 + 按对方
-  const totalOutstanding = orders.reduce((s, o) => {
-    const returned = o.returns.reduce((r, x) => r + Number(x.totalAmount), 0);
-    const paid = isReceivable ? Number((o as { receivedAmount: unknown }).receivedAmount) : Number((o as { paidAmount: unknown }).paidAmount);
-    const total = Number((o as { totalAmount: unknown }).totalAmount);
-    return s + Math.max(0, total - paid - returned);
-  }, 0);
+  // 汇总：合计 + 按对方。
+  // 注意：这里必须用 SQL 聚合，不能拿上面 take:200 的结果在内存里求和——
+  // 那样一旦单据超过 200 张，合计会静默少算，且与工作台的「应收/应付总额」出现两个不同的数。
+  const counterRows = isReceivable
+    ? await prisma.$queryRaw<
+        { counterId: number; name: string; total: number | null; unsettled: number | bigint | null }[]
+      >`
+        SELECT so.customer_id AS counterId, c.name AS name,
+               COALESCE(SUM(GREATEST(so.total_amount - so.received_amount - COALESCE(sr.total, 0), 0)), 0) AS total,
+               COALESCE(SUM(CASE WHEN so.total_amount - so.received_amount - COALESCE(sr.total, 0) > 0 THEN 1 ELSE 0 END), 0) AS unsettled
+        FROM sale_orders so
+        JOIN customers c ON c.id = so.customer_id
+        LEFT JOIN (
+          SELECT sale_order_id, SUM(total_amount) AS total FROM sale_returns WHERE status = 'confirmed' GROUP BY sale_order_id
+        ) sr ON sr.sale_order_id = so.id
+        WHERE so.status = 'confirmed' AND so.created_at >= ${range.gte} AND so.created_at <= ${range.lte}
+          ${counterId ? Prisma.sql`AND so.customer_id = ${counterId}` : Prisma.empty}
+        GROUP BY so.customer_id, c.name
+        ORDER BY total DESC`
+    : await prisma.$queryRaw<
+        { counterId: number; name: string; total: number | null; unsettled: number | bigint | null }[]
+      >`
+        SELECT po.supplier_id AS counterId, s.name AS name,
+               COALESCE(SUM(GREATEST(po.total_amount - po.paid_amount - COALESCE(pr.total, 0), 0)), 0) AS total,
+               COALESCE(SUM(CASE WHEN po.total_amount - po.paid_amount - COALESCE(pr.total, 0) > 0 THEN 1 ELSE 0 END), 0) AS unsettled
+        FROM purchase_orders po
+        JOIN suppliers s ON s.id = po.supplier_id
+        LEFT JOIN (
+          SELECT purchase_order_id, SUM(total_amount) AS total FROM purchase_returns WHERE status = 'confirmed' GROUP BY purchase_order_id
+        ) pr ON pr.purchase_order_id = po.id
+        WHERE po.status IN ('pending', 'received') AND po.created_at >= ${range.gte} AND po.created_at <= ${range.lte}
+          ${counterId ? Prisma.sql`AND po.supplier_id = ${counterId}` : Prisma.empty}
+        GROUP BY po.supplier_id, s.name
+        ORDER BY total DESC`;
 
-  const byCounter = new Map<number, { name: string; total: number }>();
-  for (const o of orders) {
-    const returned = o.returns.reduce((r, x) => r + Number(x.totalAmount), 0);
-    const paid = isReceivable ? Number((o as { receivedAmount: unknown }).receivedAmount) : Number((o as { paidAmount: unknown }).paidAmount);
-    const total = Number((o as { totalAmount: unknown }).totalAmount);
-    const key = isReceivable ? (o as { customerId: number }).customerId : (o as { supplierId: number }).supplierId;
-    const name = isReceivable ? (o as { customer: { name: string } }).customer.name : (o as { supplier: { name: string } }).supplier.name;
-    const cur = byCounter.get(key) ?? { name, total: 0 };
-    cur.total += Math.max(0, total - paid - returned);
-    byCounter.set(key, cur);
-  }
+  const totalOutstanding = counterRows.reduce((s, r) => s + Number(r.total ?? 0), 0);
+  const unsettledCount = counterRows.reduce((s, r) => s + Number(r.unsettled ?? 0), 0);
+  const byCounter = counterRows.map((r) => ({ id: Number(r.counterId), name: r.name, total: Number(r.total ?? 0) }));
 
-  // 未结清单据行
+  // 未结清单据行（表格最多展示 200 张，超出时在表头提示，合计不受此限制）
   const unpaidOrders = orders.filter((o) => {
     const returned = o.returns.reduce((r, x) => r + Number(x.totalAmount), 0);
     const paid = isReceivable ? Number((o as { receivedAmount: unknown }).receivedAmount) : Number((o as { paidAmount: unknown }).paidAmount);
@@ -89,6 +109,8 @@ export default async function ReceivablesPage({
     isReceivable
       ? await prisma.customer.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } })
       : await prisma.supplier.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } });
+
+  const isDefaultRange = !params.from && !params.to;
 
   const viewHref = (v: string) => {
     const sp = new URLSearchParams({ view: v });
@@ -151,7 +173,8 @@ export default async function ReceivablesPage({
         <div className="border-b border-gray-100 px-4 py-3 text-sm font-semibold text-gray-900">
           未结清单据（{isReceivable ? "应收" : "应付"}）
           <span className="ml-2 text-xs font-normal text-gray-400">
-            共 {unpaidOrders.length} 张 ・ 点右侧「详情 / 登记」进单据登记
+            共 {unsettledCount} 张 ・ 点右侧「详情 / 登记」进单据登记
+            {unsettledCount > unpaidOrders.length && `（下表仅显示最近 ${unpaidOrders.length} 张，合计已含全部）`}
           </span>
         </div>
         <table className="min-w-full divide-y divide-gray-200 text-sm">
@@ -214,23 +237,28 @@ export default async function ReceivablesPage({
           <div className="text-sm text-gray-500">
             {isReceivable ? "客户应收合计（未收）" : "厂家应付合计（未付）"}
             <span className="ml-2 text-xs text-gray-400">
-              当前筛选条件 ・ {unpaidOrders.length} 张单据
+              {isDefaultRange ? "默认本月 1 号至今" : `${params.from || "最早"} ~ ${params.to || "今天"}`}
+              {" ・ "}
+              {unsettledCount} 张未结清
+              {counterId ? "・已筛选单个对象" : ""}
             </span>
           </div>
           <div className="text-2xl font-semibold text-red-600">¥{totalOutstanding.toFixed(2)}</div>
         </div>
-        {byCounter.size > 0 && (
+        {byCounter.length > 0 && (
           <div className="mt-3 space-y-1 border-t border-gray-100 pt-3">
-            {[...byCounter.entries()]
-              .sort((a, b) => b[1].total - a[1].total)
-              .map(([id, v]) => (
-                <div key={id} className="flex justify-between text-sm">
-                  <span className="text-gray-700">{v.name}</span>
-                  <span className="text-gray-900">¥{v.total.toFixed(2)}</span>
-                </div>
-              ))}
+            {byCounter.map((v) => (
+              <div key={v.id} className="flex justify-between text-sm">
+                <span className="text-gray-700">{v.name}</span>
+                <span className="text-gray-900 tabular-nums">¥{v.total.toFixed(2)}</span>
+              </div>
+            ))}
           </div>
         )}
+        <p className="mt-3 border-t border-gray-100 pt-3 text-xs text-gray-400">
+          口径：单额 − 已{isReceivable ? "收" : "付"} − 未作废退货冲减，只统计{isReceivable ? "非作废售卖单" : "未作废进货单"}。
+          工作台的「{isReceivable ? "应收" : "应付"}总额」是全部时间的累计值，与这里按筛选期间统计的数字含义不同。
+        </p>
       </div>
     </div>
   );
