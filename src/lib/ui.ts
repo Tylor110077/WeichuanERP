@@ -74,3 +74,7 @@ export const textPending = "text-amber-700";
 /** 行内小标注（厂家等）：紧凑方形，区别于状态胶囊 */
 export const tagInfo = "rounded bg-blue-50 px-1.5 py-0.5 text-xs text-blue-700";
 export const tagPending = "rounded bg-amber-50 px-1.5 py-0.5 text-xs text-amber-600";
+
+/** 分段控件（视图切换、报表页签）选中态 / 未选中态 */
+export const segActive = "rounded-md bg-blue-600 text-white";
+export const segIdle = "rounded-md text-gray-600 hover:bg-gray-100 hover:text-gray-900";

@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { FilterForm } from "@/components/filter-form";
 import { EmptyState, NoPermission } from "@/components/empty-state";
-import { btnSecondary, btnSuccess } from "@/lib/ui";
+import { btnSecondary, btnSuccess, segActive } from "@/lib/ui";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { buildReport, REPORT_TABS, type ReportTabKey } from "@/lib/reports";
@@ -49,9 +49,7 @@ export default async function ReportsPage({
           <Link
             key={t.key}
             href={`/reports?tab=${t.key}${from ? `&from=${from}` : ""}${to ? `&to=${to}` : ""}`}
-            className={`rounded-md px-3 py-1.5 text-sm ${
-              tab === t.key ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-            }`}
+            className={`px-3 py-1.5 text-sm ${tab === t.key ? segActive : "rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
           >
             {t.label}
           </Link>

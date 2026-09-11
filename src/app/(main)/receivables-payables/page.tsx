@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { FilterForm } from "@/components/filter-form";
 import { EmptyState, NoPermission } from "@/components/empty-state";
-import { btnSecondary } from "@/lib/ui";
+import { btnSecondary, segActive, segIdle } from "@/lib/ui";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
@@ -106,13 +106,13 @@ export default async function ReceivablesPage({
         <div className="flex rounded-lg border border-gray-200 bg-gray-50 p-0.5 text-sm">
           <a
             href={viewHref("receivable")}
-            className={`rounded-md px-4 py-1.5 ${isReceivable ? "bg-blue-600 text-white" : "text-gray-600 hover:text-gray-900"}`}
+            className={`px-4 py-1.5 ${isReceivable ? segActive : segIdle}`}
           >
             应收（客户）
           </a>
           <a
             href={viewHref("payable")}
-            className={`rounded-md px-4 py-1.5 ${!isReceivable ? "bg-blue-600 text-white" : "text-gray-600 hover:text-gray-900"}`}
+            className={`px-4 py-1.5 ${!isReceivable ? segActive : segIdle}`}
           >
             应付（厂家）
           </a>
