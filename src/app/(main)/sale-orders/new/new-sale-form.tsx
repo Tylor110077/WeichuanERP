@@ -42,6 +42,8 @@ interface ProductOption {
   manufacturer: string;
   unitName: string;
   stockQty: number;
+  /** 当前移动加权均价（库存成本），开单时参考 */
+  avgCost: number;
   refSalePrice: number;
   lastSupplierId: number | null;
   lastSupplyPrice: number;
@@ -55,6 +57,8 @@ interface Row {
   manufacturer: string; // 选中商品的厂商（用于"自动补货：厂商"提示）
   unitName: string;
   stockQty: number;
+  /** 选中商品时的移动加权均价（参考展示） */
+  avgCost: number;
   quantity: string;
   unitPrice: string;
   lastGlobalSalePrice: number; // 全局最近成交价/参考价（参考展示用）
@@ -277,6 +281,8 @@ export function NewSaleForm({
       manufacturer: "",
       unitName: "",
       stockQty: 0,
+
+      avgCost: 0,
       quantity: "",
       unitPrice: "",
       lastGlobalSalePrice: 0,
@@ -332,6 +338,8 @@ export function NewSaleForm({
             productQuery: field === "name" ? value : row.productQuery,
             unitName: "",
             stockQty: 0,
+
+            avgCost: 0,
             unitPrice: "",
             supplierId: "",
             supplyPrice: "",
@@ -365,6 +373,7 @@ export function NewSaleForm({
               manufacturer: p.manufacturer,
               unitName: p.unitName,
               stockQty: p.stockQty,
+              avgCost: p.avgCost,
               unitPrice: String(p.refSalePrice),
               lastGlobalSalePrice: p.refSalePrice,
               supplierId: p.lastSupplierId != null ? String(p.lastSupplierId) : "",
@@ -453,6 +462,8 @@ export function NewSaleForm({
         manufacturer: result.manufacturer,
         unitName: result.unitName,
         stockQty: 0,
+
+        avgCost: 0,
         refSalePrice: result.refSalePrice,
         lastSupplierId: mfrSupplierId,
         lastSupplyPrice: result.refPurchasePrice,
@@ -468,6 +479,8 @@ export function NewSaleForm({
           manufacturer: result.manufacturer,
           unitName: result.unitName,
           stockQty: 0,
+
+          avgCost: 0,
           quantity: "",
           unitPrice: String(result.refSalePrice),
           lastGlobalSalePrice: result.refSalePrice,
@@ -1015,6 +1028,11 @@ export function NewSaleForm({
                   <div className="px-2 py-1.5 text-sm tabular-nums text-gray-700">
                     {row.unitName ? row.stockQty.toFixed(3) : "—"}
                   </div>
+                  {row.productId && row.avgCost > 0 && (
+                    <div className="px-2 text-xs text-gray-400">
+                      均价 ¥{row.avgCost.toFixed(2)}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-medium text-gray-500">

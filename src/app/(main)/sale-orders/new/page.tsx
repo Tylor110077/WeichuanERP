@@ -27,6 +27,7 @@ export default async function NewSaleOrderPage() {
       spec: true,
       manufacturer: true,
       stockQty: true,
+      avgCost: true, // 移动加权均价（开单时参考成本）
       unit: { select: { name: true } },
       refSalePrice: true,
       refPurchasePrice: true,
@@ -143,6 +144,7 @@ export default async function NewSaleOrderPage() {
       manufacturer: p.manufacturer,
       unitName: p.unit.name,
       stockQty: Number(p.stockQty),
+      avgCost: Number(p.avgCost), // 当前移动加权均价（供开单时参考成本）
       refSalePrice: lastSalePriceByProduct.get(p.id) ?? Number(p.refSalePrice), // 预填最近成交价
       lastSupplierId: autoSupplierId,
       lastSupplierName: last ? supplierMap.get(last.supplierId) ?? "" : "",
