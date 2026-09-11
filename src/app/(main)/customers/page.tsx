@@ -178,11 +178,11 @@ export default async function CustomersPage({
                   <th className="px-4 py-3 font-medium">客户</th>
                   <th className="px-4 py-3 font-medium">组织</th>
                   <th className="px-4 py-3 font-medium">标签</th>
-                  <th className="px-4 py-3 text-right font-medium">成交单数</th>
-                  <th className="px-4 py-3 text-right font-medium">销售额</th>
-                  <th className="px-4 py-3 text-right font-medium">成本</th>
-                  <th className="px-4 py-3 text-right font-medium">毛利</th>
-                  <th className="px-4 py-3 text-right font-medium">平均利润率</th>
+                  <th className="px-4 py-3 text-right font-medium tabular-nums">成交单数</th>
+                  <th className="px-4 py-3 text-right font-medium tabular-nums">销售额</th>
+                  <th className="px-4 py-3 text-right font-medium tabular-nums">成本</th>
+                  <th className="px-4 py-3 text-right font-medium tabular-nums">毛利</th>
+                  <th className="px-4 py-3 text-right font-medium tabular-nums">平均利润率</th>
                   <th className="px-4 py-3 font-medium"></th>
                 </tr>
               </thead>
@@ -216,13 +216,13 @@ export default async function CustomersPage({
                         {r.tagNames.length === 0 && <span className="text-gray-400">—</span>}
                       </div>
                     </td>
-                    <td className="px-4 py-2.5 text-right text-gray-900">{r.count}</td>
-                    <td className="px-4 py-2.5 text-right text-gray-900">¥{r.sales.toFixed(2)}</td>
-                    <td className="px-4 py-2.5 text-right text-gray-600">¥{r.cost.toFixed(2)}</td>
-                    <td className={`px-4 py-2.5 text-right font-medium ${r.profit >= 0 ? "text-green-700" : "text-red-600"}`}>
+                    <td className="px-4 py-2.5 text-right text-gray-900 tabular-nums">{r.count}</td>
+                    <td className="px-4 py-2.5 text-right text-gray-900 tabular-nums">¥{r.sales.toFixed(2)}</td>
+                    <td className="px-4 py-2.5 text-right text-gray-600 tabular-nums">¥{r.cost.toFixed(2)}</td>
+                    <td className={`px-4 py-2.5 text-right tabular-nums font-medium ${r.profit >= 0 ? "text-green-700" : "text-red-600"}`}>
                       ¥{r.profit.toFixed(2)}
                     </td>
-                    <td className={`px-4 py-2.5 text-right ${r.margin >= 0 ? "text-green-700" : "text-red-600"}`}>
+                    <td className={`px-4 py-2.5 text-right tabular-nums ${r.margin >= 0 ? "text-green-700" : "text-red-600"}`}>
                       {r.margin.toFixed(2)}%
                     </td>
                     <td className="px-4 py-2.5">

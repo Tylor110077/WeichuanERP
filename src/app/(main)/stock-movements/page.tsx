@@ -106,10 +106,10 @@ export default async function StockMovementsPage({
               <th className="px-4 py-3 font-medium">时间</th>
               <th className="px-4 py-3 font-medium">商品</th>
               <th className="px-4 py-3 font-medium">类型</th>
-              <th className="px-4 py-3 text-right font-medium">变动数量</th>
-              <th className="px-4 py-3 text-right font-medium">变动前</th>
-              <th className="px-4 py-3 text-right font-medium">变动后</th>
-              <th className="px-4 py-3 text-right font-medium">成本单价</th>
+              <th className="px-4 py-3 text-right font-medium tabular-nums">变动数量</th>
+              <th className="px-4 py-3 text-right font-medium tabular-nums">变动前</th>
+              <th className="px-4 py-3 text-right font-medium tabular-nums">变动后</th>
+              <th className="px-4 py-3 text-right font-medium tabular-nums">成本单价</th>
               <th className="px-4 py-3 font-medium">来源单据</th>
               <th className="px-4 py-3 font-medium">操作人</th>
             </tr>
@@ -135,13 +135,13 @@ export default async function StockMovementsPage({
                   <td className="px-4 py-2.5">
                     <span className={`rounded px-1.5 py-0.5 text-xs ${meta.cls}`}>{meta.label}</span>
                   </td>
-                  <td className={`px-4 py-2.5 text-right font-medium ${Number(m.changeQty) < 0 ? "text-red-600" : "text-green-700"}`}>
+                  <td className={`px-4 py-2.5 text-right tabular-nums font-medium ${Number(m.changeQty) < 0 ? "text-red-600" : "text-green-700"}`}>
                     {Number(m.changeQty) > 0 ? "+" : ""}
                     {Number(m.changeQty).toFixed(3)}
                   </td>
-                  <td className="px-4 py-2.5 text-right text-gray-600">{Number(m.beforeQty).toFixed(3)}</td>
-                  <td className="px-4 py-2.5 text-right text-gray-600">{Number(m.afterQty).toFixed(3)}</td>
-                  <td className="px-4 py-2.5 text-right text-gray-600">¥{Number(m.unitCost).toFixed(4)}</td>
+                  <td className="px-4 py-2.5 text-right text-gray-600 tabular-nums">{Number(m.beforeQty).toFixed(3)}</td>
+                  <td className="px-4 py-2.5 text-right text-gray-600 tabular-nums">{Number(m.afterQty).toFixed(3)}</td>
+                  <td className="px-4 py-2.5 text-right text-gray-600 tabular-nums">¥{Number(m.unitCost).toFixed(4)}</td>
                   <td className="px-4 py-2.5 text-gray-600">{m.bizOrderNo}</td>
                   <td className="px-4 py-2.5 text-gray-600">{operatorMap.get(m.operatorId) ?? m.operatorId}</td>
                 </tr>

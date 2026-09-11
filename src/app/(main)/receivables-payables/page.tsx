@@ -161,10 +161,10 @@ export default async function ReceivablesPage({
               <th className="px-4 py-3 font-medium">日期</th>
               <th className="px-4 py-3 font-medium">单号</th>
               <th className="px-4 py-3 font-medium">{isReceivable ? "客户" : "厂家"}</th>
-              <th className="px-4 py-3 text-right font-medium">{isReceivable ? "应收" : "应付"}</th>
-              <th className="px-4 py-3 text-right font-medium">{isReceivable ? "已收" : "已付"}</th>
-              <th className="px-4 py-3 text-right font-medium">退货冲减</th>
-              <th className="px-4 py-3 text-right font-medium">{isReceivable ? "未收" : "未付"}</th>
+              <th className="px-4 py-3 text-right font-medium tabular-nums">{isReceivable ? "应收" : "应付"}</th>
+              <th className="px-4 py-3 text-right font-medium tabular-nums">{isReceivable ? "已收" : "已付"}</th>
+              <th className="px-4 py-3 text-right font-medium tabular-nums">退货冲减</th>
+              <th className="px-4 py-3 text-right font-medium tabular-nums">{isReceivable ? "未收" : "未付"}</th>
               <th className="px-4 py-3 font-medium"></th>
             </tr>
           </thead>
@@ -195,10 +195,10 @@ export default async function ReceivablesPage({
                     <Link href={detailHref} className="font-medium text-blue-600 hover:underline">{o.orderNo}</Link>
                   </td>
                   <td className="px-4 py-2.5 text-gray-900">{counterName}</td>
-                  <td className="px-4 py-2.5 text-right text-gray-900">¥{total.toFixed(2)}</td>
-                  <td className="px-4 py-2.5 text-right text-gray-600">¥{paid.toFixed(2)}</td>
-                  <td className="px-4 py-2.5 text-right text-orange-600">¥{returned.toFixed(2)}</td>
-                  <td className="px-4 py-2.5 text-right font-medium text-red-600">¥{unpaid.toFixed(2)}</td>
+                  <td className="px-4 py-2.5 text-right text-gray-900 tabular-nums">¥{total.toFixed(2)}</td>
+                  <td className="px-4 py-2.5 text-right text-gray-600 tabular-nums">¥{paid.toFixed(2)}</td>
+                  <td className="px-4 py-2.5 text-right text-orange-600 tabular-nums">¥{returned.toFixed(2)}</td>
+                  <td className="px-4 py-2.5 text-right font-medium text-red-600 tabular-nums">¥{unpaid.toFixed(2)}</td>
                   <td className="px-4 py-2.5">
                     <Link href={detailHref} className="text-xs text-blue-600 hover:underline">详情 / 登记</Link>
                   </td>

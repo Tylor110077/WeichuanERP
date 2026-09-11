@@ -83,7 +83,7 @@ export function ReturnForm({
               <th className="w-32 px-4 py-3 font-medium">退货数量 *</th>
               <th className="w-16 px-4 py-3 font-medium">单位</th>
               <th className="w-36 px-4 py-3 font-medium">退货价 *</th>
-              <th className="w-28 px-4 py-3 text-right font-medium">金额</th>
+              <th className="w-28 px-4 py-3 text-right font-medium tabular-nums">金额</th>
               <th className="w-14 px-4 py-3 font-medium"></th>
             </tr>
           </thead>
@@ -143,8 +143,8 @@ export function ReturnForm({
                     className={inputCls}
                   />
                 </td>
-                <td className="px-4 py-2 text-right text-gray-900">{lineAmount(line).toFixed(2)}</td>
-                <td className="px-4 py-2 text-right">
+                <td className="px-4 py-2 text-right text-gray-900 tabular-nums">{lineAmount(line).toFixed(2)}</td>
+                <td className="px-4 py-2 text-right tabular-nums">
                   <button
                     type="button"
                     onClick={() => setLines((prev) => prev.filter((_, j) => j !== i))}

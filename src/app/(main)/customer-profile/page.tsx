@@ -116,11 +116,11 @@ export default async function CustomerProfilePage({
                       <thead className="text-left text-xs text-gray-500">
                         <tr>
                           <th className="py-1 font-medium">商品</th>
-                          <th className="py-1 text-right font-medium">数量</th>
-                          <th className="py-1 text-right font-medium">售价</th>
-                          <th className="py-1 text-right font-medium">金额</th>
-                          <th className="py-1 text-right font-medium">成本</th>
-                          <th className="py-1 text-right font-medium">利润</th>
+                          <th className="py-1 text-right font-medium tabular-nums">数量</th>
+                          <th className="py-1 text-right font-medium tabular-nums">售价</th>
+                          <th className="py-1 text-right font-medium tabular-nums">金额</th>
+                          <th className="py-1 text-right font-medium tabular-nums">成本</th>
+                          <th className="py-1 text-right font-medium tabular-nums">利润</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -129,11 +129,11 @@ export default async function CustomerProfilePage({
                           return (
                             <tr key={it.id} className="text-gray-900">
                               <td className="py-1">{it.product.code} {it.product.name}</td>
-                              <td className="py-1 text-right">{Number(it.quantity).toFixed(3)} {it.unit.name}</td>
-                              <td className="py-1 text-right">¥{Number(it.unitPrice).toFixed(2)}</td>
-                              <td className="py-1 text-right">¥{Number(it.amount).toFixed(2)}</td>
-                              <td className="py-1 text-right text-gray-600">¥{Number(it.costAmount).toFixed(2)}</td>
-                              <td className={`py-1 text-right ${profit >= 0 ? "text-green-700" : "text-red-600"}`}>
+                              <td className="py-1 text-right tabular-nums">{Number(it.quantity).toFixed(3)} {it.unit.name}</td>
+                              <td className="py-1 text-right tabular-nums">¥{Number(it.unitPrice).toFixed(2)}</td>
+                              <td className="py-1 text-right tabular-nums">¥{Number(it.amount).toFixed(2)}</td>
+                              <td className="py-1 text-right text-gray-600 tabular-nums">¥{Number(it.costAmount).toFixed(2)}</td>
+                              <td className={`py-1 text-right tabular-nums ${profit >= 0 ? "text-green-700" : "text-red-600"}`}>
                                 ¥{profit.toFixed(2)}
                               </td>
                             </tr>
@@ -156,11 +156,11 @@ export default async function CustomerProfilePage({
               <th className="px-4 py-3 font-medium">客户</th>
               <th className="px-4 py-3 font-medium">组织</th>
               <th className="px-4 py-3 font-medium">标签</th>
-              <th className="px-4 py-3 text-right font-medium">成交单数</th>
-              <th className="px-4 py-3 text-right font-medium">销售额</th>
-              <th className="px-4 py-3 text-right font-medium">成本</th>
-              <th className="px-4 py-3 text-right font-medium">毛利</th>
-              <th className="px-4 py-3 text-right font-medium">平均利润率</th>
+              <th className="px-4 py-3 text-right font-medium tabular-nums">成交单数</th>
+              <th className="px-4 py-3 text-right font-medium tabular-nums">销售额</th>
+              <th className="px-4 py-3 text-right font-medium tabular-nums">成本</th>
+              <th className="px-4 py-3 text-right font-medium tabular-nums">毛利</th>
+              <th className="px-4 py-3 text-right font-medium tabular-nums">平均利润率</th>
               <th className="px-4 py-3 font-medium"></th>
             </tr>
           </thead>
@@ -194,13 +194,13 @@ export default async function CustomerProfilePage({
                     {r.tagNames.length === 0 && <span className="text-gray-400">—</span>}
                   </div>
                 </td>
-                <td className="px-4 py-2.5 text-right text-gray-900">{r.count}</td>
-                <td className="px-4 py-2.5 text-right text-gray-900">¥{r.sales.toFixed(2)}</td>
-                <td className="px-4 py-2.5 text-right text-gray-600">¥{r.cost.toFixed(2)}</td>
-                <td className={`px-4 py-2.5 text-right font-medium ${r.profit >= 0 ? "text-green-700" : "text-red-600"}`}>
+                <td className="px-4 py-2.5 text-right text-gray-900 tabular-nums">{r.count}</td>
+                <td className="px-4 py-2.5 text-right text-gray-900 tabular-nums">¥{r.sales.toFixed(2)}</td>
+                <td className="px-4 py-2.5 text-right text-gray-600 tabular-nums">¥{r.cost.toFixed(2)}</td>
+                <td className={`px-4 py-2.5 text-right tabular-nums font-medium ${r.profit >= 0 ? "text-green-700" : "text-red-600"}`}>
                   ¥{r.profit.toFixed(2)}
                 </td>
-                <td className={`px-4 py-2.5 text-right ${r.margin >= 0 ? "text-green-700" : "text-red-600"}`}>
+                <td className={`px-4 py-2.5 text-right tabular-nums ${r.margin >= 0 ? "text-green-700" : "text-red-600"}`}>
                   {r.margin.toFixed(2)}%
                 </td>
                 <td className="px-4 py-2.5">
@@ -217,11 +217,11 @@ export default async function CustomerProfilePage({
           <tfoot className="bg-gray-50">
             <tr className="font-medium text-gray-900">
               <td colSpan={3} className="px-4 py-3 text-right">合计（{profileRows.length} 个客户）</td>
-              <td className="px-4 py-3 text-right">{summaryTotal.count}</td>
-              <td className="px-4 py-3 text-right">¥{summaryTotal.sales.toFixed(2)}</td>
-              <td className="px-4 py-3 text-right">¥{summaryTotal.cost.toFixed(2)}</td>
-              <td className="px-4 py-3 text-right">¥{summaryProfit.toFixed(2)}</td>
-              <td className="px-4 py-3 text-right">{summaryMargin.toFixed(2)}%</td>
+              <td className="px-4 py-3 text-right tabular-nums">{summaryTotal.count}</td>
+              <td className="px-4 py-3 text-right tabular-nums">¥{summaryTotal.sales.toFixed(2)}</td>
+              <td className="px-4 py-3 text-right tabular-nums">¥{summaryTotal.cost.toFixed(2)}</td>
+              <td className="px-4 py-3 text-right tabular-nums">¥{summaryProfit.toFixed(2)}</td>
+              <td className="px-4 py-3 text-right tabular-nums">{summaryMargin.toFixed(2)}%</td>
               <td className="px-4 py-3"></td>
             </tr>
           </tfoot>

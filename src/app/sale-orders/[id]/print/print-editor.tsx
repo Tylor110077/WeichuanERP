@@ -219,7 +219,7 @@ export function PrintEditor({ data }: { data: PrintOrderData }) {
               {visibleCols.map((c) => (
                 <th
                   key={c.key}
-                  className={`px-2 py-2 ${c.right ? "text-right" : ""}`}
+                  className={`px-2 py-2 ${c.right ? "text-right tabular-nums" : ""}`}
                 >
                   {c.label}
                 </th>
@@ -266,7 +266,7 @@ export function PrintEditor({ data }: { data: PrintOrderData }) {
                           <input
                             value={row.qty}
                             onChange={(e) => updateRow(idx, { qty: e.target.value })}
-                            className={`${inputCls} text-right`}
+                            className={`${inputCls} text-right tabular-nums`}
                           />
                         </td>
                       );
@@ -286,12 +286,12 @@ export function PrintEditor({ data }: { data: PrintOrderData }) {
                           <input
                             value={row.price}
                             onChange={(e) => updateRow(idx, { price: e.target.value })}
-                            className={`${inputCls} text-right`}
+                            className={`${inputCls} text-right tabular-nums`}
                           />
                         </td>
                       );
                     return (
-                      <td key={c.key} className={`${cellCls} text-right font-medium`}>
+                      <td key={c.key} className={`${cellCls} text-right tabular-nums font-medium`}>
                         ¥{amount.toFixed(2)}
                       </td>
                     );

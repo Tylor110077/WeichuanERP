@@ -168,18 +168,18 @@ export default async function SupplierStatementPage({
                 <thead className="text-left text-xs text-gray-500">
                   <tr>
                     <th className="py-1 font-medium">商品</th>
-                    <th className="py-1 text-right font-medium">数量</th>
-                    <th className="py-1 text-right font-medium">进价</th>
-                    <th className="py-1 text-right font-medium">金额</th>
+                    <th className="py-1 text-right font-medium tabular-nums">数量</th>
+                    <th className="py-1 text-right font-medium tabular-nums">进价</th>
+                    <th className="py-1 text-right font-medium tabular-nums">金额</th>
                   </tr>
                 </thead>
                 <tbody>
                   {o.items.map((it) => (
                     <tr key={it.id} className="text-gray-900">
                       <td className="py-1">{it.product.code} {it.product.name}</td>
-                      <td className="py-1 text-right">{Number(it.quantity).toFixed(3)} {it.unit.name}</td>
-                      <td className="py-1 text-right">¥{Number(it.unitPrice).toFixed(2)}</td>
-                      <td className="py-1 text-right">¥{Number(it.amount).toFixed(2)}</td>
+                      <td className="py-1 text-right tabular-nums">{Number(it.quantity).toFixed(3)} {it.unit.name}</td>
+                      <td className="py-1 text-right tabular-nums">¥{Number(it.unitPrice).toFixed(2)}</td>
+                      <td className="py-1 text-right tabular-nums">¥{Number(it.amount).toFixed(2)}</td>
                     </tr>
                   ))}
                 </tbody>
