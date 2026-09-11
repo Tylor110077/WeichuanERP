@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { EmptyState } from "@/components/empty-state";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { ReturnListActions } from "./return-list-actions";
@@ -44,8 +45,8 @@ export default async function PurchaseReturnsPage() {
           <tbody className="divide-y divide-gray-100">
             {returns.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-gray-400">
-                  暂无退货单
+                <td colSpan={8}>
+                  <EmptyState title="该条件下没有退货单" />
                 </td>
               </tr>
             )}

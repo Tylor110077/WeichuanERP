@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { NoPermission } from "@/components/empty-state";
 import { btnSecondary } from "@/lib/ui";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
@@ -21,9 +22,7 @@ export default async function CustomerProfilePage({
   if (!user) redirect("/login");
   if (user.role === "sales") {
     return (
-      <div className="rounded-xl border border-gray-200 bg-white p-8 text-sm text-gray-500">
-        无权限访问客户画像（管理员/老板）
-      </div>
+      <NoPermission text="无权限访问客户画像（管理员/老板）" />
     );
   }
 

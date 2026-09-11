@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { NoPermission } from "@/components/empty-state";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { ROLE_LABELS } from "@/lib/auth/roles";
@@ -12,9 +13,7 @@ export default async function UsersPage() {
   if (!current) redirect("/login");
   if (current.role !== "admin") {
     return (
-      <div className="rounded-xl border border-gray-200 bg-white p-8 text-sm text-gray-500">
-        无权限访问用户管理（仅管理员）
-      </div>
+      <NoPermission text="无权限访问用户管理（仅管理员）" />
     );
   }
 

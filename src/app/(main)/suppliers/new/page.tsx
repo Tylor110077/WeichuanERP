@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { NoPermission } from "@/components/empty-state";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { EntityForm } from "@/components/entity-form";
@@ -11,9 +12,7 @@ export default async function NewSupplierPage() {
   if (!user) redirect("/login");
   if (user.role !== "admin") {
     return (
-      <div className="rounded-xl border border-gray-200 bg-white p-8 text-sm text-gray-500">
-        无权限（仅管理员可维护供应商）
-      </div>
+      <NoPermission text="无权限（仅管理员可维护供应商）" />
     );
   }
 

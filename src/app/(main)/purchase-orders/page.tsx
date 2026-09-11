@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { EmptyState } from "@/components/empty-state";
 import { btnPrimary, btnSecondary } from "@/lib/ui";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
@@ -173,8 +174,8 @@ export default async function PurchaseOrdersPage({
           <tbody className="divide-y divide-gray-100">
             {orders.length === 0 && (
               <tr>
-                <td colSpan={10} className="px-4 py-8 text-center text-gray-400">
-                  暂无进货单
+                <td colSpan={10}>
+                  <EmptyState title="还没有进货单" hint="点右上角「新建进货单」录入进货" action={{ href: "/purchase-orders/new", label: "+ 新建进货单" }} />
                 </td>
               </tr>
             )}

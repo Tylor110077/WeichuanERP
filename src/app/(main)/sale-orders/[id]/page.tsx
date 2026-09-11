@@ -1,4 +1,5 @@
 import { redirect, notFound } from "next/navigation";
+import { NoPermission } from "@/components/empty-state";
 import { btnSecondary, btnWarn } from "@/lib/ui";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
@@ -43,9 +44,7 @@ export default async function SaleOrderDetailPage({
 
   if (user.role === "sales" && order.operatorId !== user.id) {
     return (
-      <div className="rounded-xl border border-gray-200 bg-white p-8 text-sm text-gray-500">
-        无权限查看此单据（业务员仅能查看自己的单）
-      </div>
+      <NoPermission text="无权限查看此单据（业务员仅能查看自己的单）" />
     );
   }
 

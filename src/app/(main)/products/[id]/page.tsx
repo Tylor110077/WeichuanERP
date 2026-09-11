@@ -1,4 +1,5 @@
 import { redirect, notFound } from "next/navigation";
+import { NoPermission } from "@/components/empty-state";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
@@ -17,9 +18,7 @@ export default async function EditProductPage({
   if (!user) redirect("/login");
   if (user.role !== "admin") {
     return (
-      <div className="rounded-xl border border-gray-200 bg-white p-8 text-sm text-gray-500">
-        无权限（仅管理员可维护商品）
-      </div>
+      <NoPermission text="无权限（仅管理员可维护商品）" />
     );
   }
 

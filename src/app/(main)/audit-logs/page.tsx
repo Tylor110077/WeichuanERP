@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { EmptyState, NoPermission } from "@/components/empty-state";
 import { btnSecondary } from "@/lib/ui";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
@@ -34,9 +35,7 @@ export default async function AuditLogsPage({
   if (!current) redirect("/login");
   if (current.role !== "admin") {
     return (
-      <div className="rounded-xl border border-gray-200 bg-white p-8 text-sm text-gray-500">
-        无权限访问审计日志（仅管理员）
-      </div>
+      <NoPermission text="无权限访问审计日志（仅管理员）" />
     );
   }
 
@@ -102,8 +101,8 @@ export default async function AuditLogsPage({
           <tbody className="divide-y divide-gray-100">
             {logs.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-gray-400">
-                  暂无记录
+                <td colSpan={6}>
+                  <EmptyState title="该条件下没有记录" />
                 </td>
               </tr>
             )}

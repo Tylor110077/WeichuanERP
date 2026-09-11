@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { EmptyState } from "@/components/empty-state";
 import { btnSecondary } from "@/lib/ui";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
@@ -137,8 +138,8 @@ export default async function InventoryPage({
           <tbody className="divide-y divide-gray-100">
             {rows.length === 0 && (
               <tr>
-                <td colSpan={11} className="px-4 py-8 text-center text-gray-400">
-                  暂无数据
+                <td colSpan={11}>
+                  <EmptyState title="还没有商品" hint="先到「商品与厂家」建立商品档案" action={{ href: "/products", label: "去建立商品" }} />
                 </td>
               </tr>
             )}
@@ -222,9 +223,9 @@ export default async function InventoryPage({
               <tbody className="divide-y divide-gray-100">
                 {batches.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-4 py-8 text-center text-gray-400">
-                      该商品暂无进货记录
-                    </td>
+                    <td colSpan={7}>
+                  <EmptyState title="还没有商品" hint="先到「商品与厂家」建立商品档案" action={{ href: "/products", label: "去建立商品" }} />
+                </td>
                   </tr>
                 )}
                 {batches.map((b) => (

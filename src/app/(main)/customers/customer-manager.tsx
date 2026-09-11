@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { EmptyState } from "@/components/empty-state";
 import { btnPrimary, btnSecondary, btnSmallPrimary, btnSmallSolid } from "@/lib/ui";
 import { useActionState, useState, useTransition } from "react";
 import { SearchSelect } from "@/components/search-select";
@@ -136,7 +137,9 @@ export function CustomerManager({
         <tbody className="divide-y divide-gray-100">
           {customers.length === 0 && (
             <tr>
-              <td colSpan={7} className="px-4 py-8 text-center text-gray-400">暂无客户</td>
+              <td colSpan={7}>
+                  <EmptyState title="还没有客户" hint="点右上角「新建客户」添加" action={{ href: "/customers/new", label: "+ 新建客户" }} />
+                </td>
             </tr>
           )}
           {customers.map((c) => (

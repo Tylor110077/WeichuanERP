@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { NoPermission } from "@/components/empty-state";
 import { btnSecondary } from "@/lib/ui";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
@@ -19,9 +20,7 @@ export default async function LoginLogsPage({
   if (!user) redirect("/login");
   if (user.role !== "admin") {
     return (
-      <div className="rounded-xl border border-gray-200 bg-white p-8 text-sm text-gray-500">
-        无权限访问登录日志（仅管理员）
-      </div>
+      <NoPermission text="无权限访问登录日志（仅管理员）" />
     );
   }
 

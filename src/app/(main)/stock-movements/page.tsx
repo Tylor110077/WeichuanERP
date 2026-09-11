@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { EmptyState, NoPermission } from "@/components/empty-state";
 import { btnSecondary } from "@/lib/ui";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
@@ -27,9 +28,7 @@ export default async function StockMovementsPage({
   if (!user) redirect("/login");
   if (user.role === "sales") {
     return (
-      <div className="rounded-xl border border-gray-200 bg-white p-8 text-sm text-gray-500">
-        无权限访问库存流水（管理员/老板）
-      </div>
+      <NoPermission text="无权限访问库存流水（管理员/老板）" />
     );
   }
 
@@ -117,8 +116,8 @@ export default async function StockMovementsPage({
           <tbody className="divide-y divide-gray-100">
             {movements.length === 0 && (
               <tr>
-                <td colSpan={9} className="px-4 py-8 text-center text-gray-400">
-                  暂无流水
+                <td colSpan={9}>
+                  <EmptyState title="该条件下没有库存变动" />
                 </td>
               </tr>
             )}
