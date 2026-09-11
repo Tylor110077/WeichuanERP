@@ -173,7 +173,7 @@ export function NewOrderForm({
                     />
                   </InlineField>
                   <InlineField label="单位">
-                    <span className="text-sm text-gray-700">{row.unitName || "—"}</span>
+                    <span className="block py-1.5 text-sm text-gray-700">{row.unitName || "—"}</span>
                   </InlineField>
                   <InlineField label="进价" required>
                     <input
@@ -190,7 +190,7 @@ export function NewOrderForm({
                     />
                   </InlineField>
                   <InlineField label="金额">
-                    <span className="text-base font-semibold tabular-nums text-gray-900">
+                    <span className="block py-1.5 text-base font-semibold tabular-nums text-gray-900">
                       ¥{lineAmount(row).toFixed(2)}
                     </span>
                   </InlineField>
@@ -264,7 +264,7 @@ function InlineField({
 }) {
   return (
     <div className="flex items-start gap-2">
-      <span className="w-14 shrink-0 pt-2 text-xs text-gray-500">
+      <span className="w-14 shrink-0 py-1.5 text-xs text-gray-500">
         {label}
         {required && <span className="text-red-500"> *</span>}
       </span>

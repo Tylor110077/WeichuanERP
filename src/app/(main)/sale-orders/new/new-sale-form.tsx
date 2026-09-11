@@ -1025,10 +1025,10 @@ export function NewSaleForm({
                       />
                     </InlineField>
                     <InlineField label="单位">
-                      <span className="text-sm text-gray-700">{row.unitName || "—"}</span>
+                      <span className="block py-1.5 text-sm text-gray-700">{row.unitName || "—"}</span>
                     </InlineField>
                     <InlineField label="库存">
-                      <span className="text-sm tabular-nums text-gray-700">
+                      <span className="block py-1.5 text-sm tabular-nums text-gray-700">
                         {row.stockQty.toFixed(3)}
                         {row.avgCost > 0 && <span className="ml-1 text-xs text-gray-400">均价 ¥{row.avgCost.toFixed(2)}</span>}
                       </span>
@@ -1056,7 +1056,7 @@ export function NewSaleForm({
                       )}
                     </InlineField>
                     <InlineField label="金额">
-                      <span className="text-base font-semibold tabular-nums text-gray-900">
+                      <span className="block py-1.5 text-base font-semibold tabular-nums text-gray-900">
                         ¥{lineAmount(row).toFixed(2)}
                       </span>
                     </InlineField>
@@ -1086,7 +1086,7 @@ export function NewSaleForm({
                       </div>
                     </InlineField>
                     <InlineField label="需进货">
-                      <span className={`text-sm tabular-nums ${need > 0 ? "font-medium text-amber-600" : "text-gray-400"}`}>
+                      <span className={`block py-1.5 text-sm tabular-nums ${need > 0 ? "font-medium text-amber-600" : "text-gray-400"}`}>
                         {need.toFixed(3)}
                       </span>
                       {need > 0 && !row.manufacturer && (
@@ -1275,7 +1275,7 @@ function InlineField({
 }) {
   return (
     <div className="flex items-start gap-2">
-      <span className="w-14 shrink-0 pt-2 text-xs text-gray-500">
+      <span className="w-14 shrink-0 py-1.5 text-xs text-gray-500">
         {label}
         {required && <span className="text-red-500"> *</span>}
       </span>
