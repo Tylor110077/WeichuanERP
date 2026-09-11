@@ -111,6 +111,21 @@ export function NewOrderForm({
           </span>
         </summary>
         <div className="space-y-4 border-t border-gray-100 p-5">
+      {/* 单据备注（作用于整张单据，放在商品明细上方） */}
+      <div className="flex flex-wrap items-center gap-3">
+        <label htmlFor="remark" className="shrink-0 text-sm text-gray-600">
+          单据备注
+        </label>
+        <input
+          id="remark"
+          name="remark"
+          type="text"
+          maxLength={200}
+          placeholder="选填，如交货方式、包装要求（作用于整张单据）"
+          className="min-w-64 flex-1 rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+        />
+      </div>
+
       {/* 商品清单：每个商品一张卡片，字段按 商品 / 数量单价 / 行备注 分组 */}
       <div className="space-y-3">
         {rows.map((row, i) => (
@@ -229,20 +244,6 @@ export function NewOrderForm({
         </div>
       </div>
 
-          {/* 单据备注（与行备注同区） */}
-          <div className="flex flex-wrap items-center gap-3">
-            <label htmlFor="remark" className="shrink-0 text-sm text-gray-600">
-              单据备注
-            </label>
-            <input
-              id="remark"
-              name="remark"
-              type="text"
-              maxLength={200}
-              placeholder="选填，如交货方式、包装要求"
-              className="min-w-64 flex-1 rounded-md border border-gray-300 px-2 py-1.5 text-sm"
-            />
-          </div>
         </div>
       </details>
 
