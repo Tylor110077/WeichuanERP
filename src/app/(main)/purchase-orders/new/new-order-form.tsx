@@ -22,6 +22,8 @@ interface Row {
   unitName: string;
   quantity: string;
   unitPrice: string;
+  /** 行备注（如包装、交货要求） */
+  remark: string;
 }
 
 const inputCls =
@@ -42,7 +44,7 @@ export function NewOrderForm({
   );
 
   function emptyRow(): Row {
-    return { productId: "", unitName: "", quantity: "", unitPrice: "" };
+    return { productId: "", unitName: "", quantity: "", unitPrice: "", remark: "" };
   }
 
   function onProductChange(index: number, productId: string) {
@@ -71,7 +73,17 @@ export function NewOrderForm({
 
   return (
     <form action={formAction} className="space-y-4">
-      <div className="flex flex-wrap items-end gap-4 rounded-xl border border-gray-200 bg-white p-5">
+      {/* 厂家信息（可折叠） */}
+      <details open className="rounded-xl border border-gray-200 bg-white">
+        <summary className="cursor-pointer px-5 py-3 text-sm font-medium text-gray-900">
+          厂家信息
+          <span className="ml-2 text-xs font-normal text-gray-400">
+            {supplierId
+              ? suppliers.find((x) => String(x.id) === supplierId)?.name ?? "已选择"
+              : "尚未选择厂家"}
+          </span>
+        </summary>
+        <div className="border-t border-gray-100 p-5">
         <div className="min-w-56">
           <label htmlFor="supplierId" className="block text-xs font-medium text-gray-600">
             供应商 *
@@ -87,24 +99,18 @@ export function NewOrderForm({
             onChange={setSupplierId}
           />
         </div>
-        <div className="min-w-56 flex-1">
-          <label htmlFor="remark" className="block text-xs font-medium text-gray-600">
-            备注
-          </label>
-          <input
-            id="remark"
-            name="remark"
-            type="text"
-            maxLength={200}
-            placeholder="选填"
-            className={`mt-1 ${inputCls}`}
-          />
         </div>
-        <div className="text-right text-sm text-gray-600">
-          合计：<span className="text-base font-semibold text-gray-900">¥{total.toFixed(2)}</span>
-        </div>
-      </div>
+      </details>
 
+      {/* 商品明细与备注（可折叠） */}
+      <details open className="rounded-xl border border-gray-200 bg-white">
+        <summary className="cursor-pointer px-5 py-3 text-sm font-medium text-gray-900">
+          商品明细与备注
+          <span className="ml-2 text-xs font-normal text-gray-400">
+            {rows.length} 行 ・ 合计 ¥{total.toFixed(2)}
+          </span>
+        </summary>
+        <div className="space-y-4 border-t border-gray-100 p-5">
       <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
         <table className="min-w-full divide-y divide-gray-200 text-sm">
           <thead className="bg-gray-50 text-left text-xs text-gray-500">
@@ -113,6 +119,7 @@ export function NewOrderForm({
               <th className="w-32 px-4 py-3 font-medium">数量 *</th>
               <th className="w-24 px-4 py-3 font-medium">单位</th>
               <th className="w-36 px-4 py-3 font-medium">进价 *</th>
+              <th className="w-40 px-4 py-3 font-medium">备注</th>
               <th className="w-32 px-4 py-3 text-right font-medium">金额</th>
               <th className="w-16 px-4 py-3 font-medium"></th>
             </tr>
@@ -164,6 +171,21 @@ export function NewOrderForm({
                     className={inputCls}
                   />
                 </td>
+                <td className="px-4 py-2">
+                  <input
+                    name={`item_${i}_remark`}
+                    type="text"
+                    maxLength={200}
+                    placeholder="备注"
+                    value={row.remark}
+                    onChange={(e) =>
+                      setRows((prev) =>
+                        prev.map((r, j) => (j === i ? { ...r, remark: e.target.value } : r))
+                      )
+                    }
+                    className={inputCls}
+                  />
+                </td>
                 <td className="px-4 py-2 text-right text-gray-900">
                   {lineAmount(row).toFixed(2)}
                 </td>
@@ -190,6 +212,23 @@ export function NewOrderForm({
           </button>
         </div>
       </div>
+
+          {/* 单据备注（与行备注同区） */}
+          <div className="flex flex-wrap items-center gap-3">
+            <label htmlFor="remark" className="shrink-0 text-sm text-gray-600">
+              单据备注
+            </label>
+            <input
+              id="remark"
+              name="remark"
+              type="text"
+              maxLength={200}
+              placeholder="选填，如交货方式、包装要求"
+              className="min-w-64 flex-1 rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+            />
+          </div>
+        </div>
+      </details>
 
       <div className="flex items-center gap-3">
         <button

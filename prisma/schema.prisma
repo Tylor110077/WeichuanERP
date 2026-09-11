@@ -336,6 +336,7 @@ model PurchaseOrderItem {
   // 备货量：本行数量中超出触发销售单需求的部分（客户订单量 = quantity - restock_qty）；
   // 备货进库存备用，不计入该客户的销售/成本/应收。
   restockQty      Decimal       @default(0) @map("restock_qty") @db.Decimal(12, 3)
+  remark          String?       @db.VarChar(200) // 行备注
   unitId          Int           @map("unit_id")
   unit            Unit          @relation(fields: [unitId], references: [id])
   unitPrice       Decimal       @map("unit_price") @db.Decimal(12, 2)
@@ -391,6 +392,7 @@ model SaleOrderItem {
   unitPrice   Decimal   @map("unit_price") @db.Decimal(12, 2)
   amount      Decimal   @db.Decimal(14, 2)
   costAmount  Decimal   @map("cost_amount") @db.Decimal(14, 2) // 开单时成本快照 = 数量 × 当时 avg_cost
+  remark      String?   @db.VarChar(200) // 行备注（如包装、交货要求）
 
   returnItems SaleReturnItem[]
 

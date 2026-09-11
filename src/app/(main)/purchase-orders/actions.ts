@@ -16,6 +16,7 @@ const itemSchema = z.object({
   productId: z.coerce.number().int().positive(),
   quantity: z.coerce.number().min(0.001, "数量必须大于 0").max(9_999_999.999),
   unitPrice: z.coerce.number().min(0).max(9_999_999_999.99),
+  remark: z.string().trim().max(200).optional().default(""), // 行备注
 });
 
 const createSchema = z.object({
@@ -43,6 +44,7 @@ function parseCreatePayload(formData: FormData) {
       productId: formData.get(`item_${i}_productId`),
       quantity: formData.get(`item_${i}_quantity`),
       unitPrice: formData.get(`item_${i}_unitPrice`),
+      remark: formData.get(`item_${i}_remark`) || "",
     });
     i++;
   }
@@ -99,6 +101,7 @@ export async function createPurchaseOrderAction(
       unitId: product.unitId, // 单位取商品默认单位（文档：不做换算，单单位制）
       quantity: Math.round(it.quantity * 1000) / 1000,
       unitPrice: round2(it.unitPrice),
+      remark: it.remark || null,
     };
   });
 

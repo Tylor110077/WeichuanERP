@@ -20,6 +20,7 @@ const itemSchema = z.object({
   supplierId: z.coerce.number().int().positive().optional().nullable(), // 缺货行需供应商
   // 多补：在自动补足缺口之外额外多进的备货量（不允许负数）；不填＝不多补
   extraQty: z.coerce.number().min(0).max(9_999_999.999).optional().default(0),
+  remark: z.string().trim().max(200).optional().default(""), // 行备注
 });
 
 const createSchema = z.object({
@@ -53,6 +54,7 @@ function parseCreatePayload(formData: FormData) {
       supplyPrice: formData.get(`item_${i}_supplyPrice`) ?? 0,
       supplierId: formData.get(`item_${i}_supplierId`) || undefined,
       extraQty: formData.get(`item_${i}_extraQty`) || 0,
+      remark: formData.get(`item_${i}_remark`) || "",
     });
     i++;
   }
@@ -174,6 +176,7 @@ export async function createSaleOrderAction(
           unitPrice: number;
           costAmount: number;
           avgCost: number;
+          remark: string;
         }[] = [];
 
         // ① 缺货行：生成自动补货单（按供应商聚合并即时入库）
@@ -332,6 +335,7 @@ export async function createSaleOrderAction(
             unitPrice: round2(it.unitPrice),
             costAmount: round2(qty * cur.avgCost),
             avgCost: cur.avgCost,
+            remark: it.remark ?? "",
           });
         }
 
@@ -347,6 +351,7 @@ export async function createSaleOrderAction(
               unitPrice: r.unitPrice,
               amount: round2(r.quantity * r.unitPrice),
               costAmount: r.costAmount,
+              remark: r.remark || null,
             },
           });
         }
