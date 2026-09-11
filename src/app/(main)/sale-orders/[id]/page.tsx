@@ -12,6 +12,10 @@ const STATUS_LABELS: Record<string, string> = {
   voided: "已作废",
 };
 
+/**
+ * 售卖单详情：标题栏放独立操作按钮，随后是基本信息（含金额）、收付款、商品明细与关联信息，
+ * 相关数据集中不分散。
+ */
 export default async function SaleOrderDetailPage({
   params,
 }: {
@@ -61,12 +65,15 @@ export default async function SaleOrderDetailPage({
     }),
   ]);
   const returnedSum = returns.reduce((s, r) => s + Number(r.totalAmount), 0);
-  const outstanding =
-    Number(order.totalAmount) - Number(order.receivedAmount) - returnedSum;
+  const total = Number(order.totalAmount);
+  const received = Number(order.receivedAmount);
+  const outstanding = total - received - returnedSum;
+  const profit = total - costSum(order);
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      {/* 标题与操作：按钮各自独立，集中在右上角 */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-lg font-semibold text-gray-900">
           售卖单 {order.orderNo}
           <span
@@ -79,69 +86,81 @@ export default async function SaleOrderDetailPage({
             {STATUS_LABELS[order.status]}
           </span>
         </h1>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2">
           <a
             href={`/sale-orders/${order.id}/print`}
             target="_blank"
             rel="noopener"
-            className="rounded-md border border-gray-300 px-4 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+            className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
           >
             打印销售单
           </a>
-          <Link href="/sale-orders" className="text-sm text-blue-600 hover:underline">
+          {order.status === "confirmed" && (
+            <Link
+              href={`/sale-returns/new?orderId=${order.id}`}
+              className="rounded-md border border-orange-300 bg-white px-3 py-1.5 text-sm text-orange-600 hover:bg-orange-50"
+            >
+              退货
+            </Link>
+          )}
+          {canVoid && <DetailActions orderId={order.id} status={order.status} />}
+          <Link href="/sale-orders" className="ml-1 text-sm text-blue-600 hover:underline">
             ← 返回列表
           </Link>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <InfoCard label="客户" value={order.customer.name} />
-        <InfoCard label="开单操作人" value={order.operator.displayName} />
-        <InfoCard label="开单时间" value={order.createdAt.toLocaleString("zh-CN")} />
-        <InfoCard label="应收金额" value={`¥${Number(order.totalAmount).toFixed(2)}`} />
-        <InfoCard label="已收金额" value={`¥${Number(order.receivedAmount).toFixed(2)}`} />
-        <InfoCard
-          label="未收金额"
-          value={`¥${Math.max(
-            Number(order.totalAmount) - Number(order.receivedAmount) - returnedSum,
-            0
-          ).toFixed(2)}`}
-          highlight={Number(order.totalAmount) - Number(order.receivedAmount) - returnedSum > 0}
-        />
-        <InfoCard
-          label="本单毛利（按成本快照）"
-          value={canSeeCost ? `¥${(Number(order.totalAmount) - costSum(order)).toFixed(2)}` : "仅管理员/老板可见"}
-        />
-        <InfoCard label="关联自动补货单" value={order.autoRestockOrders.length > 0 ? `${order.autoRestockOrders.length} 张` : "无"} />
-        <InfoCard label="备注" value={order.remark ?? "—"} />
+      {/* 基本信息（含金额与毛利）：紧凑排列，不分散 */}
+      <div className="rounded-xl border border-gray-200 bg-white p-5">
+        <h2 className="text-sm font-semibold text-gray-900">基本信息</h2>
+        <dl className="mt-3 grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3 lg:grid-cols-4">
+          <InfoItem label="客户" value={order.customer.name} />
+          <InfoItem label="开单操作人" value={order.operator.displayName} />
+          <InfoItem label="开单时间" value={order.createdAt.toLocaleString("zh-CN")} />
+          <InfoItem label="备注" value={order.remark ?? "—"} />
+        </dl>
+
+        <div className="mt-4 flex flex-wrap items-start gap-x-10 gap-y-3 border-t border-gray-100 pt-4">
+          <Amount label="应收金额" value={`¥${total.toFixed(2)}`} />
+          <Amount label="已收金额" value={`¥${received.toFixed(2)}`} />
+          <Amount
+            label="未收金额"
+            value={`¥${Math.max(outstanding, 0).toFixed(2)}`}
+            tone={outstanding > 0 ? "red" : "muted"}
+          />
+          {canSeeCost && (
+            <Amount
+              label="本单毛利（按成本快照）"
+              value={`¥${profit.toFixed(2)}`}
+              tone={profit >= 0 ? "green" : "red"}
+            />
+          )}
+        </div>
       </div>
 
-      {order.autoRestockOrders.length > 0 && (
-        <div className="rounded-xl border border-gray-200 bg-white p-4">
-          <h2 className="mb-2 text-sm font-semibold text-gray-900">自动补货进货单（缺货即时入库）</h2>
-          <div className="space-y-1 text-sm">
-            {order.autoRestockOrders.map((po) => (
-              <div key={po.id} className="flex items-center gap-3">
-                <Link href={`/purchase-orders/${po.id}`} className="text-blue-600 hover:underline">
-                  {po.orderNo}
-                </Link>
-                <span className="text-gray-600">{po.supplier.name}</span>
-                <span
-                  className={
-                    po.status === "received"
-                      ? "rounded-full bg-green-50 px-2 py-0.5 text-xs text-green-700"
-                      : "rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600"
-                  }
-                >
-                  {po.status === "received" ? "已入库" : "已作废"}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* 收款登记与记录（紧跟基本信息） */}
+      <ReceiptBlock
+        orderId={order.id}
+        orderStatus={order.status}
+        outstanding={outstanding}
+        canPay={canCollect}
+        payments={payments.map((p) => ({
+          id: p.id,
+          orderNo: p.orderNo,
+          amount: Number(p.amount),
+          method: p.method,
+          createdAt: p.createdAt.toLocaleString("zh-CN"),
+          operatorName: p.operator.displayName,
+          status: p.status,
+        }))}
+      />
 
+      {/* 商品明细 */}
       <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+        <div className="border-b border-gray-100 px-4 py-3 text-sm font-semibold text-gray-900">
+          商品明细
+          <span className="ml-2 text-xs font-normal text-gray-400">{order.items.length} 行</span>
+        </div>
         <table className="min-w-full divide-y divide-gray-200 text-sm">
           <thead className="bg-gray-50 text-left text-xs text-gray-500">
             <tr>
@@ -174,37 +193,39 @@ export default async function SaleOrderDetailPage({
         </table>
       </div>
 
-      <div className="rounded-xl border border-gray-200 bg-white p-5">
-        <h2 className="mb-3 text-sm font-semibold text-gray-900">单据操作</h2>
-        <div className="flex flex-wrap items-center gap-3">
-          {canVoid && <DetailActions orderId={order.id} status={order.status} />}
-          {!canVoid && order.status === "confirmed" && (
-            <span className="text-xs text-gray-400">业务员无作废权限（管理员/老板可作废）</span>
-          )}
-          {order.status === "confirmed" && (
-            <Link
-              href={`/sale-returns/new?orderId=${order.id}`}
-              className="rounded-md border border-orange-300 px-4 py-1.5 text-sm font-medium text-orange-600 hover:bg-orange-50"
-            >
-              退货（按原单部分退货）
-            </Link>
-          )}
-        </div>
-      </div>
-
-      {order.status === "voided" && (
-        <div className="rounded-xl border border-gray-200 bg-white p-5 text-sm text-gray-600">
-          作废人：{order.voidedBy ?? "—"} ｜ 作废时间：{order.voidedAt?.toLocaleString("zh-CN") ?? "—"} ｜
-          原因：{order.voidReason ?? "—"}
+      {/* 关联单据：自动补货进货单 */}
+      {order.autoRestockOrders.length > 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white p-5">
+          <h2 className="mb-2 text-sm font-semibold text-gray-900">自动补货进货单（缺货即时入库）</h2>
+          <div className="space-y-1.5 text-sm">
+            {order.autoRestockOrders.map((po) => (
+              <div key={po.id} className="flex flex-wrap items-center gap-3">
+                <Link href={`/purchase-orders/${po.id}`} className="text-blue-600 hover:underline">
+                  {po.orderNo}
+                </Link>
+                <span className="text-gray-600">{po.supplier.name}</span>
+                <span
+                  className={
+                    po.status === "received"
+                      ? "rounded-full bg-green-50 px-2 py-0.5 text-xs text-green-700"
+                      : "rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600"
+                  }
+                >
+                  {po.status === "received" ? "已入库" : "已作废"}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
+      {/* 本单退货记录 */}
       {order.returns.length > 0 && (
         <div className="rounded-xl border border-gray-200 bg-white p-5 text-sm">
           <h2 className="mb-2 font-semibold text-gray-900">本单退货记录</h2>
-          <div className="space-y-1">
+          <div className="space-y-1.5">
             {order.returns.map((r) => (
-              <div key={r.id} className="flex items-center gap-3 text-gray-700">
+              <div key={r.id} className="flex flex-wrap items-center gap-3 text-gray-700">
                 <span className="font-medium text-gray-900">{r.orderNo}</span>
                 <span>¥{Number(r.totalAmount).toFixed(2)}</span>
                 <span
@@ -225,21 +246,13 @@ export default async function SaleOrderDetailPage({
         </div>
       )}
 
-      <ReceiptBlock
-        orderId={order.id}
-        orderStatus={order.status}
-        outstanding={outstanding}
-        canPay={canCollect}
-        payments={payments.map((p) => ({
-          id: p.id,
-          orderNo: p.orderNo,
-          amount: Number(p.amount),
-          method: p.method,
-          createdAt: p.createdAt.toLocaleString("zh-CN"),
-          operatorName: p.operator.displayName,
-          status: p.status,
-        }))}
-      />
+      {/* 作废留痕 */}
+      {order.status === "voided" && (
+        <div className="rounded-xl border border-gray-200 bg-white p-5 text-sm text-gray-600">
+          作废人：{order.voidedBy ?? "—"} ｜ 作废时间：{order.voidedAt?.toLocaleString("zh-CN") ?? "—"} ｜
+          原因：{order.voidReason ?? "—"}
+        </div>
+      )}
     </div>
   );
 }
@@ -250,11 +263,30 @@ function costSum(order: {
   return order.items.reduce((s, it) => s + Number(it.costAmount), 0);
 }
 
-function InfoCard({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
+function InfoItem({ label, value }: { label: string; value: string }) {
   return (
-    <div className={`rounded-xl border border-gray-200 bg-white p-4 ${highlight ? "bg-red-50/40" : ""}`}>
+    <div>
+      <dt className="text-xs text-gray-500">{label}</dt>
+      <dd className="mt-0.5 break-words text-sm text-gray-900">{value}</dd>
+    </div>
+  );
+}
+
+function Amount({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: string;
+  tone?: "red" | "green" | "muted";
+}) {
+  const color =
+    tone === "red" ? "text-red-600" : tone === "green" ? "text-green-700" : tone === "muted" ? "text-gray-500" : "text-gray-900";
+  return (
+    <div>
       <div className="text-xs text-gray-500">{label}</div>
-      <div className={`mt-1 text-sm font-medium ${highlight ? "text-red-600" : "text-gray-900"}`}>{value}</div>
+      <div className={`mt-0.5 text-lg font-semibold tabular-nums ${color}`}>{value}</div>
     </div>
   );
 }

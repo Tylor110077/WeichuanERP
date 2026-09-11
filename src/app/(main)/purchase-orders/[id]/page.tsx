@@ -13,6 +13,10 @@ const STATUS_LABELS: Record<string, string> = {
   voided: "已作废",
 };
 
+/**
+ * 进货单详情：标题栏放独立操作按钮，随后是基本信息（含金额）、付款、商品明细与关联信息，
+ * 与售卖单详情保持一致的布局。
+ */
 export default async function PurchaseOrderDetailPage({
   params,
 }: {
@@ -31,7 +35,7 @@ export default async function PurchaseOrderDetailPage({
       supplier: true,
       operator: true,
       items: { include: { product: true, unit: true } },
-      returns: { orderBy: { createdAt: "desc" } }, // 本单退货记录（操作集成在单据操作区）
+      returns: { orderBy: { createdAt: "desc" } }, // 本单退货记录
     },
   });
   if (!order) notFound();
@@ -63,12 +67,16 @@ export default async function PurchaseOrderDetailPage({
     }),
   ]);
   const returnedSum = returns.reduce((s, r) => s + Number(r.totalAmount), 0);
-  const outstanding =
-    Number(order.totalAmount) - Number(order.paidAmount) - returnedSum;
+  const total = Number(order.totalAmount);
+  const paid = Number(order.paidAmount);
+  const outstanding = total - paid - returnedSum;
+
+  const showActions = order.status !== "voided" && (canReceive || canVoid || canReturn);
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      {/* 标题与操作：按钮各自独立，集中在右上角 */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-lg font-semibold text-gray-900">
           进货单 {order.orderNo}
           <span
@@ -83,23 +91,75 @@ export default async function PurchaseOrderDetailPage({
             {STATUS_LABELS[order.status]}
           </span>
         </h1>
-        <Link href="/purchase-orders" className="text-sm text-blue-600 hover:underline">
-          ← 返回列表
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          {showActions && (
+            <DetailActions
+              orderId={order.id}
+              status={order.status}
+              canReceive={canReceive}
+              canVoid={canVoid}
+            />
+          )}
+          {canReturn && (
+            <Link
+              href={`/purchase-returns/new?orderId=${order.id}`}
+              className="rounded-md border border-orange-300 bg-white px-3 py-1.5 text-sm text-orange-600 hover:bg-orange-50"
+            >
+              退货
+            </Link>
+          )}
+          <Link href="/purchase-orders" className="ml-1 text-sm text-blue-600 hover:underline">
+            ← 返回列表
+          </Link>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <InfoCard label="供应商" value={order.supplier.name} />
-        <InfoCard label="开单操作人" value={order.operator.displayName} />
-        <InfoCard label="开单时间" value={order.createdAt.toLocaleString("zh-CN")} />
-        <InfoCard label="应付金额" value={`¥${Number(order.totalAmount).toFixed(2)}`} />
-        <InfoCard label="已付金额" value={`¥${Number(order.paidAmount).toFixed(2)}`} />
-        <InfoCard label="来源" value={order.sourceType === "auto" ? "自动补货" : "手动进货"} />
-        <InfoCard label="入库时间" value={order.receivedAt?.toLocaleString("zh-CN") ?? "—"} />
-        <InfoCard label="备注" value={order.remark ?? "—"} />
+      {/* 基本信息（含金额）：紧凑排列，不分散 */}
+      <div className="rounded-xl border border-gray-200 bg-white p-5">
+        <h2 className="text-sm font-semibold text-gray-900">基本信息</h2>
+        <dl className="mt-3 grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3 lg:grid-cols-4">
+          <InfoItem label="供应商" value={order.supplier.name} />
+          <InfoItem label="开单操作人" value={order.operator.displayName} />
+          <InfoItem label="开单时间" value={order.createdAt.toLocaleString("zh-CN")} />
+          <InfoItem label="来源" value={order.sourceType === "auto" ? "自动补货（缺货即时入库）" : "手动进货"} />
+          <InfoItem label="入库时间" value={order.receivedAt?.toLocaleString("zh-CN") ?? "—"} />
+          <InfoItem label="备注" value={order.remark ?? "—"} />
+        </dl>
+
+        <div className="mt-4 flex flex-wrap items-start gap-x-10 gap-y-3 border-t border-gray-100 pt-4">
+          <Amount label="应付金额" value={`¥${total.toFixed(2)}`} />
+          <Amount label="已付金额" value={`¥${paid.toFixed(2)}`} />
+          <Amount
+            label="未付金额"
+            value={`¥${Math.max(outstanding, 0).toFixed(2)}`}
+            tone={outstanding > 0 ? "red" : "muted"}
+          />
+        </div>
       </div>
 
+      {/* 付款登记与记录（紧跟基本信息） */}
+      <PaymentBlock
+        orderId={order.id}
+        orderStatus={order.status}
+        outstanding={outstanding}
+        canPay={canPay}
+        payments={payments.map((p) => ({
+          id: p.id,
+          orderNo: p.orderNo,
+          amount: Number(p.amount),
+          method: p.method,
+          createdAt: p.createdAt.toLocaleString("zh-CN"),
+          operatorName: p.operator.displayName,
+          status: p.status,
+        }))}
+      />
+
+      {/* 商品明细 */}
       <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+        <div className="border-b border-gray-100 px-4 py-3 text-sm font-semibold text-gray-900">
+          商品明细
+          <span className="ml-2 text-xs font-normal text-gray-400">{order.items.length} 行</span>
+        </div>
         <table className="min-w-full divide-y divide-gray-200 text-sm">
           <thead className="bg-gray-50 text-left text-xs text-gray-500">
             <tr>
@@ -144,64 +204,20 @@ export default async function PurchaseOrderDetailPage({
                 合计
               </td>
               <td className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
-                ¥{Number(order.totalAmount).toFixed(2)}
+                ¥{total.toFixed(2)}
               </td>
             </tr>
           </tfoot>
         </table>
       </div>
 
-      {order.status !== "voided" && (canReceive || canVoid || canReturn) && (
-        <div className="rounded-xl border border-gray-200 bg-white p-5">
-          <h2 className="mb-3 text-sm font-semibold text-gray-900">单据操作</h2>
-          <div className="flex flex-wrap items-center gap-3">
-            <DetailActions
-              orderId={order.id}
-              status={order.status}
-              canReceive={canReceive}
-              canVoid={canVoid}
-            />
-            {canReturn && (
-              <Link
-                href={`/purchase-returns/new?orderId=${order.id}`}
-                className="rounded-md border border-orange-300 px-4 py-1.5 text-sm font-medium text-orange-600 hover:bg-orange-50"
-              >
-                退货（按原单部分退货）
-              </Link>
-            )}
-          </div>
-        </div>
-      )}
-
-      <PaymentBlock
-        orderId={order.id}
-        orderStatus={order.status}
-        outstanding={outstanding}
-        canPay={canPay}
-        payments={payments.map((p) => ({
-          id: p.id,
-          orderNo: p.orderNo,
-          amount: Number(p.amount),
-          method: p.method,
-          createdAt: p.createdAt.toLocaleString("zh-CN"),
-          operatorName: p.operator.displayName,
-          status: p.status,
-        }))}
-      />
-
-      {order.status === "voided" && (
-        <div className="rounded-xl border border-gray-200 bg-white p-5 text-sm text-gray-600">
-          作废人：{order.voidedBy ?? "—"} ｜ 作废时间：{order.voidedAt?.toLocaleString("zh-CN") ?? "—"} ｜
-          原因：{order.voidReason ?? "—"}
-        </div>
-      )}
-
+      {/* 本单退货记录 */}
       {order.returns.length > 0 && (
         <div className="rounded-xl border border-gray-200 bg-white p-5 text-sm">
           <h2 className="mb-2 font-semibold text-gray-900">本单退货记录</h2>
-          <div className="space-y-1">
+          <div className="space-y-1.5">
             {order.returns.map((r) => (
-              <div key={r.id} className="flex items-center gap-3 text-gray-700">
+              <div key={r.id} className="flex flex-wrap items-center gap-3 text-gray-700">
                 <span className="font-medium text-gray-900">{r.orderNo}</span>
                 <span>¥{Number(r.totalAmount).toFixed(2)}</span>
                 <span
@@ -221,15 +237,42 @@ export default async function PurchaseOrderDetailPage({
           </div>
         </div>
       )}
+
+      {/* 作废留痕 */}
+      {order.status === "voided" && (
+        <div className="rounded-xl border border-gray-200 bg-white p-5 text-sm text-gray-600">
+          作废人：{order.voidedBy ?? "—"} ｜ 作废时间：{order.voidedAt?.toLocaleString("zh-CN") ?? "—"} ｜
+          原因：{order.voidReason ?? "—"}
+        </div>
+      )}
     </div>
   );
 }
 
-function InfoCard({ label, value }: { label: string; value: string }) {
+function InfoItem({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4">
+    <div>
+      <dt className="text-xs text-gray-500">{label}</dt>
+      <dd className="mt-0.5 break-words text-sm text-gray-900">{value}</dd>
+    </div>
+  );
+}
+
+function Amount({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: string;
+  tone?: "red" | "green" | "muted";
+}) {
+  const color =
+    tone === "red" ? "text-red-600" : tone === "green" ? "text-green-700" : tone === "muted" ? "text-gray-500" : "text-gray-900";
+  return (
+    <div>
       <div className="text-xs text-gray-500">{label}</div>
-      <div className="mt-1 text-sm font-medium text-gray-900">{value}</div>
+      <div className={`mt-0.5 text-lg font-semibold tabular-nums ${color}`}>{value}</div>
     </div>
   );
 }
