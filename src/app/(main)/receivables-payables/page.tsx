@@ -85,13 +85,6 @@ export default async function ReceivablesPage({
     const total = Number((o as { totalAmount: unknown }).totalAmount);
     return total - paid - returned > 0;
   });
-  const unpaidSum = unpaidOrders.reduce((s, o) => {
-    const returned = o.returns.reduce((r, x) => r + Number(x.totalAmount), 0);
-    const paid = isReceivable ? Number((o as { receivedAmount: unknown }).receivedAmount) : Number((o as { paidAmount: unknown }).paidAmount);
-    const total = Number((o as { totalAmount: unknown }).totalAmount);
-    return s + Math.max(0, total - paid - returned);
-  }, 0);
-
   const counterOptions =
     isReceivable
       ? await prisma.customer.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } })
@@ -123,23 +116,6 @@ export default async function ReceivablesPage({
           >
             应付（供应商）
           </a>
-        </div>
-      </div>
-
-      <div className="rounded-xl border border-gray-200 bg-white p-5">
-        <div className="text-sm text-gray-500">
-          {isReceivable ? "客户应收合计（未收）" : "供应商应付合计（未付）"} ・ 当前筛选条件
-        </div>
-        <div className="mt-1 text-2xl font-semibold text-gray-900">¥{totalOutstanding.toFixed(2)}</div>
-        <div className="mt-2 space-y-1">
-          {[...byCounter.entries()]
-            .sort((a, b) => b[1].total - a[1].total)
-            .map(([id, v]) => (
-              <div key={id} className="flex justify-between text-sm">
-                <span className="text-gray-700">{v.name}</span>
-                <span className="text-gray-900">¥{v.total.toFixed(2)}</span>
-              </div>
-            ))}
         </div>
       </div>
 
@@ -175,7 +151,7 @@ export default async function ReceivablesPage({
         <div className="border-b border-gray-100 px-4 py-3 text-sm font-semibold text-gray-900">
           未结清单据（{isReceivable ? "应收" : "应付"}）
           <span className="ml-2 text-xs font-normal text-gray-400">
-            共 {unpaidOrders.length} 张 ・ 待{isReceivable ? "收" : "付"} ¥{unpaidSum.toFixed(2)} ・ 点右侧「详情 / 登记」进单据登记
+            共 {unpaidOrders.length} 张 ・ 点右侧「详情 / 登记」进单据登记
           </span>
         </div>
         <table className="min-w-full divide-y divide-gray-200 text-sm">
@@ -227,6 +203,31 @@ export default async function ReceivablesPage({
             })}
           </tbody>
         </table>
+      </div>
+
+      {/* 合计：放在单据表下方，直观反映当前筛选条件下共多少未结清 */}
+      <div className="rounded-xl border border-gray-200 bg-white p-5">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <div className="text-sm text-gray-500">
+            {isReceivable ? "客户应收合计（未收）" : "供应商应付合计（未付）"}
+            <span className="ml-2 text-xs text-gray-400">
+              当前筛选条件 ・ {unpaidOrders.length} 张单据
+            </span>
+          </div>
+          <div className="text-2xl font-semibold text-red-600">¥{totalOutstanding.toFixed(2)}</div>
+        </div>
+        {byCounter.size > 0 && (
+          <div className="mt-3 space-y-1 border-t border-gray-100 pt-3">
+            {[...byCounter.entries()]
+              .sort((a, b) => b[1].total - a[1].total)
+              .map(([id, v]) => (
+                <div key={id} className="flex justify-between text-sm">
+                  <span className="text-gray-700">{v.name}</span>
+                  <span className="text-gray-900">¥{v.total.toFixed(2)}</span>
+                </div>
+              ))}
+          </div>
+        )}
       </div>
     </div>
   );
