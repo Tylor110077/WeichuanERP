@@ -1247,14 +1247,18 @@ export function NewSaleForm({
         );
       })()}
 
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <button
           type="submit"
           disabled={pending || !customerId}
-          className="rounded-md bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+          title={!customerId ? "请先选择客户" : undefined}
+          className="rounded-md bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {pending ? "提交中…" : "提交售卖单"}
         </button>
+        {!customerId && (
+          <span className="text-sm text-amber-600">请先在上方选择客户，再提交单据</span>
+        )}
         {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
         {state?.ok && <p className="text-sm text-green-600">{state.ok}</p>}
       </div>
