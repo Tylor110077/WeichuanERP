@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { DateShortcuts } from "@/components/date-shortcuts";
+import { SearchSelect } from "@/components/search-select";
 import { PaymentForm } from "./payment-form";
 
 export const metadata = { title: "应收应付 - 玮川进销存" };
@@ -184,12 +185,14 @@ export default async function ReceivablesPage({
           <label htmlFor="to" className="block text-xs font-medium text-gray-600">结束日期</label>
           <input id="to" type="date" name="to" defaultValue={params.to} className="mt-1 rounded-md border border-gray-300 px-2 py-1.5 text-sm" />
         </div>
-        <select name="counterId" defaultValue={params.counterId ?? ""} className="rounded-md border border-gray-300 px-2 py-1.5 text-sm">
-          <option value="">{isReceivable ? "全部客户" : "全部供应商"}</option>
-          {counterOptions.map((c) => (
-            <option key={c.id} value={c.id}>{c.name}</option>
-          ))}
-        </select>
+        <SearchSelect
+          name="counterId"
+          options={counterOptions.map((c) => ({ value: String(c.id), label: c.name }))}
+          defaultValue={params.counterId ?? ""}
+          noneLabel={isReceivable ? "全部客户" : "全部厂家"}
+          placeholder={isReceivable ? "客户（可搜索）" : "厂家（可搜索）"}
+          className="w-52"
+        />
         <input type="hidden" name="view" value={view} />
         <button type="submit" className="rounded-md bg-gray-100 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-200">查询</button>
         {(params.from || params.to || params.counterId) && (

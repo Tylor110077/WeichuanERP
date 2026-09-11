@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { SearchSelect } from "@/components/search-select";
 import { createPurchaseOrderAction, type FormState } from "../actions";
 
 interface SupplierOption {
@@ -75,21 +76,16 @@ export function NewOrderForm({
           <label htmlFor="supplierId" className="block text-xs font-medium text-gray-600">
             供应商 *
           </label>
-          <select
-            id="supplierId"
+          <SearchSelect
+            key={`po-sup-${supplierId}`}
             name="supplierId"
-            required
-            value={supplierId}
-            onChange={(e) => setSupplierId(e.target.value)}
-            className={`mt-1 ${inputCls}`}
-          >
-            <option value="">请选择供应商</option>
-            {suppliers.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
+            options={suppliers.map((s) => ({ value: String(s.id), label: s.name }))}
+            defaultValue={supplierId}
+            noneLabel="请选择厂家"
+            placeholder="厂家（可搜索）"
+            className="mt-1"
+            onChange={setSupplierId}
+          />
         </div>
         <div className="min-w-56 flex-1">
           <label htmlFor="remark" className="block text-xs font-medium text-gray-600">
@@ -125,20 +121,15 @@ export function NewOrderForm({
             {rows.map((row, i) => (
               <tr key={i}>
                 <td className="px-4 py-2">
-                  <select
+                  <SearchSelect
+                    key={`po-prod-${i}-${row.productId}`}
                     name={`item_${i}_productId`}
-                    required
-                    value={row.productId}
-                    onChange={(e) => onProductChange(i, e.target.value)}
-                    className={inputCls}
-                  >
-                    <option value="">请选择商品</option>
-                    {products.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.label}
-                      </option>
-                    ))}
-                  </select>
+                    options={products.map((p) => ({ value: String(p.id), label: p.label }))}
+                    defaultValue={row.productId}
+                    noneLabel="请选择商品"
+                    placeholder="商品（可搜索）"
+                    onChange={(v) => onProductChange(i, v)}
+                  />
                 </td>
                 <td className="px-4 py-2">
                   <input

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { DateShortcuts } from "@/components/date-shortcuts";
+import { SearchSelect } from "@/components/search-select";
 
 export const metadata = { title: "供应商对账 - 玮川进销存" };
 
@@ -111,11 +112,13 @@ export default async function SupplierStatementPage({
       <form className="flex flex-wrap items-end gap-3 rounded-xl border border-gray-200 bg-white p-4">
         <div>
           <label htmlFor="supplierId" className="block text-xs font-medium text-gray-600">供应商</label>
-          <select id="supplierId" name="supplierId" defaultValue={effectiveSupplierId} className="mt-1 rounded-md border border-gray-300 px-2 py-1.5 text-sm">
-            {suppliers.map((s) => (
-              <option key={s.id} value={s.id}>{s.name}</option>
-            ))}
-          </select>
+          <SearchSelect
+            name="supplierId"
+            options={suppliers.map((s) => ({ value: String(s.id), label: s.name }))}
+            defaultValue={String(effectiveSupplierId)}
+            placeholder="厂家（可搜索）"
+            className="mt-1 w-56"
+          />
         </div>
         <div>
           <label htmlFor="from" className="block text-xs font-medium text-gray-600">开始（默认本月 1 日）</label>

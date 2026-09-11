@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { DateShortcuts } from "@/components/date-shortcuts";
+import { SearchSelect } from "@/components/search-select";
 import { ROLE_LABELS } from "@/lib/auth/roles";
 
 export const metadata = { title: "进货单 - 玮川进销存" };
@@ -85,14 +86,14 @@ export default async function PurchaseOrdersPage({
           defaultValue={q}
           className="w-40 rounded-md border border-gray-300 px-2 py-1.5 text-sm"
         />
-        <select name="supplierId" defaultValue={supplierId ?? ""} className="rounded-md border border-gray-300 px-2 py-1.5 text-sm">
-          <option value="">全部供应商</option>
-          {suppliers.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.name}
-            </option>
-          ))}
-        </select>
+        <SearchSelect
+          name="supplierId"
+          options={suppliers.map((s) => ({ value: String(s.id), label: s.name }))}
+          defaultValue={supplierId != null ? String(supplierId) : ""}
+          noneLabel="全部厂家"
+          placeholder="厂家（可搜索）"
+          className="w-52"
+        />
         <input type="date" name="from" defaultValue={params.from} className="rounded-md border border-gray-300 px-2 py-1.5 text-sm" />
         <input type="date" name="to" defaultValue={params.to} className="rounded-md border border-gray-300 px-2 py-1.5 text-sm" />
         <select name="status" defaultValue={status ?? ""} className="rounded-md border border-gray-300 px-2 py-1.5 text-sm">

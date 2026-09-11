@@ -37,8 +37,8 @@ export default async function NewProductPage() {
             required: true,
             type: "manufacturer",
           },
-          { name: "categoryId", label: "分类", type: "select", options: [{ value: "", label: "未分类" }, ...categories.map((c) => ({ value: String(c.id), label: c.name }))] },
-          { name: "unitId", label: "单位 *", required: true, type: "select", options: units.map((u) => ({ value: String(u.id), label: u.name })) },
+          { name: "categoryId", label: "分类（可搜索）", type: "searchselect", noneLabel: "未分类", options: categories.map((c) => ({ value: String(c.id), label: c.name })) },
+          { name: "unitId", label: "单位 *（可搜索）", required: true, type: "searchselect", options: units.map((u) => ({ value: String(u.id), label: u.name })) },
           { name: "refPurchasePrice", label: "参考进价", type: "number", step: "0.01" },
           { name: "minStock", label: "库存预警线（默认 1）", type: "number", step: "0.001" },
         ]}

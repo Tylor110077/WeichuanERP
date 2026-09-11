@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { DateShortcuts } from "@/components/date-shortcuts";
+import { SearchSelect } from "@/components/search-select";
 
 export const metadata = { title: "库存流水 - 玮川进销存" };
 
@@ -73,14 +74,14 @@ export default async function StockMovementsPage({
       <DateShortcuts basePath="/stock-movements" extraQuery={{ productId: productId ? String(productId) : "", bizType: bizType ?? "" }} />
 
       <form className="flex flex-wrap items-center gap-3 rounded-xl border border-gray-200 bg-white p-4">
-        <select name="productId" defaultValue={productId ?? ""} className="rounded-md border border-gray-300 px-2 py-1.5 text-sm">
-          <option value="">全部商品</option>
-          {products.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.code} {p.name}
-            </option>
-          ))}
-        </select>
+        <SearchSelect
+          name="productId"
+          options={products.map((p) => ({ value: String(p.id), label: `${p.code} ${p.name}` }))}
+          defaultValue={productId != null ? String(productId) : ""}
+          noneLabel="全部商品"
+          placeholder="商品（可搜索）"
+          className="w-60"
+        />
         <input type="date" name="from" defaultValue={params.from} className="rounded-md border border-gray-300 px-2 py-1.5 text-sm" />
         <input type="date" name="to" defaultValue={params.to} className="rounded-md border border-gray-300 px-2 py-1.5 text-sm" />
         <select name="bizType" defaultValue={bizType ?? ""} className="rounded-md border border-gray-300 px-2 py-1.5 text-sm">

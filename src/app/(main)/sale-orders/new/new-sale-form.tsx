@@ -779,17 +779,16 @@ export function NewSaleForm({
               <div>
                 <label className="block text-xs font-medium text-gray-600">分类</label>
                 <div className="mt-1 flex items-center gap-1">
-                  <select
+                  <SearchSelect
+                    key={`np-cat-${newProduct.categoryId}-${categoryOptions.length}`}
                     name="quickCategory"
-                    value={newProduct.categoryId}
-                    onChange={(e) => setNewProduct((p) => ({ ...p, categoryId: e.target.value }))}
-                    className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm text-gray-900"
-                  >
-                    <option value="">未分类</option>
-                    {categoryOptions.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
+                    options={categoryOptions.map((c) => ({ value: String(c.id), label: c.name }))}
+                    defaultValue={newProduct.categoryId}
+                    noneLabel="未分类"
+                    placeholder="分类（可搜索）"
+                    className="flex-1"
+                    onChange={(v) => setNewProduct((p) => ({ ...p, categoryId: v }))}
+                  />
                   <button
                     type="button"
                     onClick={() => { setShowQuickCategory((v) => !v); setShowQuickUnit(false); setQuickOptionName(""); }}
@@ -817,17 +816,16 @@ export function NewSaleForm({
               <div>
                 <label className="block text-xs font-medium text-gray-600">单位 *</label>
                 <div className="mt-1 flex items-center gap-1">
-                  <select
+                  <SearchSelect
+                    key={`np-unit-${newProduct.unitId}-${unitOptions.length}`}
                     name="quickUnit"
-                    value={newProduct.unitId}
-                    onChange={(e) => setNewProduct((p) => ({ ...p, unitId: e.target.value }))}
-                    className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm text-gray-900"
-                  >
-                    <option value="">请选择</option>
-                    {unitOptions.map((u) => (
-                      <option key={u.id} value={u.id}>{u.name}</option>
-                    ))}
-                  </select>
+                    options={unitOptions.map((u) => ({ value: String(u.id), label: u.name }))}
+                    defaultValue={newProduct.unitId}
+                    noneLabel="请选择"
+                    placeholder="单位（可搜索）"
+                    className="flex-1"
+                    onChange={(v) => setNewProduct((p) => ({ ...p, unitId: v }))}
+                  />
                   <button
                     type="button"
                     onClick={() => { setShowQuickUnit((v) => !v); setShowQuickCategory(false); setQuickOptionName(""); }}
