@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { btnPrimary, btnSmallDanger } from "@/lib/ui";
 import {
   createPaymentAction,
   voidPaymentAction,
@@ -73,7 +74,7 @@ export function ReceiptBlock({
           <button
             type="button"
             onClick={() => setShowPayForm((v) => !v)}
-            className="rounded-md bg-blue-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
+            className={btnPrimary}
           >
             {showPayForm ? "取消" : "收款"}
           </button>
@@ -115,7 +116,7 @@ export function ReceiptBlock({
           <button
             type="submit"
             disabled={payPending}
-            className="rounded-md bg-blue-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+            className={btnPrimary}
           >
             {payPending ? "登记中…" : "确认收款"}
           </button>
@@ -143,7 +144,7 @@ export function ReceiptBlock({
                     <button
                       type="submit"
                       disabled={voidPending}
-                      className="rounded bg-red-600 px-2 py-1 text-xs text-white hover:bg-red-700 disabled:opacity-50"
+                      className={btnSmallDanger}
                     >
                       {voidPending ? "处理中…" : "确认撤销"}
                     </button>

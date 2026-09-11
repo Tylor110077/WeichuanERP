@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect } from "react";
+import { btnPrimary } from "@/lib/ui";
 import { changePasswordAction, type FormState } from "./actions";
 
 export function ChangePasswordForm() {
@@ -73,7 +74,7 @@ export function ChangePasswordForm() {
       <button
         type="submit"
         disabled={pending}
-        className="rounded-md bg-blue-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+        className={btnPrimary}
       >
         {pending ? "提交中…" : "修改密码"}
       </button>

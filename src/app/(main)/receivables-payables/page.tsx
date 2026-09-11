@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { btnSecondary } from "@/lib/ui";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
@@ -141,7 +142,7 @@ export default async function ReceivablesPage({
           className="w-52"
         />
         <input type="hidden" name="view" value={view} />
-        <button type="submit" className="rounded-md bg-gray-100 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-200">查询</button>
+        <button type="submit" className={btnSecondary}>查询</button>
         {(params.from || params.to || params.counterId) && (
           <Link href={`/receivables-payables?view=${view}`} className="text-xs text-blue-600 hover:underline">清除条件</Link>
         )}

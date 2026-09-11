@@ -1,4 +1,5 @@
 import { redirect, notFound } from "next/navigation";
+import { btnSecondary, btnWarn } from "@/lib/ui";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
@@ -103,14 +104,14 @@ export default async function PurchaseOrderDetailPage({
           {canReturn && (
             <Link
               href={`/purchase-returns/new?orderId=${order.id}`}
-              className="rounded-md border border-orange-300 bg-white px-3 py-1.5 text-sm text-orange-600 hover:bg-orange-50"
+              className={btnWarn}
             >
               退货
             </Link>
           )}
           <Link
             href="/purchase-orders"
-            className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+            className={btnSecondary}
           >
             ← 返回列表
           </Link>

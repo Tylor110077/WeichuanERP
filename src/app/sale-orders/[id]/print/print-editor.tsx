@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
+import { btnSecondary } from "@/lib/ui";
 import { rmbUpper } from "@/lib/rmb";
 
 export interface PrintOrderData {
@@ -101,7 +102,7 @@ export function PrintEditor({ data }: { data: PrintOrderData }) {
                 window.close();
               }
             }}
-            className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm text-gray-600 hover:bg-gray-50"
+            className={btnSecondary}
           >
             返回
           </button>

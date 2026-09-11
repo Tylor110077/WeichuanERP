@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { btnPrimary } from "@/lib/ui";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
@@ -74,7 +75,7 @@ export default async function CustomersPage({
         {user.role === "admin" && (
           <Link
             href="/customers/new"
-            className="rounded-md bg-blue-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
+            className={btnPrimary}
           >
             + 新建客户
           </Link>

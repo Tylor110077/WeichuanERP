@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { btnSecondary } from "@/lib/ui";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
@@ -111,7 +112,7 @@ export default async function InventoryPage({
           <input type="checkbox" name="warnOnly" value="1" defaultChecked={warnOnly} className="h-4 w-4" />
           只看库存预警
         </label>
-        <button type="submit" className="rounded-md bg-gray-100 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-200">
+        <button type="submit" className={btnSecondary}>
           筛选
         </button>
       </form>

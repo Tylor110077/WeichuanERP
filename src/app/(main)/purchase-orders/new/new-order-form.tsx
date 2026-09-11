@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { btnPrimary, btnSmallPrimary } from "@/lib/ui";
 import { SearchSelect } from "@/components/search-select";
 import { createPurchaseOrderAction, type FormState } from "../actions";
 
@@ -224,7 +225,7 @@ export function NewOrderForm({
         <button
           type="button"
           onClick={() => setRows((prev) => [...prev, emptyRow()])}
-          className="rounded-md border border-blue-300 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50"
+          className={btnSmallPrimary}
         >
           + 添加商品行
         </button>
@@ -242,7 +243,7 @@ export function NewOrderForm({
           type="submit"
           disabled={pending || !supplierId}
           title={!supplierId ? "请先选择供应商" : undefined}
-          className="rounded-md bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+          className={btnPrimary}
         >
           {pending ? "提交中…" : "提交进货单"}
         </button>

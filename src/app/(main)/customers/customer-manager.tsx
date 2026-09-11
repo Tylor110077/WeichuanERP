@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { btnPrimary, btnSecondary, btnSmallPrimary, btnSmallSolid } from "@/lib/ui";
 import { useActionState, useState, useTransition } from "react";
 import { SearchSelect } from "@/components/search-select";
 import {
@@ -276,7 +277,7 @@ export function CustomerManager({
               <button
                 type="button"
                 onClick={() => { setShowCreateGroup((v) => !v); setShowCreateTag(false); setQuickName(""); }}
-                className="shrink-0 rounded-md border border-blue-300 px-2 py-1.5 text-xs text-blue-600 hover:bg-blue-50"
+                className={`shrink-0 ${btnSmallPrimary}`}
               >
                 + 组织
               </button>
@@ -291,7 +292,7 @@ export function CustomerManager({
                   className="w-full rounded-md border border-blue-200 px-2 py-1.5 text-sm text-gray-900"
                 />
                 <button type="button" onClick={createGroup} disabled={quickPending}
-                  className="shrink-0 rounded-md bg-blue-600 px-2 py-1 text-xs text-white disabled:opacity-50">
+                  className={`shrink-0 ${btnSmallSolid}`}>
                   {quickPending ? "…" : "创建"}
                 </button>
               </div>
@@ -339,7 +340,7 @@ export function CustomerManager({
                   className="w-28 rounded-md border border-blue-200 px-2 py-1 text-xs text-gray-900"
                 />
                 <button type="button" onClick={createTag} disabled={quickPending}
-                  className="rounded-md bg-blue-600 px-2 py-1 text-xs text-white disabled:opacity-50">
+                  className={btnSmallSolid}>
                   {quickPending ? "…" : "创建"}
                 </button>
               </>
@@ -352,13 +353,13 @@ export function CustomerManager({
           <button
             type="submit"
             disabled={savePending}
-            className="rounded-md bg-blue-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+            className={btnPrimary}
           >
             {savePending ? "保存中…" : editing ? "保存（移动组织/标签随保存生效）" : "创建客户"}
           </button>
           {editing && (
             <button type="button" onClick={() => startCreate(null)}
-              className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50">
+              className={btnSecondary}>
               取消
             </button>
           )}

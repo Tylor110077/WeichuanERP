@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { btnSmallDanger } from "@/lib/ui";
 import { voidPaymentAction, type FormState } from "./actions";
 
 export function VoidPaymentButton({ id, status }: { id: number; status: string }) {
@@ -38,7 +39,7 @@ export function VoidPaymentButton({ id, status }: { id: number; status: string }
             <button
               type="submit"
               disabled={pending}
-              className="rounded bg-red-600 px-2 py-0.5 text-xs text-white hover:bg-red-700 disabled:opacity-50"
+              className={btnSmallDanger}
             >
               {pending ? "处理中…" : "确认"}
             </button>

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { btnPrimary, btnSecondary } from "@/lib/ui";
 import { useActionState, useState, type ReactNode } from "react";
 
 export interface FieldDef {
@@ -212,7 +213,7 @@ export function MasterDataManager({
           <button
             type="submit"
             disabled={savePending}
-            className="rounded-md bg-blue-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+            className={btnPrimary}
           >
             {savePending ? "保存中…" : editing ? "保存" : "创建"}
           </button>
@@ -220,7 +221,7 @@ export function MasterDataManager({
             <button
               type="button"
               onClick={() => setEditing(null)}
-              className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50"
+              className={btnSecondary}
             >
               取消
             </button>

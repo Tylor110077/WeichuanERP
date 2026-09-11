@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState, useTransition } from "react";
+import { btnPrimary, btnSmallPrimary, btnSmallSolid } from "@/lib/ui";
 import { SearchSelect } from "@/components/search-select";
 import { createSaleOrderAction, type FormState } from "../actions";
 import {
@@ -598,7 +599,7 @@ export function NewSaleForm({
                   setShowCreateCustomer((v) => !v);
                   setCreateCustomerMsg(null);
                 }}
-                className="shrink-0 rounded-md border border-blue-300 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50"
+                className={`shrink-0 ${btnSmallPrimary}`}
               >
                 {showCreateCustomer ? "取消" : "+ 新建客户"}
               </button>
@@ -650,7 +651,7 @@ export function NewSaleForm({
                 <button
                   type="button"
                   onClick={() => { setShowQuickGroup((v) => !v); setShowQuickTag(false); setQuickOrgName(""); }}
-                  className="shrink-0 rounded-md border border-blue-300 px-2 py-1.5 text-xs text-blue-600 hover:bg-blue-50"
+                  className={`shrink-0 ${btnSmallPrimary}`}
                 >
                   {showQuickGroup ? "取消" : "+ 组织"}
                 </button>
@@ -665,7 +666,7 @@ export function NewSaleForm({
                     className="w-full rounded-md border border-blue-200 px-2 py-1.5 text-sm text-gray-900"
                   />
                   <button type="button" onClick={quickCreateGroup} disabled={createPending}
-                    className="shrink-0 rounded-md bg-blue-600 px-2 py-1 text-xs text-white disabled:opacity-50">
+                    className={`shrink-0 ${btnSmallSolid}`}>
                     {createPending ? "…" : "创建"}
                   </button>
                 </div>
@@ -712,7 +713,7 @@ export function NewSaleForm({
                       className="w-28 rounded-md border border-blue-200 px-2 py-1 text-xs text-gray-900"
                     />
                     <button type="button" onClick={quickCreateTag} disabled={createPending}
-                      className="rounded-md bg-blue-600 px-2 py-1 text-xs text-white disabled:opacity-50">
+                      className={btnSmallSolid}>
                       {createPending ? "…" : "创建"}
                     </button>
                   </>
@@ -838,7 +839,7 @@ export function NewSaleForm({
                   <button
                     type="button"
                     onClick={() => { setShowQuickCategory((v) => !v); setShowQuickUnit(false); setQuickOptionName(""); }}
-                    className="shrink-0 rounded-md border border-blue-300 px-2 py-1.5 text-xs text-blue-600 hover:bg-blue-50"
+                    className={`shrink-0 ${btnSmallPrimary}`}
                   >
                     {showQuickCategory ? "取消" : "+ 分类"}
                   </button>
@@ -853,7 +854,7 @@ export function NewSaleForm({
                       className="w-full rounded-md border border-blue-200 px-2 py-1.5 text-sm text-gray-900"
                     />
                     <button type="button" onClick={quickCreateCategory} disabled={productPending}
-                      className="shrink-0 rounded-md bg-blue-600 px-2 py-1 text-xs text-white disabled:opacity-50">
+                      className={`shrink-0 ${btnSmallSolid}`}>
                       {productPending ? "…" : "创建"}
                     </button>
                   </div>
@@ -875,7 +876,7 @@ export function NewSaleForm({
                   <button
                     type="button"
                     onClick={() => { setShowQuickUnit((v) => !v); setShowQuickCategory(false); setQuickOptionName(""); }}
-                    className="shrink-0 rounded-md border border-blue-300 px-2 py-1.5 text-xs text-blue-600 hover:bg-blue-50"
+                    className={`shrink-0 ${btnSmallPrimary}`}
                   >
                     {showQuickUnit ? "取消" : "+ 单位"}
                   </button>
@@ -890,7 +891,7 @@ export function NewSaleForm({
                       className="w-full rounded-md border border-blue-200 px-2 py-1.5 text-sm text-gray-900"
                     />
                     <button type="button" onClick={quickCreateUnit} disabled={productPending}
-                      className="shrink-0 rounded-md bg-blue-600 px-2 py-1 text-xs text-white disabled:opacity-50">
+                      className={`shrink-0 ${btnSmallSolid}`}>
                       {productPending ? "…" : "创建"}
                     </button>
                   </div>
@@ -1166,7 +1167,7 @@ export function NewSaleForm({
           <button
             type="button"
             onClick={() => setRows((prev) => [...prev, emptyRow()])}
-            className="rounded-md border border-blue-300 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50"
+            className={btnSmallPrimary}
           >
             + 添加商品行
           </button>
@@ -1177,7 +1178,7 @@ export function NewSaleForm({
                 setShowCreateProduct((v) => !v);
                 setProductMsg(null);
               }}
-              className="rounded-md border border-blue-300 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50"
+              className={btnSmallPrimary}
             >
               {showCreateProduct ? "收起" : "+ 新建商品"}
             </button>
@@ -1254,7 +1255,7 @@ export function NewSaleForm({
           type="submit"
           disabled={pending || !customerId}
           title={!customerId ? "请先选择客户" : undefined}
-          className="rounded-md bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+          className={btnPrimary}
         >
           {pending ? "提交中…" : "提交售卖单"}
         </button>

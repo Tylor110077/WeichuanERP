@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { btnSecondary } from "@/lib/ui";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { buildReport, REPORT_TABS, type ReportTabKey } from "@/lib/reports";
@@ -73,7 +74,7 @@ export default async function ReportsPage({
           <input id="to" type="date" name="to" defaultValue={to} className="mt-1 rounded-md border border-gray-300 px-2 py-1.5 text-sm" />
         </div>
         <input type="hidden" name="tab" value={tab} />
-        <button type="submit" className="rounded-md bg-gray-100 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-200">
+        <button type="submit" className={btnSecondary}>
           查询
         </button>
       </form>

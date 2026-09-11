@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { btnPrimary, btnSecondary } from "@/lib/ui";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
@@ -97,7 +98,7 @@ export default async function PurchaseOrdersPage({
         {user.role !== "boss" && (
           <Link
             href="/purchase-orders/new"
-            className="rounded-md bg-blue-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
+            className={btnPrimary}
           >
             新建进货单
           </Link>
@@ -146,7 +147,7 @@ export default async function PurchaseOrdersPage({
         </select>
         <button
           type="submit"
-          className="rounded-md bg-gray-100 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-200"
+          className={btnSecondary}
         >
           筛选
         </button>

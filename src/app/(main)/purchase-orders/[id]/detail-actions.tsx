@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { btnDanger, btnDangerSolid, btnSecondary } from "@/lib/ui";
 import {
   receivePurchaseOrderAction,
   voidPurchaseOrderAction,
@@ -50,7 +51,7 @@ export function DetailActions({
           <button
             type="button"
             onClick={() => setShowVoidInput((v) => !v)}
-            className="rounded-md border border-red-300 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50"
+            className={btnDanger}
           >
             作废
           </button>
@@ -74,14 +75,14 @@ export function DetailActions({
           <button
             type="submit"
             disabled={voidPending}
-            className="rounded-md bg-red-600 px-3 py-1.5 text-sm text-white hover:bg-red-700 disabled:opacity-50"
+            className={btnDangerSolid}
           >
             {voidPending ? "处理中…" : "确认作废"}
           </button>
           <button
             type="button"
             onClick={() => setShowVoidInput(false)}
-            className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50"
+            className={btnSecondary}
           >
             取消
           </button>

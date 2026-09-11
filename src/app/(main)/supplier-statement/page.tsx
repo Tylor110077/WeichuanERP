@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { btnSecondary } from "@/lib/ui";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
@@ -136,7 +137,7 @@ export default async function SupplierStatementPage({
             <option value="paid">已付清</option>
           </select>
         </div>
-        <button type="submit" className="rounded-md bg-gray-100 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-200">
+        <button type="submit" className={btnSecondary}>
           查询
         </button>
         <span className="text-xs text-gray-500">
