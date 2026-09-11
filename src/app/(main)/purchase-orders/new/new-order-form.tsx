@@ -126,22 +126,19 @@ export function NewOrderForm({
         />
       </div>
 
-      {/* 商品清单：每个商品一张卡片，字段按 商品 / 数量单价 / 行备注 分组 */}
-      <div className="space-y-3">
+      {/* 商品清单：每行一个商品，字段标签内联、行间以分隔线区隔 */}
+      <div className="divide-y divide-gray-100 border-y border-gray-100">
         {rows.map((row, i) => (
-          <div key={i} className="rounded-xl border border-gray-200 bg-white p-4">
-            {/* ① 商品 */}
-            <div className="flex items-start gap-3">
+          <div key={i} className="py-4">
+            {/* 商品 */}
+            <div className="flex items-center gap-2">
               <div className="min-w-0 flex-1">
-                <label className="mb-1 block text-xs font-medium text-gray-500">
-                  商品 <span className="text-red-500">*</span>
-                </label>
                 <SearchSelect
                   key={`po-prod-${i}-${row.productId}`}
                   name={`item_${i}_productId`}
                   options={products.map((p) => ({ value: String(p.id), label: p.label }))}
                   defaultValue={row.productId}
-                  noneLabel="请选择商品"
+                  noneLabel="搜索并选择商品"
                   placeholder="商品（可搜索名称 / 编码）"
                   onChange={(v) => onProductChange(i, v)}
                 />
@@ -149,88 +146,81 @@ export function NewOrderForm({
               <button
                 type="button"
                 onClick={() => setRows((prev) => (prev.length > 1 ? prev.filter((_, j) => j !== i) : prev))}
-                className="mt-6 shrink-0 rounded-md border border-red-200 px-2.5 py-1 text-xs text-red-600 hover:bg-red-50"
+                className="shrink-0 rounded px-1.5 py-1 text-xs text-gray-400 transition hover:bg-red-50 hover:text-red-600"
+                title="删除本行"
               >
-                删除本行
+                删除
               </button>
             </div>
 
             {row.productId ? (
               <>
-            {/* ② 数量 / 单位 / 进价 / 金额 */}
-            <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <div>
-                <label className="mb-1 block text-xs font-medium text-gray-500">
-                  数量 <span className="text-red-500">*</span>
-                </label>
-                <input
-                  name={`item_${i}_quantity`}
-                  type="number"
-                  min="0.001"
-                  step="0.001"
-                  inputMode="decimal"
-                  required
-                  value={row.quantity}
-                  onChange={(e) =>
-                    setRows((prev) => prev.map((r, j) => (j === i ? { ...r, quantity: e.target.value } : r)))
-                  }
-                  className={inputCls}
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-xs font-medium text-gray-500">单位</label>
-                <div className="px-2 py-1.5 text-sm text-gray-700">{row.unitName || "—"}</div>
-              </div>
-              <div>
-                <label className="mb-1 block text-xs font-medium text-gray-500">
-                  进价 <span className="text-red-500">*</span>
-                </label>
-                <input
-                  name={`item_${i}_unitPrice`}
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  required
-                  value={row.unitPrice}
-                  onChange={(e) =>
-                    setRows((prev) => prev.map((r, j) => (j === i ? { ...r, unitPrice: e.target.value } : r)))
-                  }
-                  className={inputCls}
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-xs font-medium text-gray-500">行金额</label>
-                <div className="px-2 py-1.5 text-lg font-semibold tabular-nums text-gray-900">
-                  ¥{lineAmount(row).toFixed(2)}
+                {/* 数量 / 单位 / 进价 / 金额 */}
+                <div className="mt-2.5 grid grid-cols-2 gap-x-5 gap-y-2 lg:grid-cols-4">
+                  <InlineField label="数量" required>
+                    <input
+                      name={`item_${i}_quantity`}
+                      type="number"
+                      min="0.001"
+                      step="0.001"
+                      inputMode="decimal"
+                      required
+                      value={row.quantity}
+                      onChange={(e) =>
+                        setRows((prev) => prev.map((r, j) => (j === i ? { ...r, quantity: e.target.value } : r)))
+                      }
+                      className={inputCls}
+                    />
+                  </InlineField>
+                  <InlineField label="单位">
+                    <span className="text-sm text-gray-700">{row.unitName || "—"}</span>
+                  </InlineField>
+                  <InlineField label="进价" required>
+                    <input
+                      name={`item_${i}_unitPrice`}
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      required
+                      value={row.unitPrice}
+                      onChange={(e) =>
+                        setRows((prev) => prev.map((r, j) => (j === i ? { ...r, unitPrice: e.target.value } : r)))
+                      }
+                      className={inputCls}
+                    />
+                  </InlineField>
+                  <InlineField label="金额">
+                    <span className="text-base font-semibold tabular-nums text-gray-900">
+                      ¥{lineAmount(row).toFixed(2)}
+                    </span>
+                  </InlineField>
                 </div>
-              </div>
-            </div>
 
-            {/* ③ 行备注 */}
-            <div className="mt-3">
-              <label className="mb-1 block text-xs font-medium text-gray-500">行备注</label>
-              <input
-                name={`item_${i}_remark`}
-                type="text"
-                maxLength={200}
-                placeholder="选填，如包装、交货要求"
-                value={row.remark}
-                onChange={(e) =>
-                  setRows((prev) => prev.map((r, j) => (j === i ? { ...r, remark: e.target.value } : r)))
-                }
-                className={inputCls}
-              />
-            </div>
+                {/* 行备注 */}
+                <div className="mt-2.5 flex items-center gap-2">
+                  <span className="w-16 shrink-0 text-xs text-gray-500">行备注</span>
+                  <input
+                    name={`item_${i}_remark`}
+                    type="text"
+                    maxLength={200}
+                    placeholder="选填，如包装、交货要求"
+                    value={row.remark}
+                    onChange={(e) =>
+                      setRows((prev) => prev.map((r, j) => (j === i ? { ...r, remark: e.target.value } : r)))
+                    }
+                    className={`${inputCls} flex-1`}
+                  />
+                </div>
               </>
             ) : (
-              <p className="mt-3 text-xs text-gray-400">选择商品后即可填写数量、进价与行备注</p>
+              <p className="mt-2 text-xs text-gray-400">选择商品后填写数量、进价与行备注</p>
             )}
           </div>
         ))}
       </div>
 
-      {/* 清单操作与合计 */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3">
+      {/* 底部操作与合计（去边框） */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <button
           type="button"
           onClick={() => setRows((prev) => [...prev, emptyRow()])}
@@ -258,5 +248,27 @@ export function NewOrderForm({
         {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
       </div>
     </form>
+  );
+}
+
+
+/** 内联字段：标签在左、内容在右，比"标签独占一行"更紧凑 */
+function InlineField({
+  label,
+  required,
+  children,
+}: {
+  label: string;
+  required?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-start gap-2">
+      <span className="w-14 shrink-0 pt-2 text-xs text-gray-500">
+        {label}
+        {required && <span className="text-red-500"> *</span>}
+      </span>
+      <div className="min-w-0 flex-1">{children}</div>
+    </div>
   );
 }
