@@ -87,7 +87,7 @@ export function NewOrderForm({
         <div className="border-t border-gray-100 p-5">
         <div className="min-w-56">
           <label htmlFor="supplierId" className="block text-xs font-medium text-gray-600">
-            供应商 *
+            厂家 *
           </label>
           <SearchSelect
             key={`po-sup-${supplierId}`}
@@ -242,13 +242,13 @@ export function NewOrderForm({
         <button
           type="submit"
           disabled={pending || !supplierId}
-          title={!supplierId ? "请先选择供应商" : undefined}
+          title={!supplierId ? "请先选择厂家" : undefined}
           className={btnPrimary}
         >
           {pending ? "提交中…" : "提交进货单"}
         </button>
         {!supplierId && (
-          <span className="text-sm text-amber-600">请先在上方选择供应商，再提交单据</span>
+          <span className="text-sm text-amber-600">请先在上方选择厂家，再提交单据</span>
         )}
         {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
         {state?.ok && <p className="text-sm text-green-600">{state.ok}</p>}

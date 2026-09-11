@@ -121,7 +121,7 @@ export default async function PurchaseOrderDetailPage({
       <div className="rounded-xl border border-gray-200 bg-white p-5">
         <h2 className="text-sm font-semibold text-gray-900">基本信息</h2>
         <dl className="mt-3 grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3 lg:grid-cols-4">
-          <InfoItem label="供应商" value={order.supplier.name} />
+          <InfoItem label="厂家" value={order.supplier.name} />
           <InfoItem label="开单操作人" value={order.operator.displayName} />
           <InfoItem label="开单时间" value={order.createdAt.toLocaleString("zh-CN")} />
           <InfoItem label="来源" value={order.sourceType === "auto" ? "自动补货（缺货即时入库）" : "手动进货"} />

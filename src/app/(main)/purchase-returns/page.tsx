@@ -34,7 +34,7 @@ export default async function PurchaseReturnsPage() {
             <tr>
               <th className="px-4 py-3 font-medium">退货单号</th>
               <th className="px-4 py-3 font-medium">原进货单</th>
-              <th className="px-4 py-3 font-medium">供应商</th>
+              <th className="px-4 py-3 font-medium">厂家</th>
               <th className="px-4 py-3 font-medium">状态</th>
               <th className="px-4 py-3 font-medium">冲减应付</th>
               <th className="px-4 py-3 font-medium">操作人</th>

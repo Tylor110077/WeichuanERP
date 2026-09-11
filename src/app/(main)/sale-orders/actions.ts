@@ -17,7 +17,7 @@ const itemSchema = z.object({
   quantity: z.coerce.number().min(0.001, "数量必须大于 0").max(9_999_999.999),
   unitPrice: z.coerce.number().min(0).max(9_999_999_999.99), // 售价
   supplyPrice: z.coerce.number().min(0).max(9_999_999_999.99), // 自动补货进价
-  supplierId: z.coerce.number().int().positive().optional().nullable(), // 缺货行需供应商
+  supplierId: z.coerce.number().int().positive().optional().nullable(), // 缺货行需厂家
   // 多补：在自动补足缺口之外额外多进的备货量（不允许负数）；不填＝不多补
   extraQty: z.coerce.number().min(0).max(9_999_999.999).optional().default(0),
   remark: z.string().trim().max(200).optional().default(""), // 行备注
@@ -126,8 +126,8 @@ export async function createSaleOrderAction(
     if (p.status !== 1) return { error: `商品 #${p.id} 已停用，无法开单` };
   }
 
-  // 归属供应商：缺货行没有指定供应商时，默认使用商品档案的厂商
-  // （厂商名无对应供应商档案则自动按厂商名建档，不再需要手选）
+  // 归属厂家：缺货行没有指定厂家时，默认使用商品档案的厂家
+  // （厂家名无对应厂家档案则自动按厂家名建档，不再需要手选）
   const supplierIds = new Set<number>();
   const mfrNames = new Set<string>();
   for (const it of items) {
@@ -140,7 +140,7 @@ export async function createSaleOrderAction(
       } else if (product.manufacturer.trim()) {
         mfrNames.add(product.manufacturer.trim());
       } else {
-        return { error: `商品 #${product.id} 缺货且无厂商，请选择补货供应商` };
+        return { error: `商品 #${product.id} 缺货且无厂家，请选择补货厂家` };
       }
     }
   }
@@ -149,9 +149,9 @@ export async function createSaleOrderAction(
       where: { id: { in: [...supplierIds] }, status: 1 },
       select: { id: true },
     });
-    if (suppliers.length !== supplierIds.size) return { error: "存在已停用的补货供应商" };
+    if (suppliers.length !== supplierIds.size) return { error: "存在已停用的补货厂家" };
   }
-  // 按厂商名确定/创建供应商档案，建立 商品厂商名 → supplierId 映射
+  // 按厂家名确定/创建厂家档案，建立 商品厂家名 → supplierId 映射
   const supplierByMfr = new Map<string, number>();
   if (mfrNames.size > 0) {
     const existing = await prisma.supplier.findMany({
@@ -231,14 +231,14 @@ export async function createSaleOrderAction(
           const restockTotal = round3(purchaseQty + extraQty);
 
           if (restockTotal > 0) {
-            // 供应商：行内指定优先，否则用厂商匹配到的供应商（事务前已兜底建档）
+            // 厂家：行内指定优先，否则用商品厂家匹配到的厂家（事务前已兜底建档）
             const supplierId =
               it.supplierId ??
               (product.manufacturer.trim()
                 ? supplierByMfr.get(product.manufacturer.trim())
                 : undefined);
             if (supplierId == null) {
-              throw new Error(`商品 #${product.id} 需现场进货但无法确定供应商`);
+              throw new Error(`商品 #${product.id} 需现场进货但无法确定厂家`);
             }
             const g = autoGroups.get(supplierId) ?? [];
             g.push({

@@ -11,7 +11,7 @@ import { writeAudit } from "@/lib/audit";
 const productSchema = z.object({
   name: z.string().trim().min(1, "请填写商品名称（完整名称，含规格）").max(100),
   spec: z.string().trim().max(100).optional().default(""), // 表单已与名称合一（历史兼容）
-  manufacturer: z.string().trim().min(1, "请选择或新建厂商/生产厂家").max(100), // 必填（供应商档案）
+  manufacturer: z.string().trim().min(1, "请选择或新建厂家").max(100), // 必填（厂家档案）
   categoryId: z.coerce.number().int().positive().nullable(),
   unitId: z.coerce.number().int().positive("请选择单位"),
   refPurchasePrice: z.coerce.number().min(0).max(9_999_999_999.99),
@@ -174,7 +174,7 @@ export type QuickProductResult =
 export async function createQuickProductAction(data: {
   name: string;
   spec?: string;
-  manufacturer: string; // 必填：厂商/生产厂家
+  manufacturer: string; // 必填：厂家
   categoryId?: number | null;
   unitId: number;
   refPurchasePrice?: number | null;

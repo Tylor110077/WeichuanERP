@@ -20,7 +20,7 @@ const itemSchema = z.object({
 });
 
 const createSchema = z.object({
-  supplierId: z.coerce.number().int().positive("请选择供应商"),
+  supplierId: z.coerce.number().int().positive("请选择厂家"),
   remark: z.string().trim().max(200),
   items: z.array(itemSchema).min(1, "请至少添加一行商品"),
 });
@@ -86,7 +86,7 @@ export async function createPurchaseOrderAction(
   const { supplierId, remark, items } = parsed.data;
 
   const supplier = await prisma.supplier.findUnique({ where: { id: supplierId } });
-  if (!supplier || supplier.status !== 1) return { error: "供应商不存在或已停用" };
+  if (!supplier || supplier.status !== 1) return { error: "厂家不存在或已停用" };
 
   const productIds = [...new Set(items.map((it) => it.productId))];
   const products = await prisma.product.findMany({

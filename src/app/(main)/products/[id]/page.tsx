@@ -45,7 +45,7 @@ export default async function EditProductPage({
           { name: "name", label: "商品名称（完整名称，含规格）*", required: true, maxLength: 100 },
           {
             name: "manufacturer",
-            label: "厂商（生产厂家）*，选择供应商档案，可当场新建",
+            label: "厂家 *（缺货时自动向其补货，可当场新建）",
             required: true,
             type: "manufacturer",
           },

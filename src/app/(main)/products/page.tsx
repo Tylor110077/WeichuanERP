@@ -98,14 +98,14 @@ export default async function ProductsPage({
     label: c.status === 1 ? c.name : `${c.name}（停用）`,
   }));
 
-  // 按厂家归集商品：厂家名 = 商品的 manufacturer（与供应商档案同名即为该厂家的补货来源）
+  // 按厂家归集商品：厂家名 = 商品的 manufacturer（与厂家档案同名即为该厂家的补货来源）
   const mfrOf = (p: (typeof allProducts)[number]) => p.manufacturer.trim() || NO_MFR;
   const mfrCounts = new Map<string, number>();
   for (const p of allProducts) {
     const m = mfrOf(p);
     mfrCounts.set(m, (mfrCounts.get(m) ?? 0) + 1);
   }
-  // 标签行包含：供应商档案里的厂家 + 商品中已使用但未建档的厂家
+  // 标签行包含：厂家档案 + 商品中已使用但未建档的厂家
   const mfrNames = new Set<string>(suppliers.map((s) => s.name));
   for (const m of mfrCounts.keys()) {
     if (m !== NO_MFR) mfrNames.add(m);
@@ -161,7 +161,7 @@ export default async function ProductsPage({
         <summary className="cursor-pointer px-5 py-3 text-sm font-medium text-gray-900">
           厂家管理（{suppliers.length} 个）
           <span className="ml-2 text-xs font-normal text-gray-400">
-            点击展开/收起 · 厂家即供应商档案，开单缺货时按商品厂家自动补货
+            点击展开/收起 · 厂家档案，开单缺货时按商品厂家自动补货
           </span>
         </summary>
         <div className="border-t border-gray-100 p-5">
@@ -169,7 +169,7 @@ export default async function ProductsPage({
             entityLabel="厂家"
             columns={[
               { key: "name", label: "厂家名称" },
-              { key: "productCount", label: "供应商品" },
+              { key: "productCount", label: "商品数" },
               { key: "contact", label: "联系人" },
               { key: "phone", label: "电话" },
               { key: "address", label: "地址" },

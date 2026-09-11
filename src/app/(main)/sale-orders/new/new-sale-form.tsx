@@ -55,7 +55,7 @@ interface Row {
   productLabel: string; // 选中商品的回填文本（编码 + 名称）
   productCode: string; // 编码输入框（分开显示/搜索）
   productQuery: string; // 名称输入框（搜索用）
-  manufacturer: string; // 选中商品的厂商（用于"自动补货：厂商"提示）
+  manufacturer: string; // 选中商品的厂家（用于"自动补货：厂家"提示）
   unitName: string;
   stockQty: number;
   /** 选中商品时的移动加权均价（参考展示） */
@@ -436,7 +436,7 @@ export function NewSaleForm({
       return;
     }
     if (!mfrQuery.trim()) {
-      setProductMsg({ error: "请选择或新建厂商/生产厂家" });
+      setProductMsg({ error: "请选择或新建厂家" });
       return;
     }
     startProductTransition(async () => {
@@ -774,12 +774,12 @@ export function NewSaleForm({
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600">厂商（生产厂家）*，选择或新建供应商档案</label>
+                <label className="block text-xs font-medium text-gray-600">厂家 *（缺货时自动向其补货，可当场新建）</label>
                 <div className="relative mt-1">
                   <input
                     type="text"
                     autoComplete="off"
-                    placeholder="输入厂商名搜索供应商档案…"
+                    placeholder="输入厂家名搜索厂家档案…"
                     value={mfrQuery}
                     onChange={(e) => { setMfrQuery(e.target.value); setMfrOpen(true); }}
                     onFocus={() => setMfrOpen(true)}
@@ -788,7 +788,7 @@ export function NewSaleForm({
                   />
                   {mfrOpen && mfrQuery.trim() && (
                     <div className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-md border border-gray-200 bg-white shadow-lg">
-                      {mfrHits.length === 0 && <div className="px-3 py-2 text-xs text-gray-400">无匹配厂商</div>}
+                      {mfrHits.length === 0 && <div className="px-3 py-2 text-xs text-gray-400">无匹配厂家</div>}
                       {mfrHits.map((s) => (
                         <button
                           key={s.id}
@@ -817,7 +817,7 @@ export function NewSaleForm({
                         disabled={productPending}
                         className="block w-full border-t border-gray-100 px-3 py-2 text-left text-sm text-blue-600 hover:bg-blue-50 disabled:opacity-50"
                       >
-                        ＋ 新建厂商：「{mfrQuery.trim()}」
+                        ＋ 新建厂家：「{mfrQuery.trim()}」
                       </button>
                     </div>
                   )}
@@ -971,7 +971,7 @@ export function NewSaleForm({
                   name={`item_${i}_productQuery`}
                   type="text"
                   autoComplete="off"
-                  placeholder="搜索商品：名称 / 型号 / 厂商 / 编码"
+                  placeholder="搜索商品：名称 / 型号 / 厂家 / 编码"
                   value={row.productQuery}
                   onChange={(e) => onProductInputChange(i, "name", e.target.value)}
                   onFocus={(e) => openProductPanel(e, i)}
@@ -1203,7 +1203,7 @@ export function NewSaleForm({
           >
             {hits.length === 0 && (
               <div className="px-3 py-2 text-xs text-gray-400">
-                无匹配商品（试试厂商、型号、名称、编码）
+                无匹配商品（试试厂家、型号、名称、编码）
               </div>
             )}
             {canCreateProduct && row && row.productQuery.trim() && (

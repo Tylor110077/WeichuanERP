@@ -28,7 +28,7 @@ export function EntityForm({
   initialTags?: string[];
   saveAction: (prev: FormState, fd: FormData) => Promise<FormState>;
   submitLabel: string;
-  /** 厂商字段（type="manufacturer"）：供应商档案自动补全 */
+  /** 厂家字段（type="manufacturer"）：厂家档案自动补全 */
   manufacturerSuppliers?: { id: number; name: string }[];
   onQuickCreateSupplier?: (data: { name: string }) => Promise<{ id: number; name: string } | { error: string }>;
 }) {
@@ -216,7 +216,7 @@ function ManufacturerField({
           autoComplete="off"
           required={required}
           maxLength={100}
-          placeholder="输入厂商名搜索供应商档案…"
+          placeholder="输入厂家名搜索厂家档案…"
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);
@@ -229,7 +229,7 @@ function ManufacturerField({
         {open && kw && (
           <div className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-md border border-gray-200 bg-white shadow-lg">
             {hits.length === 0 && (
-              <div className="px-3 py-2 text-xs text-gray-400">无匹配厂商</div>
+              <div className="px-3 py-2 text-xs text-gray-400">无匹配厂家</div>
             )}
             {hits.map((s) => (
               <button
@@ -250,7 +250,7 @@ function ManufacturerField({
                 disabled={pending}
                 className="block w-full border-t border-gray-100 px-3 py-2 text-left text-sm text-blue-600 hover:bg-blue-50 disabled:opacity-50"
               >
-                ＋ 新建厂商：「{kw}」
+                ＋ 新建厂家：「{kw}」
               </button>
             )}
           </div>

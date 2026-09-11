@@ -115,7 +115,7 @@ export default async function ReceivablesPage({
             href={viewHref("payable")}
             className={`rounded-md px-4 py-1.5 ${!isReceivable ? "bg-blue-600 text-white" : "text-gray-600 hover:text-gray-900"}`}
           >
-            应付（供应商）
+            应付（厂家）
           </a>
         </div>
       </div>
@@ -160,7 +160,7 @@ export default async function ReceivablesPage({
             <tr>
               <th className="px-4 py-3 font-medium">日期</th>
               <th className="px-4 py-3 font-medium">单号</th>
-              <th className="px-4 py-3 font-medium">{isReceivable ? "客户" : "供应商"}</th>
+              <th className="px-4 py-3 font-medium">{isReceivable ? "客户" : "厂家"}</th>
               <th className="px-4 py-3 text-right font-medium">{isReceivable ? "应收" : "应付"}</th>
               <th className="px-4 py-3 text-right font-medium">{isReceivable ? "已收" : "已付"}</th>
               <th className="px-4 py-3 text-right font-medium">退货冲减</th>
@@ -210,7 +210,7 @@ export default async function ReceivablesPage({
       <div className="rounded-xl border border-gray-200 bg-white p-5">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <div className="text-sm text-gray-500">
-            {isReceivable ? "客户应收合计（未收）" : "供应商应付合计（未付）"}
+            {isReceivable ? "客户应收合计（未收）" : "厂家应付合计（未付）"}
             <span className="ml-2 text-xs text-gray-400">
               当前筛选条件 ・ {unpaidOrders.length} 张单据
             </span>

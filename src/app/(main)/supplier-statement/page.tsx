@@ -8,7 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { DateShortcuts } from "@/components/date-shortcuts";
 import { SearchSelect } from "@/components/search-select";
 
-export const metadata = { title: "供应商对账 - 玮川进销存" };
+export const metadata = { title: "厂家对账 - 玮川进销存" };
 
 const METHOD_LABELS: Record<string, string> = {
   cash: "现金",
@@ -18,7 +18,7 @@ const METHOD_LABELS: Record<string, string> = {
   other: "其他",
 };
 
-/** 供应商进货对账：按供应商 + 期间 + 收付状态，每单含商品明细与付款记录。 */
+/** 厂家进货对账：按厂家 + 期间 + 收付状态，每单含商品明细与付款记录。 */
 export default async function SupplierStatementPage({
   searchParams,
 }: {
@@ -28,7 +28,7 @@ export default async function SupplierStatementPage({
   if (!user) redirect("/login");
   if (user.role === "sales") {
     return (
-      <NoPermission text="无权限访问供应商对账（管理员/老板）" />
+      <NoPermission text="无权限访问厂家对账（管理员/老板）" />
     );
   }
 
@@ -42,7 +42,7 @@ export default async function SupplierStatementPage({
     select: { id: true, name: true },
   });
 
-  // 选中的供应商必须是有效选择；未选时展示全部？业务上"某个商家"——默认取第一家
+  // 选中的厂家必须是有效选择；未选时展示全部？业务上"某个商家"——默认取第一家
   const effectiveSupplierId = supplierId && suppliers.some((s) => s.id === supplierId)
     ? supplierId
     : suppliers[0]?.id;
@@ -50,9 +50,9 @@ export default async function SupplierStatementPage({
   if (!effectiveSupplierId) {
     return (
       <div className="space-y-6">
-        <h1 className="text-lg font-semibold text-gray-900">供应商对账</h1>
+        <h1 className="text-lg font-semibold text-gray-900">厂家对账</h1>
         <div className="rounded-xl border border-gray-200 bg-white p-8 text-sm text-gray-500">
-          请先建立供应商档案
+          请先建立厂家档案
         </div>
       </div>
     );
@@ -105,14 +105,14 @@ export default async function SupplierStatementPage({
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-gray-900">供应商对账</h1>
+        <h1 className="text-lg font-semibold text-gray-900">厂家对账</h1>
       </div>
 
       <DateShortcuts basePath="/supplier-statement" extraQuery={{ supplierId: String(effectiveSupplierId), status: status ?? "" }} />
 
       <FilterForm className="flex flex-wrap items-end gap-3 rounded-xl border border-gray-200 bg-white p-4">
         <div>
-          <label htmlFor="supplierId" className="block text-xs font-medium text-gray-600">供应商</label>
+          <label htmlFor="supplierId" className="block text-xs font-medium text-gray-600">厂家</label>
           <SearchSelect
             name="supplierId"
             options={suppliers.map((s) => ({ value: String(s.id), label: s.name }))}

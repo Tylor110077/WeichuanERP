@@ -70,7 +70,7 @@ export default async function NewSaleOrderPage() {
       orderBy: { name: "asc" },
       select: { id: true, name: true },
     }),
-    // 每个商品最近一次非作废进货单（用于预填自动补货的供应商 / 进价）
+    // 每个商品最近一次非作废进货单（用于预填自动补货的厂家 / 进价）
     prisma.purchaseOrderItem.findMany({
       where: {
         productId: { in: products.map((p) => p.id) },
@@ -125,7 +125,7 @@ export default async function NewSaleOrderPage() {
   }
 
   const supplierMap = new Map(suppliers.map((s) => [s.id, s.name]));
-  // 厂商优先：商品档案的“厂商”名称匹配到供应商档案时，自动补货商默认取该供应商
+  // 厂家优先：商品档案的“厂家”名称匹配到厂家档案时，自动补货商默认取该厂家
   const supplierIdByName = new Map<string, number>();
   for (const s of suppliers) {
     supplierIdByName.set(s.name, s.id);

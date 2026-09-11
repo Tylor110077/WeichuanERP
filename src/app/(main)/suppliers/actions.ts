@@ -8,7 +8,7 @@ import { requireMasterDataWrite } from "@/lib/auth/guards";
 import { writeAudit } from "@/lib/audit";
 
 const supplierSchema = z.object({
-  name: z.string().trim().min(1, "请填写供应商名称").max(100),
+  name: z.string().trim().min(1, "请填写厂家名称").max(100),
   contact: z.string().trim().max(50),
   phone: z.string().trim().max(30),
   address: z.string().trim().max(200),
@@ -42,7 +42,7 @@ export async function saveSupplierAction(_prev: FormState, formData: FormData): 
 
   if (id) {
     const before = await prisma.supplier.findUnique({ where: { id } });
-    if (!before) return { error: "供应商不存在" };
+    if (!before) return { error: "厂家不存在" };
     await prisma.supplier.update({ where: { id }, data });
     await writeAudit({
       userId: admin.id,
@@ -63,7 +63,7 @@ export async function saveSupplierAction(_prev: FormState, formData: FormData): 
     });
   }
   revalidatePath("/suppliers");
-  redirect("/suppliers");
+  redirect("/products"); // 厂家档案已并入「商品与厂家」页
 }
 
 export async function toggleSupplierStatusAction(_prev: FormState, formData: FormData): Promise<FormState> {
@@ -72,7 +72,7 @@ export async function toggleSupplierStatusAction(_prev: FormState, formData: For
   });
   const id = Number(formData.get("id"));
   const supplier = await prisma.supplier.findUnique({ where: { id } });
-  if (!supplier) return { error: "供应商不存在" };
+  if (!supplier) return { error: "厂家不存在" };
   const next = supplier.status === 1 ? 0 : 1;
   await prisma.supplier.update({ where: { id }, data: { status: next } });
   await writeAudit({
@@ -87,20 +87,20 @@ export async function toggleSupplierStatusAction(_prev: FormState, formData: For
   return { ok: next === 1 ? "已启用" : "已停用" };
 }
 
-/** 删除供应商：未被任何进货/退货单引用才可删（引用关系建议用停用）。 */
+/** 删除厂家：未被任何进货/退货单引用才可删（引用关系建议用停用）。 */
 export async function deleteSupplierAction(_prev: FormState, formData: FormData): Promise<FormState> {
   const admin = await requireMasterDataWrite().catch(() => {
     throw new Error("无权限执行此操作");
   });
   const id = Number(formData.get("id"));
   const supplier = await prisma.supplier.findUnique({ where: { id } });
-  if (!supplier) return { error: "供应商不存在" };
+  if (!supplier) return { error: "厂家不存在" };
   const [poCount, retCount] = await Promise.all([
     prisma.purchaseOrder.count({ where: { supplierId: id } }),
     prisma.purchaseReturn.count({ where: { supplierId: id } }),
   ]);
   if (poCount + retCount > 0) {
-    return { error: `该供应商已有 ${poCount + retCount} 张单据，不可删除，请停用` };
+    return { error: `该厂家已有 ${poCount + retCount} 张单据，不可删除，请停用` };
   }
   await prisma.supplier.delete({ where: { id } });
   await writeAudit({
@@ -116,16 +116,16 @@ export async function deleteSupplierAction(_prev: FormState, formData: FormData)
 
 export type QuickSupplierResult = { id: number; name: string } | { error: string };
 
-/** 商品建档处的厂商=供应商档案；不存在时按名称快速建档（仅管理员）。 */
+/** 商品建档处的厂家=厂家档案；不存在时按名称快速建档（仅管理员）。 */
 export async function createQuickSupplierAction(data: {
   name: string;
 }): Promise<QuickSupplierResult> {
   const admin = await requireMasterDataWrite().catch(() => null);
-  if (!admin) return { error: "仅管理员可新建厂商/供应商" };
+  if (!admin) return { error: "仅管理员可新建厂家" };
   const name = data.name?.trim() ?? "";
-  if (!name || name.length > 100) return { error: "厂商名称不能为空（≤100 字）" };
+  if (!name || name.length > 100) return { error: "厂家名称不能为空（≤100 字）" };
   const dup = await prisma.supplier.findFirst({ where: { name } });
-  if (dup) return { error: "该厂商已存在" };
+  if (dup) return { error: "该厂家已存在" };
   const supplier = await prisma.supplier.create({ data: { name }, select: { id: true, name: true } });
   await writeAudit({
     userId: admin.id,

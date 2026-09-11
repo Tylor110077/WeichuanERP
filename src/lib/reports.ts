@@ -134,7 +134,7 @@ export async function payablesReport(from?: string, to?: string): Promise<Report
   return {
     title: "应付明细",
     columns: [
-      { key: "supplier", label: "供应商" },
+      { key: "supplier", label: "厂家" },
       { key: "orderNo", label: "单据号" },
       { key: "status", label: "状态" },
       { key: "total", label: "应付", align: "right" },

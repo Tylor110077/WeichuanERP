@@ -161,7 +161,7 @@ export default async function PurchaseOrdersPage({
           <thead className="bg-gray-50 text-left text-xs text-gray-500">
             <tr>
               <th className="px-4 py-3 font-medium">单据号</th>
-              <th className="px-4 py-3 font-medium">供应商</th>
+              <th className="px-4 py-3 font-medium">厂家</th>
               <th className="px-4 py-3 font-medium">状态</th>
               <th className="px-4 py-3 font-medium">金额</th>
               <th className="px-4 py-3 font-medium">已付</th>
