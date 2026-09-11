@@ -1,5 +1,5 @@
 import "server-only";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { createHash, randomBytes } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import type { User } from "@prisma/client";
@@ -8,7 +8,7 @@ import type { User } from "@prisma/client";
  * 服务端会话（文档 8.1）：
  * - 会话有效期 8 小时，登出即失效（删除 sessions 行）；
  * - Cookie 仅存随机 token，数据库中只存 sha256(token)，泄漏库文件无法伪造会话；
- * - Cookie：HttpOnly + SameSite=Lax + 生产环境 Secure。
+ * - Cookie：HttpOnly + SameSite=Lax + 生产环境 Secure（按实际协议判断，见下）。
  */
 
 const COOKIE_NAME = "weichuan_session";
@@ -21,11 +21,19 @@ function sha256(input: string): string {
   return createHash("sha256").update(input).digest("hex");
 }
 
-function sessionCookieOptions(maxAgeSec: number) {
+/** 当前请求是否走 HTTPS（生产经 Nginx 反代，取 X-Forwarded-Proto）。 */
+async function isHttpsRequest(): Promise<boolean> {
+  const h = await headers();
+  return (h.get("x-forwarded-proto") ?? "").split(",")[0]?.trim() === "https";
+}
+
+function sessionCookieOptions(maxAgeSec: number, secure: boolean) {
   return {
     httpOnly: true,
     sameSite: "lax" as const,
-    secure: process.env.NODE_ENV === "production",
+    // 仅在实际 HTTPS 下加 Secure：HTTP 阶段若强制 Secure，浏览器会拒绝保存该
+    // Cookie（手机浏览器尤其严格），导致登录态无法保持、频繁掉线。
+    secure,
     path: "/",
     maxAge: maxAgeSec,
   };
@@ -33,7 +41,7 @@ function sessionCookieOptions(maxAgeSec: number) {
 
 export async function createSession(userId: number): Promise<void> {
   const token = randomBytes(32).toString("hex");
-  const cookieStore = await cookies();
+  const [cookieStore, secure] = await Promise.all([cookies(), isHttpsRequest()]);
 
   await prisma.session.create({
     data: {
@@ -43,7 +51,7 @@ export async function createSession(userId: number): Promise<void> {
     },
   });
 
-  cookieStore.set(COOKIE_NAME, token, sessionCookieOptions(SESSION_TTL_MS / 1000));
+  cookieStore.set(COOKIE_NAME, token, sessionCookieOptions(SESSION_TTL_MS / 1000, secure));
 }
 
 export async function destroySession(): Promise<void> {
