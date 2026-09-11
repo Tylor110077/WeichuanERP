@@ -130,8 +130,7 @@ export default async function PurchaseOrderDetailPage({
         </dl>
 
         <div className="mt-4 flex flex-wrap items-start gap-x-10 gap-y-3 border-t border-gray-100 pt-4">
-          <Amount label="应付金额" value={`¥${total.toFixed(2)}`} />
-          <Amount label="已付金额" value={`¥${paid.toFixed(2)}`} />
+          <Amount label="已付 / 应付" value={`¥${paid.toFixed(2)} / ¥${total.toFixed(2)}`} />
           <Amount
             label="未付金额"
             value={`¥${Math.max(outstanding, 0).toFixed(2)}`}
