@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { EmptyState, NoPermission } from "@/components/empty-state";
-import { btnSecondary } from "@/lib/ui";
+import { badgeMuted, btnSecondary } from "@/lib/ui";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { buildCustomerProfile } from "@/lib/customer-profile";
@@ -80,7 +80,7 @@ export default async function CustomerProfilePage({
               <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-700">{selected.groupName}</span>
             )}
             {selected.tagNames.map((t) => (
-              <span key={t} className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">{t}</span>
+              <span key={t} className={badgeMuted}>{t}</span>
             ))}
             <Link href="/customer-profile" className="ml-auto text-sm text-gray-500 hover:underline">
               ← 返回全部客户
@@ -189,7 +189,7 @@ export default async function CustomerProfilePage({
                 <td className="px-4 py-2.5">
                   <div className="flex flex-wrap gap-1">
                     {r.tagNames.map((t) => (
-                      <span key={t} className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">{t}</span>
+                      <span key={t} className={badgeMuted}>{t}</span>
                     ))}
                     {r.tagNames.length === 0 && <span className="text-gray-400">—</span>}
                   </div>

@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { FilterForm } from "@/components/filter-form";
 import { EmptyState } from "@/components/empty-state";
-import { btnPrimary, btnSecondary } from "@/lib/ui";
+import { badgeDanger, badgeMuted, badgeOk, btnPrimary, btnSecondary } from "@/lib/ui";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
@@ -177,8 +177,8 @@ export default async function SaleOrdersPage({
                   <span
                     className={
                       o.status === "confirmed"
-                        ? "rounded-full bg-green-50 px-2 py-0.5 text-xs text-green-700"
-                        : "rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600"
+                        ? badgeOk
+                        : badgeMuted
                     }
                   >
                     {STATUS_LABELS[o.status]}
@@ -190,11 +190,11 @@ export default async function SaleOrdersPage({
                   {o.status === "voided" ? (
                     <span className="text-xs text-gray-400">—</span>
                   ) : outstanding <= 0 ? (
-                    <span className="rounded-full bg-green-50 px-2 py-0.5 text-xs text-green-700">
+                    <span className={badgeOk}>
                       已结清
                     </span>
                   ) : (
-                    <span className="whitespace-nowrap text-xs text-red-600">
+                    <span className={`whitespace-nowrap ${badgeDanger}`}>
                       未结清 ¥{outstanding.toFixed(2)}
                     </span>
                   )}

@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { btnPrimary } from "@/lib/ui";
+import { btnPrimary, tagInfo, tagPending } from "@/lib/ui";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
@@ -26,9 +26,7 @@ function MfrTag({ name }: { name: string }) {
   const empty = !name || name === NO_MFR;
   return (
     <span
-      className={`inline-block shrink-0 rounded px-1.5 py-0.5 text-xs ${
-        empty ? "bg-amber-50 text-amber-600" : "bg-blue-50 text-blue-700"
-      }`}
+      className={`inline-block shrink-0 ${empty ? tagPending : tagInfo}`}
     >
       {empty ? "未填厂家" : name}
     </span>

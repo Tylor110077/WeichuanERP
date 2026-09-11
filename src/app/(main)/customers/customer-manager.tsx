@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
-import { btnPrimary, btnSecondary, btnSmallPrimary, btnSmallSolid } from "@/lib/ui";
+import { badgeMuted, badgeOk, btnPrimary, btnSecondary, btnSmallPrimary, btnSmallSolid } from "@/lib/ui";
 import { useActionState, useState, useTransition } from "react";
 import { SearchSelect } from "@/components/search-select";
 import {
@@ -162,16 +162,16 @@ export function CustomerManager({
               <td className="px-4 py-2.5">
                 <div className="flex flex-wrap gap-1">
                   {c.tagNames.map((t) => (
-                    <span key={t} className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">{t}</span>
+                    <span key={t} className={badgeMuted}>{t}</span>
                   ))}
                   {c.tagNames.length === 0 && <span className="text-gray-400">—</span>}
                 </div>
               </td>
               <td className="px-4 py-2.5">
                 {c.status === 1 ? (
-                  <span className="rounded-full bg-green-50 px-2 py-0.5 text-xs text-green-700">启用</span>
+                  <span className={badgeOk}>启用</span>
                 ) : (
-                  <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">停用</span>
+                  <span className={badgeMuted}>停用</span>
                 )}
               </td>
               {isAdmin && (

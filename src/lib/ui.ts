@@ -49,3 +49,24 @@ export const btnWarnSolid =
 /** 行内小按钮（红底）：行内删除/移除的二次确认 */
 export const btnSmallDanger =
   "inline-flex h-8 items-center justify-center rounded-md bg-red-600 px-3 text-xs font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50";
+
+/**
+ * 状态标签（小胶囊）：语义固定，避免同一含义在不同页面换色
+ * - 绿=已完成/已结清/启用；橙=待处理/预警；灰=作废/停用/中性；红=异常
+ * 用法：<span className={badgeOk}>已结清</span>
+ */
+export const badgeOk = "rounded-full bg-green-50 px-2 py-0.5 text-xs text-green-700";
+export const badgePending = "rounded-full bg-amber-50 px-2 py-0.5 text-xs text-amber-700";
+export const badgeMuted = "rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600";
+export const badgeDanger = "rounded-full bg-red-50 px-2 py-0.5 text-xs text-red-700";
+/** 信息类标签（厂家、分类等中性标注） */
+export const badgeInfo = "rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-700";
+
+/** 数值语义色：正向（利润、已收）=绿，负向（未收、欠款）=红，待处理=橙 */
+export const textPositive = "text-green-700";
+export const textNegative = "text-red-600";
+export const textPending = "text-amber-700";
+
+/** 行内小标注（厂家等）：紧凑方形，区别于状态胶囊 */
+export const tagInfo = "rounded bg-blue-50 px-1.5 py-0.5 text-xs text-blue-700";
+export const tagPending = "rounded bg-amber-50 px-1.5 py-0.5 text-xs text-amber-600";

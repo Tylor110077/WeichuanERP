@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState, useTransition } from "react";
-import { btnPrimary, btnSmallPrimary, btnSmallSolid } from "@/lib/ui";
+import { btnPrimary, btnSmallPrimary, btnSmallSolid, tagInfo, tagPending } from "@/lib/ui";
 import { SearchSelect } from "@/components/search-select";
 import { createSaleOrderAction, type FormState } from "../actions";
 import {
@@ -976,9 +976,7 @@ export function NewSaleForm({
                 />
                 {row.productId && (
                   <span
-                    className={`shrink-0 rounded px-1.5 py-0.5 text-xs ${
-                      row.manufacturer ? "bg-blue-50 text-blue-700" : "bg-amber-50 text-amber-600"
-                    }`}
+                    className={`shrink-0 ${row.manufacturer ? tagInfo : tagPending}`}
                     title="厂家：缺货时自动向该厂家补货"
                   >
                     {row.manufacturer || "未填厂家"}
@@ -1230,9 +1228,7 @@ export function NewSaleForm({
                     {p.code} {p.name}
                   </span>
                   <span
-                    className={`rounded px-1.5 py-0.5 text-xs ${
-                      p.manufacturer ? "bg-blue-50 text-blue-700" : "bg-amber-50 text-amber-600"
-                    }`}
+                    className={p.manufacturer ? tagInfo : tagPending}
                   >
                     {p.manufacturer || "未填厂家"}
                   </span>

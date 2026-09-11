@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { FilterForm } from "@/components/filter-form";
 import { EmptyState } from "@/components/empty-state";
-import { btnPrimary, btnSecondary } from "@/lib/ui";
+import { badgeDanger, badgeMuted, badgeOk, badgePending, btnPrimary, btnSecondary } from "@/lib/ui";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
@@ -191,10 +191,10 @@ export default async function PurchaseOrdersPage({
                   <span
                     className={
                       o.status === "received"
-                        ? "rounded-full bg-green-50 px-2 py-0.5 text-xs text-green-700"
+                        ? badgeOk
                         : o.status === "voided"
-                          ? "rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600"
-                          : "rounded-full bg-amber-50 px-2 py-0.5 text-xs text-amber-700"
+                          ? badgeMuted
+                          : badgePending
                     }
                   >
                     {STATUS_LABELS[o.status]}
@@ -206,11 +206,11 @@ export default async function PurchaseOrdersPage({
                   {o.status === "voided" ? (
                     <span className="text-xs text-gray-400">—</span>
                   ) : outstanding <= 0 ? (
-                    <span className="rounded-full bg-green-50 px-2 py-0.5 text-xs text-green-700">
+                    <span className={badgeOk}>
                       已结清
                     </span>
                   ) : (
-                    <span className="whitespace-nowrap text-xs text-red-600">
+                    <span className={`whitespace-nowrap ${badgeDanger}`}>
                       未结清 ¥{outstanding.toFixed(2)}
                     </span>
                   )}

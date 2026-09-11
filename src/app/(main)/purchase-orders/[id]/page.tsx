@@ -1,6 +1,6 @@
 import { redirect, notFound } from "next/navigation";
 import { NoPermission } from "@/components/empty-state";
-import { btnSecondary, btnWarn } from "@/lib/ui";
+import { badgeMuted, badgeOk, badgePending, btnSecondary, btnWarn } from "@/lib/ui";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
@@ -82,10 +82,10 @@ export default async function PurchaseOrderDetailPage({
           <span
             className={
               order.status === "received"
-                ? "ml-3 rounded-full bg-green-50 px-2 py-0.5 text-xs text-green-700"
+                ? `ml-3 ${badgeOk}`
                 : order.status === "voided"
-                  ? "ml-3 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600"
-                  : "ml-3 rounded-full bg-amber-50 px-2 py-0.5 text-xs text-amber-700"
+                  ? `ml-3 ${badgeMuted}`
+                  : `ml-3 ${badgePending}`
             }
           >
             {STATUS_LABELS[order.status]}
@@ -227,8 +227,8 @@ export default async function PurchaseOrderDetailPage({
                 <span
                   className={
                     r.status === "confirmed"
-                      ? "rounded-full bg-green-50 px-2 py-0.5 text-xs text-green-700"
-                      : "rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600"
+                      ? badgeOk
+                      : badgeMuted
                   }
                 >
                   {r.status === "confirmed" ? "已退" : "已作废"}

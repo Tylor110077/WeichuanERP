@@ -1,6 +1,6 @@
 import { redirect, notFound } from "next/navigation";
 import { NoPermission } from "@/components/empty-state";
-import { btnSecondary, btnWarn } from "@/lib/ui";
+import { badgeMuted, badgeOk, btnSecondary, btnWarn } from "@/lib/ui";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
@@ -79,8 +79,8 @@ export default async function SaleOrderDetailPage({
           <span
             className={
               order.status === "confirmed"
-                ? "ml-3 rounded-full bg-green-50 px-2 py-0.5 text-xs text-green-700"
-                : "ml-3 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600"
+                ? `ml-3 ${badgeOk}`
+                : `ml-3 ${badgeMuted}`
             }
           >
             {STATUS_LABELS[order.status]}
@@ -225,8 +225,8 @@ export default async function SaleOrderDetailPage({
                 <span
                   className={
                     po.status === "received"
-                      ? "rounded-full bg-green-50 px-2 py-0.5 text-xs text-green-700"
-                      : "rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600"
+                      ? badgeOk
+                      : badgeMuted
                   }
                 >
                   {po.status === "received" ? "已入库" : "已作废"}
@@ -249,8 +249,8 @@ export default async function SaleOrderDetailPage({
                 <span
                   className={
                     r.status === "confirmed"
-                      ? "rounded-full bg-green-50 px-2 py-0.5 text-xs text-green-700"
-                      : "rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600"
+                      ? badgeOk
+                      : badgeMuted
                   }
                 >
                   {r.status === "confirmed" ? "已退" : "已作废"}

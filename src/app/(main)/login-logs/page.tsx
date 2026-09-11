@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { FilterForm } from "@/components/filter-form";
 import { EmptyState, NoPermission } from "@/components/empty-state";
-import { btnSecondary } from "@/lib/ui";
+import { badgeDanger, badgeOk, btnSecondary } from "@/lib/ui";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
@@ -103,9 +103,9 @@ export default async function LoginLogsPage({
                   </td>
                   <td className="px-4 py-2.5">
                     {log.success ? (
-                      <span className="rounded-full bg-green-50 px-2 py-0.5 text-xs text-green-700">成功</span>
+                      <span className={badgeOk}>成功</span>
                     ) : (
-                      <span className="rounded-full bg-red-50 px-2 py-0.5 text-xs text-red-700">失败</span>
+                      <span className={badgeDanger}>失败</span>
                     )}
                   </td>
                   <td className="px-4 py-2.5 text-gray-600">{log.ip ?? "—"}</td>
