@@ -984,6 +984,8 @@ export function NewSaleForm({
                 </button>
               </div>
 
+              {row.productId ? (
+                <>
               {/* ② 交易信息 */}
               <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
                 <div>
@@ -1143,6 +1145,12 @@ export function NewSaleForm({
                   className={inputCls}
                 />
               </div>
+                </>
+              ) : (
+                <p className="mt-3 text-xs text-gray-400">
+                  选择商品后即可填写数量、售价、补货方式与行备注
+                </p>
+              )}
             </div>
           );
         })}

@@ -140,6 +140,8 @@ export function NewOrderForm({
               </button>
             </div>
 
+            {row.productId ? (
+              <>
             {/* ② 数量 / 单位 / 进价 / 金额 */}
             <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
               <div>
@@ -204,6 +206,10 @@ export function NewOrderForm({
                 className={inputCls}
               />
             </div>
+              </>
+            ) : (
+              <p className="mt-3 text-xs text-gray-400">选择商品后即可填写数量、进价与行备注</p>
+            )}
           </div>
         ))}
       </div>
