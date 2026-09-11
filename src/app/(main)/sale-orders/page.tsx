@@ -17,7 +17,7 @@ const STATUS_LABELS: Record<string, string> = {
 export default async function SaleOrdersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; status?: string; from?: string; to?: string; customerId?: string; q?: string }>;
+  searchParams: Promise<{ page?: string; status?: string; from?: string; to?: string; customerId?: string; q?: string; settle?: string }>;
 }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
@@ -27,12 +27,39 @@ export default async function SaleOrdersPage({
   const status = params.status || undefined;
   const customerId = params.customerId ? Number(params.customerId) : undefined;
   const q = params.q?.trim();
+  const settle =
+    params.settle === "settled" || params.settle === "unsettled" ? params.settle : undefined;
   const range = dateRange(params.from, params.to);
+
+  // 款项结清筛选：未结清 = 应收 − 已收 − 未作废退货冲减 > 0（仅统计已开单）
+  let settleIds: number[] | null = null;
+  if (settle === "settled") {
+    const rows = await prisma.$queryRaw<{ id: number }[]>`
+      SELECT so.id FROM sale_orders so
+      LEFT JOIN (
+        SELECT sale_order_id, SUM(total_amount) AS t
+        FROM sale_returns WHERE status = 'confirmed' GROUP BY sale_order_id
+      ) sr ON sr.sale_order_id = so.id
+      WHERE so.status = 'confirmed'
+        AND (so.total_amount - so.received_amount - COALESCE(sr.t, 0)) <= 0`;
+    settleIds = rows.map((r) => r.id);
+  } else if (settle === "unsettled") {
+    const rows = await prisma.$queryRaw<{ id: number }[]>`
+      SELECT so.id FROM sale_orders so
+      LEFT JOIN (
+        SELECT sale_order_id, SUM(total_amount) AS t
+        FROM sale_returns WHERE status = 'confirmed' GROUP BY sale_order_id
+      ) sr ON sr.sale_order_id = so.id
+      WHERE so.status = 'confirmed'
+        AND (so.total_amount - so.received_amount - COALESCE(sr.t, 0)) > 0`;
+    settleIds = rows.map((r) => r.id);
+  }
 
   const where = {
     ...(status ? { status: status as "confirmed" | "voided" } : {}),
     ...(customerId ? { customerId } : {}),
     ...(q ? { orderNo: { contains: q } } : {}),
+    ...(settleIds ? { id: { in: settleIds } } : {}),
     createdAt: { gte: range.gte, lte: range.lte },
     ...(user.role === "sales" ? { operatorId: user.id } : {}),
   };
@@ -47,6 +74,7 @@ export default async function SaleOrdersPage({
       include: {
         customer: { select: { name: true } },
         operator: { select: { displayName: true, role: true } },
+        returns: { where: { status: "confirmed" }, select: { totalAmount: true } },
       },
     }),
     prisma.customer.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
@@ -74,6 +102,7 @@ export default async function SaleOrdersPage({
           customerId: customerId != null ? String(customerId) : "",
           q: q ?? "",
           status: status ?? "",
+          settle: settle ?? "",
         }}
       />
 
@@ -100,6 +129,11 @@ export default async function SaleOrdersPage({
           <option value="confirmed">已开单</option>
           <option value="voided">已作废</option>
         </select>
+        <select name="settle" defaultValue={settle ?? ""} className="rounded-md border border-gray-300 px-2 py-1.5 text-sm">
+          <option value="">全部款项</option>
+          <option value="unsettled">未结清</option>
+          <option value="settled">已结清</option>
+        </select>
         <button type="submit" className="rounded-md bg-gray-100 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-200">
           筛选
         </button>
@@ -115,6 +149,7 @@ export default async function SaleOrdersPage({
               <th className="px-4 py-3 font-medium">状态</th>
               <th className="px-4 py-3 font-medium">金额</th>
               <th className="px-4 py-3 font-medium">已收</th>
+              <th className="px-4 py-3 font-medium">款项</th>
               <th className="px-4 py-3 font-medium">操作人</th>
               <th className="px-4 py-3 font-medium">开单时间</th>
               <th className="px-4 py-3 font-medium"></th>
@@ -123,12 +158,15 @@ export default async function SaleOrdersPage({
           <tbody className="divide-y divide-gray-100">
             {orders.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-gray-400">
+                <td colSpan={9} className="px-4 py-8 text-center text-gray-400">
                   暂无售卖单
                 </td>
               </tr>
             )}
-            {orders.map((o) => (
+            {orders.map((o) => {
+              const returned = o.returns.reduce((sum, r) => sum + Number(r.totalAmount), 0);
+              const outstanding = Number(o.totalAmount) - Number(o.receivedAmount) - returned;
+              return (
               <tr key={o.id}>
                 <td className="px-4 py-2.5 font-medium text-gray-900">{o.orderNo}</td>
                 <td className="px-4 py-2.5 text-gray-900">{o.customer.name}</td>
@@ -145,6 +183,19 @@ export default async function SaleOrdersPage({
                 </td>
                 <td className="px-4 py-2.5 text-gray-900">¥{Number(o.totalAmount).toFixed(2)}</td>
                 <td className="px-4 py-2.5 text-gray-600">¥{Number(o.receivedAmount).toFixed(2)}</td>
+                <td className="px-4 py-2.5">
+                  {o.status === "voided" ? (
+                    <span className="text-xs text-gray-400">—</span>
+                  ) : outstanding <= 0 ? (
+                    <span className="rounded-full bg-green-50 px-2 py-0.5 text-xs text-green-700">
+                      已结清
+                    </span>
+                  ) : (
+                    <span className="whitespace-nowrap text-xs text-red-600">
+                      未结清 ¥{outstanding.toFixed(2)}
+                    </span>
+                  )}
+                </td>
                 <td className="px-4 py-2.5 text-gray-600">
                   {o.operator.displayName}（{ROLE_LABELS[o.operator.role]}）
                 </td>
@@ -155,7 +206,8 @@ export default async function SaleOrdersPage({
                   </Link>
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
         {totalPages > 1 && (
@@ -182,6 +234,7 @@ export default async function SaleOrdersPage({
     if (q) sp.set("q", q);
     if (customerId) sp.set("customerId", String(customerId));
     if (status) sp.set("status", status);
+    if (settle) sp.set("settle", settle);
     if (params.from) sp.set("from", params.from);
     if (params.to) sp.set("to", params.to);
     sp.set("page", String(p));
