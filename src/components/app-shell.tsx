@@ -1,47 +1,41 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { SidebarNav, type NavGroup } from "./sidebar-nav";
+import { SIDEBAR_COOKIE } from "@/lib/sidebar";
 
-const STORAGE_KEY = "wc-sidebar-collapsed";
+function persist(collapsed: boolean) {
+  try {
+    document.cookie = `${SIDEBAR_COOKIE}=${collapsed ? "1" : "0"}; path=/; max-age=31536000; samesite=lax`;
+  } catch {
+    // ignore
+  }
+}
 
 /**
  * 应用外壳：左侧导航 + 主内容区。
- * 整条侧边栏可收起（收起后左上角留一个 ☰ 按钮随时展开），状态记忆在 localStorage，
+ * 整条侧边栏可收起（收起后左上角留一个 ☰ 按钮随时展开），状态记忆在 Cookie，
  * 便于小屏/需要宽视野时把空间让给内容区。
  */
 export function AppShell({
   groups,
   footer,
+  initialCollapsed,
   children,
 }: {
   groups: NavGroup[];
   /** 侧边栏底部内容（用户信息 / 退出登录；由服务端渲染后作为插槽传入） */
   footer: ReactNode;
+  /** 服务端从 Cookie 读出的初始收起状态 */
+  initialCollapsed: boolean;
   children: ReactNode;
 }) {
-  const [collapsed, setCollapsed] = useState(false);
-
-  // 恢复上次的收起状态（异步读取，避免 SSR 与首屏不一致）
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      try {
-        setCollapsed(localStorage.getItem(STORAGE_KEY) === "1");
-      } catch {
-        // ignore
-      }
-    }, 0);
-    return () => clearTimeout(timer);
-  }, []);
+  const [collapsed, setCollapsed] = useState(initialCollapsed);
 
   function toggle() {
     setCollapsed((prev) => {
       const next = !prev;
-      try {
-        localStorage.setItem(STORAGE_KEY, next ? "1" : "0");
-      } catch {
-        // ignore
-      }
+      persist(next);
       return next;
     });
   }

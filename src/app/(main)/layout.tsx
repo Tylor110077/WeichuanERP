@@ -1,8 +1,10 @@
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { getCurrentUser } from "@/lib/auth/session";
 import { logoutAction } from "./logout-action";
 import { ROLE_LABELS } from "@/lib/auth/roles";
 import { AppShell } from "@/components/app-shell";
+import { SIDEBAR_COOKIE } from "@/lib/sidebar";
 
 const ALL_ROLES = ["admin", "sales", "boss"] as const;
 
@@ -72,8 +74,13 @@ export default async function MainLayout({
     redirect("/login");
   }
 
+  // 侧边栏收起状态由服务端从 Cookie 读取：刷新或表单 GET 跳转时直接渲染正确状态，避免闪烁
+  const cookieStore = await cookies();
+  const initialCollapsed = cookieStore.get(SIDEBAR_COOKIE)?.value === "1";
+
   return (
     <AppShell
+      initialCollapsed={initialCollapsed}
       groups={NAV_GROUPS.map((group) => ({
         label: group.label,
         items: group.items
