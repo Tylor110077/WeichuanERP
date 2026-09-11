@@ -22,7 +22,6 @@ export default async function ReceivablesPage({
     from?: string;
     to?: string;
     counterId?: string;
-    method?: string;
   }>;
 }) {
   const user = await getCurrentUser();

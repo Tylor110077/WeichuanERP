@@ -225,9 +225,20 @@ export default async function PurchaseOrdersPage({
                   {o.createdAt.toLocaleString("zh-CN")}
                 </td>
                 <td className="px-4 py-2.5">
-                  <Link href={`/purchase-orders/${o.id}`} className="text-blue-600 hover:underline">
-                    详情
-                  </Link>
+                  <div className="flex items-center gap-3">
+                    <Link href={`/purchase-orders/${o.id}`} className="text-blue-600 hover:underline">
+                      详情
+                    </Link>
+                    {o.status !== "voided" && outstanding > 0 && (
+                      <Link
+                        href={`/purchase-orders/${o.id}#payment`}
+                        className="text-xs text-blue-600 hover:underline"
+                        title="直接跳到该单的付款登记处"
+                      >
+                        登记
+                      </Link>
+                    )}
+                  </div>
                 </td>
               </tr>
               );

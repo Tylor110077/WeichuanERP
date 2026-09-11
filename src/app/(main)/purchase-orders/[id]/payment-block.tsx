@@ -58,7 +58,7 @@ export function PaymentBlock({
   const message = payState?.ok ?? payState?.error ?? voidState?.ok ?? voidState?.error;
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5">
+    <div id="payment" className="scroll-mt-4 rounded-xl border border-gray-200 bg-white p-5">
       <h2 className="mb-3 text-sm font-semibold text-gray-900">付款记录</h2>
       <div className="flex flex-wrap items-center gap-4">
         <div className="text-sm">

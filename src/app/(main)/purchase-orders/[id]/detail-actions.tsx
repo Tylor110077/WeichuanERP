@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { btnDanger, btnDangerSolid, btnSecondary } from "@/lib/ui";
+import { btnDanger, btnDangerSolid, btnSecondary, btnSuccess } from "@/lib/ui";
 import {
   receivePurchaseOrderAction,
   voidPurchaseOrderAction,
@@ -42,7 +42,7 @@ export function DetailActions({
             <button
               type="submit"
               disabled={receivePending}
-              className="rounded-md bg-green-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
+              className={btnSuccess}
             >
               {receivePending ? "入库中…" : "确认入库"}
             </button>

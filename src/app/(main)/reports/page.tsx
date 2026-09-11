@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { FilterForm } from "@/components/filter-form";
 import { EmptyState, NoPermission } from "@/components/empty-state";
-import { btnSecondary } from "@/lib/ui";
+import { btnSecondary, btnSuccess } from "@/lib/ui";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { buildReport, REPORT_TABS, type ReportTabKey } from "@/lib/reports";
@@ -38,7 +38,7 @@ export default async function ReportsPage({
         <h1 className="text-lg font-semibold text-gray-900">报表中心</h1>
         <Link
           href={`/reports/export?${exportParams.toString()}`}
-          className="rounded-md bg-green-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-green-700"
+          className={btnSuccess}
         >
           导出 Excel
         </Link>

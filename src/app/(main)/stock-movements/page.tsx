@@ -12,6 +12,12 @@ export const metadata = { title: "库存流水 - 玮川进销存" };
 
 const PAGE_SIZE = 20;
 
+/** 业务类型 → 单号归属的单据详情页前缀（退货/作废冲回不在此跳转） */
+const ORDER_PATH: Record<string, string> = {
+  purchase_in: "/purchase-orders",
+  sale_out: "/sale-orders",
+};
+
 const BIZ_TYPE_LABELS: Record<string, { label: string; cls: string }> = {
   purchase_in: { label: "进货入库", cls: "bg-green-50 text-green-700" },
   sale_out: { label: "销售出库", cls: "bg-blue-50 text-blue-700" },
@@ -55,6 +61,17 @@ export default async function StockMovementsPage({
       include: { product: { select: { code: true, name: true } } },
     }),
     prisma.product.findMany({ orderBy: { code: "asc" }, select: { id: true, code: true, name: true } }),
+  ]);
+
+  // 单号 → 单据详情：一次查出本页涉及的进货/售卖单 id，行内单号可直接点开
+  const orderNos = [...new Set(movements.map((m) => m.bizOrderNo))];
+  const [poIds, soIds] = await Promise.all([
+    prisma.purchaseOrder.findMany({ where: { orderNo: { in: orderNos } }, select: { id: true, orderNo: true } }),
+    prisma.saleOrder.findMany({ where: { orderNo: { in: orderNos } }, select: { id: true, orderNo: true } }),
+  ]);
+  const orderHrefMap = new Map<string, string>([
+    ...poIds.map((o) => [o.orderNo, `/purchase-orders/${o.id}`] as const),
+    ...soIds.map((o) => [o.orderNo, `/sale-orders/${o.id}`] as const),
   ]);
 
   const operatorMap = new Map(
@@ -142,7 +159,15 @@ export default async function StockMovementsPage({
                   <td className="px-4 py-2.5 text-right text-gray-600 tabular-nums">{Number(m.beforeQty).toFixed(3)}</td>
                   <td className="px-4 py-2.5 text-right text-gray-600 tabular-nums">{Number(m.afterQty).toFixed(3)}</td>
                   <td className="px-4 py-2.5 text-right text-gray-600 tabular-nums">¥{Number(m.unitCost).toFixed(4)}</td>
-                  <td className="px-4 py-2.5 text-gray-600">{m.bizOrderNo}</td>
+                  <td className="px-4 py-2.5">
+                    {ORDER_PATH[m.bizType] && orderHrefMap.has(m.bizOrderNo) ? (
+                      <Link href={orderHrefMap.get(m.bizOrderNo)!} className="text-blue-600 hover:underline">
+                        {m.bizOrderNo}
+                      </Link>
+                    ) : (
+                      <span className="text-gray-600">{m.bizOrderNo}</span>
+                    )}
+                  </td>
                   <td className="px-4 py-2.5 text-gray-600">{operatorMap.get(m.operatorId) ?? m.operatorId}</td>
                 </tr>
               );

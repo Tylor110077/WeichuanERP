@@ -18,6 +18,10 @@ export const btnPrimary =
 export const btnSecondary =
   "inline-flex h-9 items-center justify-center rounded-md border border-gray-300 bg-white px-4 text-sm text-gray-700 transition hover:bg-gray-50";
 
+/** 正向确认类操作（确认入库、导出）：绿色实心 */
+export const btnSuccess =
+  "inline-flex h-9 items-center justify-center rounded-md bg-green-600 px-4 text-sm font-medium text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50";
+
 /** 警告类操作：退货等 */
 export const btnWarn =
   "inline-flex h-9 items-center justify-center rounded-md border border-orange-300 bg-white px-4 text-sm text-orange-600 transition hover:bg-orange-50";
