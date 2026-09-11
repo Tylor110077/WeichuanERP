@@ -1,10 +1,11 @@
 import { redirect } from "next/navigation";
-import { badgeMuted, btnPrimary } from "@/lib/ui";
+import { badgeMuted, btnPrimary, btnSecondary } from "@/lib/ui";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { MasterDataManager } from "@/components/master-data-manager";
 import { AutoFilterForm } from "@/components/auto-filter-form";
+import { FilterForm } from "@/components/filter-form";
 import { EmptyState } from "@/components/empty-state";
 import { buildCustomerProfile } from "@/lib/customer-profile";
 import { CustomerManager } from "./customer-manager";
@@ -22,7 +23,7 @@ export const metadata = { title: "客户管理 - 玮川进销存" };
 export default async function CustomersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ groupId?: string; tagId?: string }>;
+  searchParams: Promise<{ groupId?: string; tagId?: string; q?: string }>;
 }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
@@ -30,12 +31,23 @@ export default async function CustomersPage({
   const params = await searchParams;
   const groupId = params.groupId ? Number(params.groupId) : undefined;
   const tagId = params.tagId ? Number(params.tagId) : undefined;
+  const q = params.q?.trim();
 
   const [customers, groups, tags] = await Promise.all([
     prisma.customer.findMany({
       where: {
         ...(groupId ? { groupId } : {}),
         ...(tagId ? { tagLinks: { some: { tagId } } } : {}),
+        // 客户一多就没有别的办法找人了：名称 / 联系人 / 电话都能搜
+        ...(q
+          ? {
+              OR: [
+                { name: { contains: q } },
+                { contact: { contains: q } },
+                { phone: { contains: q } },
+              ],
+            }
+          : {}),
       },
       orderBy: { createdAt: "asc" },
       include: {
@@ -82,6 +94,35 @@ export default async function CustomersPage({
           </Link>
         )}
       </div>
+
+      {/* 文本搜索：客户一多，靠组织/标签下拉是找不到人的（回车即搜，条件叠加） */}
+      <FilterForm className="flex flex-wrap items-end gap-3 rounded-xl border border-gray-200 bg-white p-4">
+        <div className="min-w-56 flex-1">
+          <label htmlFor="q" className="block text-xs font-medium text-gray-600">搜索客户</label>
+          <input
+            id="q"
+            type="search"
+            name="q"
+            defaultValue={q ?? ""}
+            placeholder="名称 / 联系人 / 电话"
+            className="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+          />
+        </div>
+        {groupId != null && <input type="hidden" name="groupId" value={groupId} />}
+        {tagId != null && <input type="hidden" name="tagId" value={tagId} />}
+        <button type="submit" className={btnSecondary}>查询</button>
+        {q && (
+          <Link
+            href={`/customers?${new URLSearchParams({
+              ...(groupId != null ? { groupId: String(groupId) } : {}),
+              ...(tagId != null ? { tagId: String(tagId) } : {}),
+            }).toString()}`}
+            className="text-xs text-blue-600 hover:underline"
+          >
+            清除关键词
+          </Link>
+        )}
+      </FilterForm>
 
       <AutoFilterForm
         basePath="/customers"
@@ -239,6 +280,8 @@ export default async function CustomersPage({
       </details>
 
       <CustomerManager
+        emptyTitle={q ? `没有匹配「${q}」的客户` : undefined}
+        emptyHint={q ? "换个关键词，或点「清除关键词」看全部" : undefined}
         customers={customersData}
         groups={groups}
         tags={tags}

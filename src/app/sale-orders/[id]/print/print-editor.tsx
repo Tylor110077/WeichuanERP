@@ -144,9 +144,12 @@ export function PrintEditor({ data }: { data: PrintOrderData }) {
           </div>
         </div>
 
-        {/* 提示行 */}
-        <p className="mt-3 border-t border-gray-100 pt-2.5 text-xs text-gray-400">
+        {/* 提示行：必须说清"这里的修改不会保存到订单"，否则用户会以为改的是订单 */}
+        <p className="mt-3 border-t border-gray-100 pt-2.5 text-xs text-gray-500">
           提示：直接点击单据中的文字即可编辑；行可添加 / 删除；调整满意后点「打印」。
+          <span className="ml-1 font-medium text-amber-600">
+            这里的修改只作用于本次打印稿，不会保存到订单；如需修改订单请用「作废后重开」或退货。
+          </span>
         </p>
       </div>
 

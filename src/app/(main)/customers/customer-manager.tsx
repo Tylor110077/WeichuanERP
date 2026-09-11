@@ -39,6 +39,8 @@ export function CustomerManager({
   isAdmin,
   hideForm,
   editBase,
+  emptyTitle,
+  emptyHint,
 }: {
   customers: CustomerRowData[];
   groups: { id: number; name: string; status: number }[];
@@ -47,6 +49,9 @@ export function CustomerManager({
   /** 独立页模式：不渲染平铺表单；行内"编辑"变为链接 */
   hideForm?: boolean;
   editBase?: string;
+  /** 列表为空时的说法（被搜索条件过滤空 vs 真的一个客户都没有，含义不同） */
+  emptyTitle?: string;
+  emptyHint?: string;
 }) {
   const [groupOptions, setGroupOptions] = useState(groups);
   const [tagOptions, setTagOptions] = useState(tags);
@@ -140,8 +145,8 @@ export function CustomerManager({
             <tr>
               <td colSpan={7}>
                 <EmptyState
-                  title="还没有客户"
-                  hint="点右上角「新建客户」添加"
+                  title={emptyTitle ?? "还没有客户"}
+                  hint={emptyHint ?? "点右上角「新建客户」添加"}
                   action={{ href: "/customers/new", label: "+ 新建客户" }}
                 />
               </td>
