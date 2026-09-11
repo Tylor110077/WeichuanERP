@@ -965,16 +965,6 @@ export function NewSaleForm({
                   </td>
                   {/* 售价 */}
                   <td className="px-4 py-2">
-                    {row.productId && customerId && lastCustomerPrices[`${customerId}-${row.productId}`] != null && (
-                      <div className="mb-1 text-xs text-blue-500">
-                        上次（{selectedCustomer?.name ?? "该客户"}）：¥{lastCustomerPrices[`${customerId}-${row.productId}`].toFixed(2)}
-                      </div>
-                    )}
-                    {row.productId && (!customerId || lastCustomerPrices[`${customerId}-${row.productId}`] == null) && row.lastGlobalSalePrice > 0 && (
-                      <div className="mb-1 text-xs text-gray-400">
-                        参考价 ¥{row.lastGlobalSalePrice.toFixed(2)}
-                      </div>
-                    )}
                     <input
                       name={`item_${i}_unitPrice`}
                       type="number"
@@ -989,6 +979,17 @@ export function NewSaleForm({
                       }
                       className={inputCls}
                     />
+                    {/* 价格参考放在输入框下方，不遮挡填写 */}
+                    {row.productId && customerId && lastCustomerPrices[`${customerId}-${row.productId}`] != null && (
+                      <div className="mt-1 text-xs text-blue-500">
+                        上次（{selectedCustomer?.name ?? "该客户"}）：¥{lastCustomerPrices[`${customerId}-${row.productId}`].toFixed(2)}
+                      </div>
+                    )}
+                    {row.productId && (!customerId || lastCustomerPrices[`${customerId}-${row.productId}`] == null) && row.lastGlobalSalePrice > 0 && (
+                      <div className="mt-1 text-xs text-gray-400">
+                        参考价 ¥{row.lastGlobalSalePrice.toFixed(2)}
+                      </div>
+                    )}
                   </td>
                   {/* 进价（缺货补货时填写） */}
                   <td className="px-4 py-2">
