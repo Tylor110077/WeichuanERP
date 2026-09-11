@@ -88,6 +88,7 @@ export function NewSaleForm({
   lastCustomerPrices,
   canCreateCustomer,
   canCreateProduct,
+  canSeeCost,
 }: {
   customers: CustomerOption[];
   suppliers: SupplierOption[];
@@ -100,6 +101,8 @@ export function NewSaleForm({
   lastCustomerPrices: Record<string, number>;
   canCreateCustomer: boolean;
   canCreateProduct: boolean;
+  /** 成本可见性（与单据详情页 canSeeCost 同口径：业务员不可见成本/毛利） */
+  canSeeCost: boolean;
 }) {
   const [rows, setRows] = useState<Row[]>([emptyRow()]);
   const [productOptions, setProductOptions] = useState<ProductOption[]>(products);
@@ -1027,7 +1030,9 @@ export function NewSaleForm({
                     <InlineField label="库存">
                       <span className="block py-1.5 text-sm tabular-nums text-gray-700">
                         {row.stockQty.toFixed(3)}
-                        {row.avgCost > 0 && <span className="ml-1 text-xs text-gray-400">均价 ¥{row.avgCost.toFixed(2)}</span>}
+                        {canSeeCost && row.avgCost > 0 && (
+                          <span className="ml-1 text-xs text-gray-400">均价 ¥{row.avgCost.toFixed(2)}</span>
+                        )}
                       </span>
                     </InlineField>
                     <InlineField label="售价" required>

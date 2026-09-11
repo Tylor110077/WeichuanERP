@@ -131,6 +131,10 @@ export default async function NewSaleOrderPage() {
     supplierIdByName.set(s.name, s.id);
   }
 
+  // 成本可见性与单据详情页同口径：业务员不可见成本/毛利，
+  // 因此这里连数据都不下发（只靠前端隐藏等于把成本发到了浏览器）。
+  const canSeeCost = user.role !== "sales";
+
   const productOptions = products.map((p) => {
     const last = lastByProduct.get(p.id);
     const mfrSupplierId = supplierIdByName.get(p.manufacturer.trim()) ?? null;
@@ -144,7 +148,7 @@ export default async function NewSaleOrderPage() {
       manufacturer: p.manufacturer,
       unitName: p.unit.name,
       stockQty: Number(p.stockQty),
-      avgCost: Number(p.avgCost), // 当前移动加权均价（供开单时参考成本）
+      avgCost: canSeeCost ? Number(p.avgCost) : 0, // 当前移动加权均价（仅供可见成本的角色的开单参考）
       refSalePrice: lastSalePriceByProduct.get(p.id) ?? Number(p.refSalePrice), // 预填最近成交价
       lastSupplierId: autoSupplierId,
       lastSupplierName: last ? supplierMap.get(last.supplierId) ?? "" : "",
@@ -171,6 +175,7 @@ export default async function NewSaleOrderPage() {
         lastCustomerPrices={Object.fromEntries(lastCustomerPrice)}
         canCreateCustomer={user.role === "admin"}
         canCreateProduct={user.role === "admin"}
+        canSeeCost={canSeeCost}
       />
     </div>
   );
