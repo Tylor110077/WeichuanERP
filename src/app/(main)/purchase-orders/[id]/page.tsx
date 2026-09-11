@@ -5,7 +5,7 @@ import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { DetailActions } from "./detail-actions";
-import { PaymentBlock } from "./payment-block";
+import { PaymentBlock } from "@/components/payment-block";
 
 export const metadata = { title: "进货单详情 - 玮川进销存" };
 
@@ -141,6 +141,7 @@ export default async function PurchaseOrderDetailPage({
 
       {/* 付款登记与记录（紧跟基本信息） */}
       <PaymentBlock
+        direction="payment"
         orderId={order.id}
         orderStatus={order.status}
         outstanding={outstanding}

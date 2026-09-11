@@ -6,7 +6,7 @@ import {
   createPaymentAction,
   voidPaymentAction,
   type FormState,
-} from "../../receivables-payables/actions";
+} from "@/app/(main)/receivables-payables/actions";
 import { FormAlert } from "@/components/form-alert";
 
 const METHOD_LABELS: Record<string, string> = {
@@ -17,7 +17,7 @@ const METHOD_LABELS: Record<string, string> = {
   other: "其他",
 };
 
-interface PaymentRow {
+export interface PaymentRow {
   id: number;
   orderNo: string;
   amount: number;
@@ -27,19 +27,57 @@ interface PaymentRow {
   status: string;
 }
 
+const COPY = {
+  receipt: {
+    anchor: "receipt",
+    title: "收款记录",
+    paidLabel: "已收",
+    dueLabel: "未收",
+    actionLabel: "收款",
+    submitLabel: "确认收款",
+    emptyText: "暂无收款记录",
+    voidLabel: "撤销收款",
+    permissionHint: "收款登记权限：管理员/老板",
+    direction: "receipt",
+    orderType: "sale",
+  },
+  payment: {
+    anchor: "payment",
+    title: "付款记录",
+    paidLabel: "已付",
+    dueLabel: "未付",
+    actionLabel: "付款",
+    submitLabel: "确认付款",
+    emptyText: "暂无付款记录",
+    voidLabel: "撤销付款",
+    permissionHint: "付款登记权限：管理员/老板",
+    direction: "payment",
+    orderType: "purchase",
+  },
+} as const;
+
+/**
+ * 收款 / 付款登记区块（销售单与进货单共用）。
+ *
+ * 这两块原先各写一份（188 行 vs 188 行，差异只有 7 行：文案与 direction/orderType），
+ * 合并后改一处即两处生效，避免"收款修了、付款没修"的分叉。
+ */
 export function PaymentBlock({
+  direction,
   orderId,
   orderStatus,
   outstanding,
   payments,
   canPay,
 }: {
+  direction: "receipt" | "payment";
   orderId: number;
   orderStatus: string;
   outstanding: number;
   payments: PaymentRow[];
   canPay: boolean;
 }) {
+  const c = COPY[direction];
   const [showPayForm, setShowPayForm] = useState(false);
   const [showVoidFor, setShowVoidFor] = useState<number | null>(null);
   const [payState, payAction, payPending] = useActionState<FormState, FormData>(
@@ -58,35 +96,31 @@ export function PaymentBlock({
   const message = payState?.ok ?? payState?.error ?? voidState?.ok ?? voidState?.error;
 
   return (
-    <div id="payment" className="scroll-mt-4 rounded-xl border border-gray-200 bg-white p-5">
-      <h2 className="mb-3 text-sm font-semibold text-gray-900">付款记录</h2>
+    <div id={c.anchor} className="scroll-mt-4 rounded-xl border border-gray-200 bg-white p-5">
+      <h2 className="mb-3 text-sm font-semibold text-gray-900">{c.title}</h2>
       <div className="flex flex-wrap items-center gap-4">
         <div className="text-sm">
-          <span className="text-gray-500">已付：</span>
-          <span className="font-medium text-gray-900">¥{paidTotal.toFixed(2)}</span>
+          <span className="text-gray-500">{c.paidLabel}：</span>
+          <span className="font-medium text-gray-900 tabular-nums">¥{paidTotal.toFixed(2)}</span>
         </div>
         <div className="text-sm">
-          <span className="text-gray-500">未付：</span>
-          <span className={`font-medium ${outstanding > 0 ? "text-red-600" : "text-gray-900"}`}>
+          <span className="text-gray-500">{c.dueLabel}：</span>
+          <span className={`font-medium tabular-nums ${outstanding > 0 ? "text-red-600" : "text-gray-900"}`}>
             ¥{Math.max(outstanding, 0).toFixed(2)}
           </span>
         </div>
         {canPay && outstanding > 0 && orderStatus !== "voided" && (
-          <button
-            type="button"
-            onClick={() => setShowPayForm((v) => !v)}
-            className={btnPrimary}
-          >
-            {showPayForm ? "取消" : "付款"}
+          <button type="button" onClick={() => setShowPayForm((v) => !v)} className={btnPrimary}>
+            {showPayForm ? "取消" : c.actionLabel}
           </button>
         )}
-        {!canPay && <span className="text-xs text-gray-400">付款登记权限：管理员/老板</span>}
+        {!canPay && <span className="text-xs text-gray-400">{c.permissionHint}</span>}
       </div>
 
       {showPayForm && (
         <form action={payAction} className="mt-3 flex flex-wrap items-end gap-2 rounded-lg bg-gray-50 p-3">
-          <input type="hidden" name="direction" value="payment" />
-          <input type="hidden" name="orderType" value="purchase" />
+          <input type="hidden" name="direction" value={c.direction} />
+          <input type="hidden" name="orderType" value={c.orderType} />
           <input type="hidden" name="orderId" value={orderId} />
           <div>
             <label className="block text-xs text-gray-600">金额 *</label>
@@ -114,23 +148,24 @@ export function PaymentBlock({
             <label className="block text-xs text-gray-600">备注</label>
             <input name="remark" type="text" maxLength={200} className={inputCls} />
           </div>
-          <button
-            type="submit"
-            disabled={payPending}
-            className={btnPrimary}
-          >
-            {payPending ? "登记中…" : "确认付款"}
+          <button type="submit" disabled={payPending} className={btnPrimary}>
+            {payPending ? "登记中…" : c.submitLabel}
           </button>
         </form>
       )}
 
       <div className="mt-4 space-y-2">
-        {payments.length === 0 && <p className="text-sm text-gray-400">暂无付款记录</p>}
+        {payments.length === 0 && <p className="text-sm text-gray-400">{c.emptyText}</p>}
         {payments.map((p) => (
-          <div key={p.id} className="flex flex-wrap items-center gap-3 rounded-lg border border-gray-100 px-3 py-2 text-sm">
-            <span className="font-medium text-gray-900">¥{p.amount.toFixed(2)}</span>
+          <div
+            key={p.id}
+            className="flex flex-wrap items-center gap-3 rounded-lg border border-gray-100 px-3 py-2 text-sm"
+          >
+            <span className="font-medium text-gray-900 tabular-nums">¥{p.amount.toFixed(2)}</span>
             <span className="text-gray-600">{METHOD_LABELS[p.method] ?? p.method}</span>
-            <span className="text-gray-500">{p.orderNo} ・ {p.createdAt} ・ {p.operatorName}</span>
+            <span className="text-gray-500">
+              {p.orderNo} ・ {p.createdAt} ・ {p.operatorName}
+            </span>
             {p.status === "confirmed" && canPay ? (
               <span className="ml-auto flex items-center gap-2">
                 {showVoidFor === p.id ? (
@@ -142,11 +177,7 @@ export function PaymentBlock({
                       required
                       className="w-44 rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-900"
                     />
-                    <button
-                      type="submit"
-                      disabled={voidPending}
-                      className={btnSmallDanger}
-                    >
+                    <button type="submit" disabled={voidPending} className={btnSmallDanger}>
                       {voidPending ? "处理中…" : "确认撤销"}
                     </button>
                     <button
@@ -163,7 +194,7 @@ export function PaymentBlock({
                     onClick={() => setShowVoidFor(p.id)}
                     className="text-xs text-red-600 hover:underline"
                   >
-                    撤销付款
+                    {c.voidLabel}
                   </button>
                 )}
               </span>
