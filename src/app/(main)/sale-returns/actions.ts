@@ -9,13 +9,25 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { writeAudit } from "@/lib/audit";
 import { applyStockChange } from "@/lib/stock-cost";
 import { buildOrderNo, ORDER_NO_PREFIXES, todayCompact } from "@/lib/order-no";
+import { firstIssueMessage, requiredNumber } from "@/lib/form-number";
 
 export type FormState = { error?: string; ok?: string } | null;
 
 const itemSchema = z.object({
   orderItemId: z.coerce.number().int().positive(),
-  quantity: z.coerce.number().min(0.001, "退货数量必须大于 0").max(9_999_999.999),
-  unitPrice: z.coerce.number().min(0).max(9_999_999_999.99),
+  quantity: requiredNumber({
+    invalid: "请填写退货数量",
+    min: 0.001,
+    minMessage: "退货数量必须大于 0",
+    max: 9_999_999.999,
+    maxMessage: "退货数量过大",
+  }),
+  unitPrice: requiredNumber({
+    invalid: "请填写退货单价",
+    min: 0,
+    max: 9_999_999_999.99,
+    maxMessage: "退货单价格式不正确",
+  }),
 });
 
 const createSchema = z.object({
@@ -49,7 +61,7 @@ export async function createSaleReturnAction(
     saleOrderId: formData.get("saleOrderId"),
     items,
   });
-  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "输入有误" };
+  if (!parsed.success) return { error: firstIssueMessage(parsed.error) };
   const { saleOrderId } = parsed.data;
 
   const order = await prisma.saleOrder.findUnique({

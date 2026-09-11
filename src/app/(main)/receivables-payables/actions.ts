@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { requireLogin } from "@/lib/auth/guards";
 import { writeAudit } from "@/lib/audit";
 import { buildOrderNo, ORDER_NO_PREFIXES, todayCompact } from "@/lib/order-no";
+import { requiredNumber } from "@/lib/form-number";
 
 export type FormState = { error?: string; ok?: string } | null;
 
@@ -14,7 +15,13 @@ const paymentSchema = z.object({
   direction: z.enum(["receipt", "payment"]),
   orderType: z.enum(["sale", "purchase"]),
   orderId: z.coerce.number().int().positive("请选择单据"),
-  amount: z.coerce.number().positive("金额必须大于 0").max(9_999_999_999.99),
+  amount: requiredNumber({
+    invalid: "请填写金额",
+    min: 0,
+    minMessage: "金额不能为负",
+    max: 9_999_999_999.99,
+    maxMessage: "金额过大",
+  }).refine((v) => v > 0, "金额必须大于 0"),
   method: z.enum(["cash", "bank", "wechat", "alipay", "other"]),
   remark: z.string().trim().max(200),
 });

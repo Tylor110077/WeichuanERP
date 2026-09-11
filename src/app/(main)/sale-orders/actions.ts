@@ -9,26 +9,50 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { writeAudit } from "@/lib/audit";
 import { applyStockChange } from "@/lib/stock-cost";
 import { buildOrderNo, ORDER_NO_PREFIXES, todayCompact } from "@/lib/order-no";
+import { firstIssueMessage, optionalNumber, requiredNumber } from "@/lib/form-number";
 
 export type FormState = { error?: string; ok?: string } | null;
 
 const itemSchema = z.object({
   productId: z.coerce.number().int().positive("请选择商品"),
-  quantity: z.coerce.number().min(0.001, "数量必须大于 0").max(9_999_999.999),
-  unitPrice: z.coerce.number().min(0).max(9_999_999_999.99), // 售价
-  supplyPrice: z.coerce.number().min(0).max(9_999_999_999.99), // 自动补货进价
+  quantity: requiredNumber({
+    invalid: "请填写数量",
+    min: 0.001,
+    minMessage: "数量必须大于 0",
+    max: 9_999_999.999,
+    maxMessage: "数量过大",
+  }),
+  unitPrice: requiredNumber({
+    invalid: "请填写售价",
+    min: 0,
+    max: 9_999_999_999.99,
+    maxMessage: "售价格式不正确",
+  }), // 售价
+  supplyPrice: requiredNumber({
+    invalid: "请填写进价",
+    min: 0,
+    max: 9_999_999_999.99,
+    maxMessage: "进价格式不正确",
+  }), // 自动补货进价
   supplierId: z.coerce.number().int().positive().optional().nullable(), // 缺货行需厂家
   // 多补：在自动补足缺口之外额外多进的备货量（不允许负数）；不填＝不多补
-  extraQty: z.coerce.number().min(0).max(9_999_999.999).optional().default(0),
+  extraQty: optionalNumber({
+    invalid: "多补必须是数字",
+    min: 0,
+    minMessage: "多补不能为负",
+    max: 9_999_999.999,
+    maxMessage: "多补过大",
+  }).default(0),
   remark: z.string().trim().max(200).optional().default(""), // 行备注
   // 本次使用的现有库存数量（留空＝尽量用库存；填 0＝全部现场进货）
-  // 注意：空字符串必须先转 undefined，否则 z.coerce.number() 会把它变成 0
-  stockUsed: z
-    .preprocess(
-      (v) => (v === "" || v == null ? undefined : v),
-      z.coerce.number().min(0).max(9_999_999.999)
-    )
-    .optional(),
+  // 留空必须视为「未填写」而不是 0，见 src/lib/form-number.ts 的说明
+  stockUsed: optionalNumber({
+    invalid: "用库存必须是数字",
+    min: 0,
+    minMessage: "用库存不能为负",
+    max: 9_999_999.999,
+    maxMessage: "用库存过大",
+  }),
 });
 
 const createSchema = z.object({
@@ -36,6 +60,9 @@ const createSchema = z.object({
   remark: z.string().trim().max(200),
   items: z.array(itemSchema).min(1, "请至少添加一行商品"),
 });
+
+/** 行字段的中文标签（报错说成「第 2 行「售价」：…」而不是字段名） */
+const ITEM_LABELS = { unitPrice: "售价", supplyPrice: "进价" };
 
 function round2(n: number): number {
   return Math.round(n * 100) / 100;
@@ -109,7 +136,7 @@ export async function createSaleOrderAction(
   const user = await requireSaleWrite();
   const parsed = parseCreatePayload(formData);
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "输入有误" };
+    return { error: firstIssueMessage(parsed.error, ITEM_LABELS) };
   }
   const { customerId, remark, items } = parsed.data;
 

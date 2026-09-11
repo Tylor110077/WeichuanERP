@@ -9,13 +9,25 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { writeAudit } from "@/lib/audit";
 import { applyStockChange } from "@/lib/stock-cost";
 import { buildOrderNo, ORDER_NO_PREFIXES, todayCompact } from "@/lib/order-no";
+import { firstIssueMessage, requiredNumber } from "@/lib/form-number";
 
 export type FormState = { error?: string; ok?: string } | null;
 
 const itemSchema = z.object({
   productId: z.coerce.number().int().positive("请选择商品"),
-  quantity: z.coerce.number().min(0.001, "数量必须大于 0").max(9_999_999.999),
-  unitPrice: z.coerce.number().min(0).max(9_999_999_999.99),
+  quantity: requiredNumber({
+    invalid: "请填写数量",
+    min: 0.001,
+    minMessage: "数量必须大于 0",
+    max: 9_999_999.999,
+    maxMessage: "数量过大",
+  }),
+  unitPrice: requiredNumber({
+    invalid: "请填写进价",
+    min: 0,
+    max: 9_999_999_999.99,
+    maxMessage: "进价格式不正确",
+  }),
   remark: z.string().trim().max(200).optional().default(""), // 行备注
 });
 
@@ -81,7 +93,7 @@ export async function createPurchaseOrderAction(
   const user = await requirePurchaseWrite();
   const parsed = parseCreatePayload(formData);
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "输入有误" };
+    return { error: firstIssueMessage(parsed.error, { unitPrice: "进价" }) };
   }
   const { supplierId, remark, items } = parsed.data;
 
