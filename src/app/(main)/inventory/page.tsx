@@ -136,7 +136,7 @@ export default async function InventoryPage({
               <th className="px-4 py-3 font-medium">状态</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-gray-100 [&>tr]:transition-colors [&>tr:hover]:bg-gray-100/70">
             {rows.length === 0 && (
               <tr>
                 <td colSpan={11}>
@@ -221,7 +221,7 @@ export default async function InventoryPage({
                   <th className="px-4 py-3 text-right font-medium tabular-nums">金额</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-gray-100 [&>tr]:transition-colors [&>tr:hover]:bg-gray-100/70">
                 {batches.length === 0 && (
                   <tr>
                     <td colSpan={7}>

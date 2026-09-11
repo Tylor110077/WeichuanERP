@@ -158,7 +158,7 @@ export default async function SaleOrdersPage({
               <th className="px-4 py-3 font-medium"></th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-gray-100 [&>tr]:transition-colors [&>tr:hover]:bg-gray-100/70">
             {orders.length === 0 && (
               <tr>
                 <td colSpan={9}>

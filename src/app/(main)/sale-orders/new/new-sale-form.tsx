@@ -516,7 +516,7 @@ export function NewSaleForm({
     <form action={formAction} className="space-y-4">
       {/* 客户信息（可折叠） */}
       <details open className="rounded-xl border border-gray-200 bg-white">
-        <summary className="cursor-pointer px-5 py-3 text-sm font-medium text-gray-900">
+        <summary className="cursor-pointer rounded-t-xl px-5 py-3 text-sm font-medium text-gray-900 transition-colors hover:bg-gray-50">
           客户信息
           <span className="ml-2 text-xs font-normal text-gray-400">
             {selectedCustomer ? selectedCustomer.name : "尚未选择客户"}
@@ -742,7 +742,7 @@ export function NewSaleForm({
 
       {/* 商品明细与备注（可折叠） */}
       <details open className="rounded-xl border border-gray-200 bg-white">
-        <summary className="cursor-pointer px-5 py-3 text-sm font-medium text-gray-900">
+        <summary className="cursor-pointer rounded-t-xl px-5 py-3 text-sm font-medium text-gray-900 transition-colors hover:bg-gray-50">
           商品明细与备注
           <span className="ml-2 text-xs font-normal text-gray-400">
             {rows.length} 行 ・ 合计 ¥{total.toFixed(2)}

@@ -90,7 +90,7 @@ export default async function ReportsPage({
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-gray-100 [&>tr]:transition-colors [&>tr:hover]:bg-gray-100/70">
             {result.rows.length === 0 && (
               <tr>
                 <td colSpan={result.columns.length}>

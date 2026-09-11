@@ -87,7 +87,7 @@ export function ReturnForm({
               <th className="w-14 px-4 py-3 font-medium"></th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-gray-100 [&>tr]:transition-colors [&>tr:hover]:bg-gray-100/70">
             {lines.map((line, i) => (
               <tr key={i}>
                 <td className="px-4 py-2">

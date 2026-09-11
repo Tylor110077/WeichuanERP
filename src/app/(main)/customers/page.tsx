@@ -108,7 +108,7 @@ export default async function CustomersPage({
       />
 
       <details className="rounded-xl border border-gray-200 bg-white">
-        <summary className="cursor-pointer px-5 py-3 text-sm font-medium text-gray-900">
+        <summary className="cursor-pointer rounded-t-xl px-5 py-3 text-sm font-medium text-gray-900 transition-colors hover:bg-gray-50">
           客户组织管理（{groups.length} 个）
           <span className="ml-2 text-xs font-normal text-gray-400">点击展开/收起 · 客户归属组织可移动，未被引用可删除</span>
         </summary>
@@ -137,7 +137,7 @@ export default async function CustomersPage({
       </details>
 
       <details className="rounded-xl border border-gray-200 bg-white">
-        <summary className="cursor-pointer px-5 py-3 text-sm font-medium text-gray-900">
+        <summary className="cursor-pointer rounded-t-xl px-5 py-3 text-sm font-medium text-gray-900 transition-colors hover:bg-gray-50">
           客户标签管理（{tags.length} 个）
           <span className="ml-2 text-xs font-normal text-gray-400">点击展开/收起 · 一个客户可挂多个标签，未被引用可删除</span>
         </summary>
@@ -166,7 +166,7 @@ export default async function CustomersPage({
       </details>
 
       <details className="rounded-xl border border-gray-200 bg-white">
-        <summary className="cursor-pointer px-5 py-3 text-sm font-medium text-gray-900">
+        <summary className="cursor-pointer rounded-t-xl px-5 py-3 text-sm font-medium text-gray-900 transition-colors hover:bg-gray-50">
           客户画像（{profileRows.length} 个客户有成交）
           <span className="ml-2 text-xs font-normal text-gray-400">点击展开/收起 · 单数/销售额/毛利/平均利润率，点击客户「看明细」进入详情</span>
         </summary>
@@ -186,7 +186,7 @@ export default async function CustomersPage({
                   <th className="px-4 py-3 font-medium"></th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-gray-100 [&>tr]:transition-colors [&>tr:hover]:bg-gray-100/70">
                 {profileRows.length === 0 && (
                   <tr>
                     <td colSpan={9}>

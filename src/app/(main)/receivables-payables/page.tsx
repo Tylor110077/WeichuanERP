@@ -167,7 +167,7 @@ export default async function ReceivablesPage({
               <th className="px-4 py-3 font-medium"></th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-gray-100 [&>tr]:transition-colors [&>tr:hover]:bg-gray-100/70">
             {unpaidOrders.length === 0 && (
               <tr>
                 <td colSpan={8}>

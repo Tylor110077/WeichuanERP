@@ -176,7 +176,7 @@ export default async function SaleOrderDetailPage({
               {canSeeCost && <th className="px-4 py-3 text-right font-medium tabular-nums">成本（快照）</th>}
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-gray-100 [&>tr]:transition-colors [&>tr:hover]:bg-gray-100/70">
             {order.items.map((item) => (
               <tr key={item.id}>
                 <td className="px-4 py-2.5 text-gray-600">{item.product.code}</td>

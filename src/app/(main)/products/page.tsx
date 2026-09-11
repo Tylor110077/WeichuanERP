@@ -156,7 +156,7 @@ export default async function ProductsPage({
       </div>
 
       <details className="rounded-xl border border-gray-200 bg-white">
-        <summary className="cursor-pointer px-5 py-3 text-sm font-medium text-gray-900">
+        <summary className="cursor-pointer rounded-t-xl px-5 py-3 text-sm font-medium text-gray-900 transition-colors hover:bg-gray-50">
           厂家管理（{suppliers.length} 个）
           <span className="ml-2 text-xs font-normal text-gray-400">
             点击展开/收起 · 厂家档案，开单缺货时按商品厂家自动补货
@@ -208,7 +208,7 @@ export default async function ProductsPage({
       </details>
 
       <details className="rounded-xl border border-gray-200 bg-white">
-        <summary className="cursor-pointer px-5 py-3 text-sm font-medium text-gray-900">
+        <summary className="cursor-pointer rounded-t-xl px-5 py-3 text-sm font-medium text-gray-900 transition-colors hover:bg-gray-50">
           商品分类管理（{categories.length} 个）
           <span className="ml-2 text-xs font-normal text-gray-400">点击展开/收起 · 有商品的分类不可删除，请停用</span>
         </summary>
@@ -237,7 +237,7 @@ export default async function ProductsPage({
       </details>
 
       <details className="rounded-xl border border-gray-200 bg-white">
-        <summary className="cursor-pointer px-5 py-3 text-sm font-medium text-gray-900">
+        <summary className="cursor-pointer rounded-t-xl px-5 py-3 text-sm font-medium text-gray-900 transition-colors hover:bg-gray-50">
           单位字典管理（{units.length} 个）
           <span className="ml-2 text-xs font-normal text-gray-400">点击展开/收起 · 被商品引用的单位不可删除，请停用</span>
         </summary>

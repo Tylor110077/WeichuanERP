@@ -138,7 +138,7 @@ export default async function PriceAnalysisPage({
                       <th className="px-4 py-3 text-right font-medium tabular-nums">最低单毛利率</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100">
+                  <tbody className="divide-y divide-gray-100 [&>tr]:transition-colors [&>tr:hover]:bg-gray-100/70">
                     {[...analysis.byDay].reverse().map((d) => {
                       const one = d.highest === d.lowest;
                       return (
@@ -194,7 +194,7 @@ export default async function PriceAnalysisPage({
                     <th className="px-4 py-3 text-right font-medium tabular-nums">最近购买</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-gray-100 [&>tr]:transition-colors [&>tr:hover]:bg-gray-100/70">
                   {analysis.byCustomer.length === 0 && (
                     <tr>
                       <td colSpan={10}>
@@ -252,7 +252,7 @@ export default async function PriceAnalysisPage({
                     <th className="px-4 py-3 text-right font-medium tabular-nums">销售额</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-gray-100 [&>tr]:transition-colors [&>tr:hover]:bg-gray-100/70">
                   {detailRows.length === 0 && (
                     <tr>
                       <td colSpan={9}>

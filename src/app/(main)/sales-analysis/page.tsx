@@ -121,7 +121,7 @@ export default async function SalesAnalysisPage({
               <th className="px-4 py-3 text-right font-medium tabular-nums">利润率</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-gray-100 [&>tr]:transition-colors [&>tr:hover]:bg-gray-100/70">
             {productRows.length === 0 && (
               <tr>
                 <td colSpan={8}>
@@ -175,7 +175,7 @@ export default async function SalesAnalysisPage({
                 <th className="px-4 py-3 text-right font-medium tabular-nums">利润</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-gray-100 [&>tr]:transition-colors [&>tr:hover]:bg-gray-100/70">
               {dayRows.map((d) => (
                 <tr key={d.date}>
                   <td className="px-4 py-2.5 text-gray-900">{d.date}</td>

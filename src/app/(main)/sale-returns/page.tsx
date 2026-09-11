@@ -42,7 +42,7 @@ export default async function SaleReturnsPage() {
               {user.role !== "sales" && <th className="px-4 py-3 font-medium">操作</th>}
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-gray-100 [&>tr]:transition-colors [&>tr:hover]:bg-gray-100/70">
             {returns.length === 0 && (
               <tr>
                 <td colSpan={8}>

@@ -175,7 +175,7 @@ export default async function PurchaseOrderDetailPage({
               <th className="px-4 py-3 font-medium">备注</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-gray-100 [&>tr]:transition-colors [&>tr:hover]:bg-gray-100/70">
             {order.items.map((item) => {
               const qty = Number(item.quantity);
               const restock = Number(item.restockQty);
