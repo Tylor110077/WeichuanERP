@@ -15,6 +15,7 @@ import {
   type QuickResult,
 } from "./actions";
 import { FormStateAlert } from "@/components/form-alert";
+import { RowAction } from "@/components/row-action";
 
 export interface CustomerRowData {
   id: number;
@@ -191,18 +192,21 @@ export function CustomerManager({
                         编辑
                       </button>
                     )}
-                    <form action={toggleAction}>
-                      <input type="hidden" name="id" value={c.id} />
-                      <button type="submit" disabled={togglePending} className="text-xs text-red-600 hover:underline disabled:opacity-50">
-                        {c.status === 1 ? "停用" : "启用"}
-                      </button>
-                    </form>
-                    <form action={deleteAction}>
-                      <input type="hidden" name="id" value={c.id} />
-                      <button type="submit" disabled={deletePending} className="text-xs text-gray-500 hover:underline disabled:opacity-50">
-                        删除
-                      </button>
-                    </form>
+                    <RowAction
+                      action={toggleAction}
+                      hidden={{ id: c.id }}
+                      label={c.status === 1 ? "停用" : "启用"}
+                      confirmLabel={`确认${c.status === 1 ? "停用" : "启用"}`}
+                      disabled={togglePending}
+                    />
+                    <RowAction
+                      action={deleteAction}
+                      hidden={{ id: c.id }}
+                      label="删除"
+                      confirmLabel="确认删除"
+                      className="text-xs text-gray-500 hover:underline"
+                      disabled={deletePending}
+                    />
                   </div>
                   <FormStateAlert state={toggleState ?? deleteState} compact className="mt-1" />
                 </td>

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { btnPrimary, btnSecondary } from "@/lib/ui";
 import { useActionState, useState, type ReactNode } from "react";
 import { FormStateAlert } from "@/components/form-alert";
+import { RowAction } from "@/components/row-action";
 
 export interface FieldDef {
   name: string;
@@ -119,33 +120,25 @@ export function MasterDataManager({
                         编辑
                       </button>
                     )}
-                    <form action={toggleActionState}>
-                      <input type="hidden" name="id" value={row.id} />
-                      <button
-                        type="submit"
-                        disabled={togglePending}
-                        className="text-xs text-red-600 hover:underline disabled:opacity-50"
-                      >
-                        {row.status === 1 ? "停用" : "启用"}
-                      </button>
-                    </form>
+                    <RowAction
+                      action={toggleActionState}
+                      hidden={{ id: row.id }}
+                      label={row.status === 1 ? "停用" : "启用"}
+                      confirmLabel={`确认${row.status === 1 ? "停用" : "启用"}`}
+                      disabled={togglePending}
+                    />
                     {deleteAction && (
-                      <form action={deleteActionState}>
-                        <input type="hidden" name="id" value={row.id} />
-                        <button
-                          type="submit"
-                          disabled={deletePending}
-                          className="text-xs text-gray-500 hover:underline disabled:opacity-50"
-                        >
-                          删除
-                        </button>
-                      </form>
+                      <RowAction
+                        action={deleteActionState}
+                        hidden={{ id: row.id }}
+                        label="删除"
+                        confirmLabel="确认删除"
+                        className="text-xs text-gray-500 hover:underline"
+                        disabled={deletePending}
+                      />
                     )}
                   </div>
-                  {toggleState?.error && <p className="text-xs text-red-600">{toggleState.error}</p>}
-                  {toggleState?.ok && <p className="text-xs text-green-600">{toggleState.ok}</p>}
-                  {deleteState?.error && <p className="text-xs text-red-600">{deleteState.error}</p>}
-                  {deleteState?.ok && <p className="text-xs text-green-600">{deleteState.ok}</p>}
+                  <FormStateAlert state={toggleState ?? deleteState} compact className="mt-1" />
                 </td>
               )}
             </tr>
