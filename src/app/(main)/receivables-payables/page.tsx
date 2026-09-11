@@ -4,13 +4,12 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { DateShortcuts } from "@/components/date-shortcuts";
 import { SearchSelect } from "@/components/search-select";
-import { PaymentForm } from "./payment-form";
 
 export const metadata = { title: "应收应付 - 玮川进销存" };
 
 /**
  * 应收应付：一个视图（应收/应付切换）+ 顶部合计 + 统一筛选（日期快捷/对象/方式），
- * 下方为未结清单据表与收付款登记。历史收付流水请在单据详情页查阅/撤销。
+ * 下方为未结清单据表；点行内「详情 / 登记」进入单据详情页登记收付款（历史收付流水也在那里查阅/撤销）。
  */
 export default async function ReceivablesPage({
   searchParams,
@@ -92,34 +91,6 @@ export default async function ReceivablesPage({
     const total = Number((o as { totalAmount: unknown }).totalAmount);
     return s + Math.max(0, total - paid - returned);
   }, 0);
-
-  // 未结清单（登记表单用，与筛选一致）
-  const sales = isReceivable
-    ? unpaidOrders.map((o) => {
-        const returned = o.returns.reduce((r, x) => r + Number(x.totalAmount), 0);
-        const received = Number((o as { receivedAmount: unknown }).receivedAmount);
-        const total = Number((o as { totalAmount: unknown }).totalAmount);
-        return {
-          id: o.id,
-          orderNo: o.orderNo,
-          customerName: (o as { customer: { name: string } }).customer.name,
-          outstanding: Math.max(0, total - received - returned),
-        };
-      })
-    : [];
-  const purchases = !isReceivable
-    ? unpaidOrders.map((o) => {
-        const returned = o.returns.reduce((r, x) => r + Number(x.totalAmount), 0);
-        const paid = Number((o as { paidAmount: unknown }).paidAmount);
-        const total = Number((o as { totalAmount: unknown }).totalAmount);
-        return {
-          id: o.id,
-          orderNo: o.orderNo,
-          supplierName: (o as { supplier: { name: string } }).supplier.name,
-          outstanding: Math.max(0, total - paid - returned),
-        };
-      })
-    : [];
 
   const counterOptions =
     isReceivable
@@ -204,7 +175,7 @@ export default async function ReceivablesPage({
         <div className="border-b border-gray-100 px-4 py-3 text-sm font-semibold text-gray-900">
           未结清单据（{isReceivable ? "应收" : "应付"}）
           <span className="ml-2 text-xs font-normal text-gray-400">
-            共 {unpaidOrders.length} 张 ・ 待{isReceivable ? "收" : "付"} ¥{unpaidSum.toFixed(2)} ・ 点单号进详情登记
+            共 {unpaidOrders.length} 张 ・ 待{isReceivable ? "收" : "付"} ¥{unpaidSum.toFixed(2)} ・ 点右侧「详情 / 登记」进单据登记
           </span>
         </div>
         <table className="min-w-full divide-y divide-gray-200 text-sm">
@@ -257,8 +228,6 @@ export default async function ReceivablesPage({
           </tbody>
         </table>
       </div>
-
-      <PaymentForm saleOrders={sales} purchaseOrders={purchases} lockedDirection={isReceivable ? "receipt" : "payment"} />
     </div>
   );
 }
