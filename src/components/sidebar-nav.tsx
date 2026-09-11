@@ -5,12 +5,12 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { useEffect, useState } from "react";
 
-interface NavItem {
+export interface NavItem {
   href: string;
   label: string;
 }
 
-interface NavGroup {
+export interface NavGroup {
   label: string | null;
   items: NavItem[];
 }

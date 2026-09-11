@@ -56,11 +56,20 @@ export default async function DashboardPage() {
   const receivableTotal = Number(receivableRows[0]?.total ?? 0);
   const payableTotal = Number(payableRows[0]?.total ?? 0);
 
-  const cards: { label: string; value: string; note: string; tone?: "profit" | "loss" }[] = [
+  const canViewFinance = user?.role === "admin" || user?.role === "boss";
+
+  const cards: {
+    label: string;
+    value: string;
+    note: string;
+    href?: string;
+    tone?: "profit" | "loss";
+  }[] = [
     {
       label: "今日销售额",
       value: `¥${todaySalesAmount.toFixed(2)}`,
       note: "今日已开售卖单（未作废）",
+      href: "/sale-orders",
     },
     ...(canSeeProfit
       ? [
@@ -68,6 +77,7 @@ export default async function DashboardPage() {
             label: "今日利润",
             value: `¥${todayProfit.toFixed(2)}`,
             note: todayMargin == null ? "今日暂无销售" : `毛利率 ${todayMargin.toFixed(2)}%`,
+            href: "/sales-analysis",
             tone: (todayProfit >= 0 ? "profit" : "loss") as "profit" | "loss",
           },
         ]
@@ -76,11 +86,13 @@ export default async function DashboardPage() {
       label: "应收总额",
       value: `¥${receivableTotal.toFixed(2)}`,
       note: "客户未收合计（含已开单未收）",
+      href: canViewFinance ? "/receivables-payables?view=receivable" : undefined,
     },
     {
       label: "应付总额",
       value: `¥${payableTotal.toFixed(2)}`,
       note: "厂家未付合计",
+      href: canViewFinance ? "/receivables-payables?view=payable" : undefined,
     },
   ];
 
@@ -129,28 +141,57 @@ export default async function DashboardPage() {
         </span>
       </div>
 
-      {/* 数字概览 */}
+      {/* 数字概览（可点击的卡片直达对应页面） */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {cards.map((card) => (
-          <div
-            key={card.label}
-            className="rounded-xl border border-gray-200 bg-white p-5 transition hover:border-gray-300 hover:shadow-sm"
-          >
-            <div className="text-sm text-gray-500">{card.label}</div>
-            <div
-              className={`mt-2 text-2xl font-semibold tabular-nums ${
-                card.tone === "profit"
-                  ? "text-green-700"
-                  : card.tone === "loss"
-                    ? "text-red-600"
-                    : "text-gray-900"
-              }`}
+        {cards.map((card) => {
+          const body = (
+            <>
+              <div className="flex items-start justify-between gap-2">
+                <span className="text-sm text-gray-500">{card.label}</span>
+                {card.href && (
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    className="h-4 w-4 shrink-0 text-gray-300 transition group-hover:translate-x-0.5 group-hover:text-blue-500"
+                  >
+                    <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )}
+              </div>
+              <div
+                className={`mt-2 text-2xl font-semibold tabular-nums ${
+                  card.tone === "profit"
+                    ? "text-green-700"
+                    : card.tone === "loss"
+                      ? "text-red-600"
+                      : "text-gray-900"
+                }`}
+              >
+                {card.value}
+              </div>
+              <div className="mt-1.5 text-xs text-gray-400">{card.note}</div>
+            </>
+          );
+
+          const base =
+            "rounded-xl border border-gray-200 bg-white p-5 transition";
+
+          return card.href ? (
+            <Link
+              key={card.label}
+              href={card.href}
+              className={`group ${base} hover:border-blue-300 hover:shadow-sm`}
             >
-              {card.value}
+              {body}
+            </Link>
+          ) : (
+            <div key={card.label} className={base}>
+              {body}
             </div>
-            <div className="mt-1.5 text-xs text-gray-400">{card.note}</div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* 快捷开单 */}

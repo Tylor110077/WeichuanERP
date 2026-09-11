@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/session";
 import { logoutAction } from "./logout-action";
 import { ROLE_LABELS } from "@/lib/auth/roles";
-import { SidebarNav } from "@/components/sidebar-nav";
+import { AppShell } from "@/components/app-shell";
 
 const ALL_ROLES = ["admin", "sales", "boss"] as const;
 
@@ -73,19 +73,14 @@ export default async function MainLayout({
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <aside className="flex w-52 flex-col border-r border-gray-200 bg-white">
-        <div className="border-b border-gray-200 px-4 py-4">
-          <div className="text-base font-semibold text-gray-900">玮川进销存</div>
-        </div>
-        <SidebarNav
-          groups={NAV_GROUPS.map((group) => ({
-            label: group.label,
-            items: group.items
-              .filter((item) => item.roles.includes(user.role))
-              .map(({ href, label }) => ({ href, label })),
-          })).filter((g) => g.items.length > 0)}
-        />
+    <AppShell
+      groups={NAV_GROUPS.map((group) => ({
+        label: group.label,
+        items: group.items
+          .filter((item) => item.roles.includes(user.role))
+          .map(({ href, label }) => ({ href, label })),
+      })).filter((g) => g.items.length > 0)}
+      footer={
         <div className="border-t border-gray-200 px-4 py-3">
           <div className="text-sm text-gray-900">{user.displayName}</div>
           <div className="text-xs text-gray-500">{ROLE_LABELS[user.role]}</div>
@@ -98,8 +93,9 @@ export default async function MainLayout({
             </button>
           </form>
         </div>
-      </aside>
-      <main className="flex-1 overflow-x-auto p-6">{children}</main>
-    </div>
+      }
+    >
+      {children}
+    </AppShell>
   );
 }
