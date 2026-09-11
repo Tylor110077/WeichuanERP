@@ -170,7 +170,7 @@ export default async function PurchaseOrderDetailPage({
               <th className="px-4 py-3 font-medium">规格</th>
               <th className="px-4 py-3 font-medium">数量</th>
               <th className="px-4 py-3 font-medium">单位</th>
-              <th className="px-4 py-3 font-medium">进价</th>
+              <th className="px-4 py-3 text-right font-medium tabular-nums">进价</th>
               <th className="px-4 py-3 text-right font-medium tabular-nums">金额</th>
               <th className="px-4 py-3 font-medium">备注</th>
             </tr>
@@ -193,7 +193,7 @@ export default async function PurchaseOrderDetailPage({
                     )}
                   </td>
                   <td className="px-4 py-2.5 text-gray-600">{item.unit.name}</td>
-                  <td className="px-4 py-2.5 text-gray-600">¥{Number(item.unitPrice).toFixed(2)}</td>
+                  <td className="px-4 py-2.5 text-right text-gray-600 tabular-nums">¥{Number(item.unitPrice).toFixed(2)}</td>
                   <td className="px-4 py-2.5 text-right text-gray-900 tabular-nums">
                     ¥{Number(item.amount).toFixed(2)}
                   </td>

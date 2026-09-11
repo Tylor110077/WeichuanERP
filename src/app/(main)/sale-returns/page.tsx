@@ -36,7 +36,7 @@ export default async function SaleReturnsPage() {
               <th className="px-4 py-3 font-medium">原售卖单</th>
               <th className="px-4 py-3 font-medium">客户</th>
               <th className="px-4 py-3 font-medium">状态</th>
-              <th className="px-4 py-3 font-medium">冲减应收</th>
+              <th className="px-4 py-3 text-right font-medium tabular-nums">冲减应收</th>
               <th className="px-4 py-3 font-medium">操作人</th>
               <th className="px-4 py-3 font-medium">时间</th>
               {user.role !== "sales" && <th className="px-4 py-3 font-medium">操作</th>}
@@ -66,7 +66,7 @@ export default async function SaleReturnsPage() {
                     {STATUS_LABELS[r.status]}
                   </span>
                 </td>
-                <td className="px-4 py-2.5 text-gray-900">¥{Number(r.totalAmount).toFixed(2)}</td>
+                <td className="px-4 py-2.5 text-right text-gray-900 tabular-nums">¥{Number(r.totalAmount).toFixed(2)}</td>
                 <td className="px-4 py-2.5 text-gray-600">{r.operator.displayName}</td>
                 <td className="px-4 py-2.5 text-gray-600">{r.createdAt.toLocaleString("zh-CN")}</td>
                 {user.role !== "sales" && (

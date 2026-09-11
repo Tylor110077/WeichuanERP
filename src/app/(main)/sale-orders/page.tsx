@@ -150,8 +150,8 @@ export default async function SaleOrdersPage({
               <th className="px-4 py-3 font-medium">单据号</th>
               <th className="px-4 py-3 font-medium">客户</th>
               <th className="px-4 py-3 font-medium">状态</th>
-              <th className="px-4 py-3 font-medium">金额</th>
-              <th className="px-4 py-3 font-medium">已收</th>
+              <th className="px-4 py-3 text-right font-medium tabular-nums">金额</th>
+              <th className="px-4 py-3 text-right font-medium tabular-nums">已收</th>
               <th className="px-4 py-3 font-medium">款项</th>
               <th className="px-4 py-3 font-medium">操作人</th>
               <th className="px-4 py-3 font-medium">开单时间</th>
@@ -184,8 +184,8 @@ export default async function SaleOrdersPage({
                     {STATUS_LABELS[o.status]}
                   </span>
                 </td>
-                <td className="px-4 py-2.5 text-gray-900">¥{Number(o.totalAmount).toFixed(2)}</td>
-                <td className="px-4 py-2.5 text-gray-600">¥{Number(o.receivedAmount).toFixed(2)}</td>
+                <td className="px-4 py-2.5 text-right text-gray-900 tabular-nums">¥{Number(o.totalAmount).toFixed(2)}</td>
+                <td className="px-4 py-2.5 text-right text-gray-600 tabular-nums">¥{Number(o.receivedAmount).toFixed(2)}</td>
                 <td className="px-4 py-2.5">
                   {o.status === "voided" ? (
                     <span className="text-xs text-gray-400">—</span>
