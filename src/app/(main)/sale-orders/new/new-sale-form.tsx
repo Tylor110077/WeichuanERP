@@ -598,7 +598,7 @@ export function NewSaleForm({
                   setShowCreateCustomer((v) => !v);
                   setCreateCustomerMsg(null);
                 }}
-                className="shrink-0 rounded-md border border-blue-300 px-2.5 py-1.5 text-xs text-blue-600 hover:bg-blue-50"
+                className="shrink-0 rounded-md border border-blue-300 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50"
               >
                 {showCreateCustomer ? "取消" : "+ 新建客户"}
               </button>
@@ -1191,7 +1191,7 @@ export function NewSaleForm({
                 setShowCreateProduct((v) => !v);
                 setProductMsg(null);
               }}
-              className="rounded-md border border-blue-300 px-2.5 py-1.5 text-xs text-blue-600 hover:bg-blue-50"
+              className="rounded-md border border-blue-300 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50"
             >
               {showCreateProduct ? "收起" : "+ 新建商品"}
             </button>
