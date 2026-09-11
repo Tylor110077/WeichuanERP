@@ -59,6 +59,8 @@ interface Row {
   lastGlobalSalePrice: number; // 全局最近成交价/参考价（参考展示用）
   supplierId: string;
   supplyPrice: string;
+  /** 计划补货数量（可大于缺口，多出部分为自有备货）；留空表示恰好补足缺口 */
+  restockQty: string;
   hasLastSupplier: boolean;
 }
 
@@ -275,6 +277,7 @@ export function NewSaleForm({
       lastGlobalSalePrice: 0,
       supplierId: "",
       supplyPrice: "",
+      restockQty: "",
       hasLastSupplier: false,
     };
   }
@@ -323,6 +326,7 @@ export function NewSaleForm({
             unitPrice: "",
             supplierId: "",
             supplyPrice: "",
+            restockQty: "",
             hasLastSupplier: false,
           };
         }
@@ -352,6 +356,7 @@ export function NewSaleForm({
               lastGlobalSalePrice: p.refSalePrice,
               supplierId: p.lastSupplierId != null ? String(p.lastSupplierId) : "",
               supplyPrice: String(p.lastSupplyPrice),
+              restockQty: "",
               hasLastSupplier: p.lastSupplierId != null,
             }
           : row
@@ -364,6 +369,19 @@ export function NewSaleForm({
     const q = Number(row.quantity);
     if (!Number.isFinite(q) || q <= 0) return 0;
     return Math.max(q - row.stockQty, 0);
+  }
+
+  /** 计划补货总量：填写了且大于缺口时按填写值（多出部分为备货），否则恰好补足缺口。 */
+  function restockTotal(row: Row): number {
+    const sf = shortfall(row);
+    if (sf <= 0) return 0;
+    const planned = Number(row.restockQty);
+    return Number.isFinite(planned) && planned > sf ? planned : sf;
+  }
+
+  /** 本次补货中属于自有备货的部分（不计入该客户）。 */
+  function stockExtra(row: Row): number {
+    return Math.max(restockTotal(row) - shortfall(row), 0);
   }
 
   function lineAmount(row: Row): number {
@@ -429,6 +447,7 @@ export function NewSaleForm({
           lastGlobalSalePrice: result.refSalePrice,
           supplierId: "",
           supplyPrice: String(result.refPurchasePrice),
+          restockQty: "",
           hasLastSupplier: false,
         };
         // 未选中的行视为空行（即便输入过搜索词），替换为新商品行
@@ -881,7 +900,7 @@ export function NewSaleForm({
               <th className="w-28 px-4 py-3 font-medium">数量 *</th>
               <th className="w-16 px-4 py-3 font-medium">单位</th>
               <th className="w-32 px-4 py-3 font-medium">售价 *</th>
-              <th className="w-72 px-4 py-3 font-medium">补货商家 / 进价（缺货时）</th>
+              <th className="w-96 px-4 py-3 font-medium">补货商家 / 进价 / 补货数量（可多进备货）</th>
               <th className="w-28 px-4 py-3 text-right font-medium">金额</th>
               <th className="w-14 px-4 py-3 font-medium"></th>
             </tr>
@@ -889,6 +908,7 @@ export function NewSaleForm({
           <tbody className="divide-y divide-gray-100">
             {rows.map((row, i) => {
               const sf = shortfall(row);
+              const extra = stockExtra(row);
               return (
                 <tr key={i}>
                   <td className="px-4 py-2">
@@ -996,9 +1016,30 @@ export function NewSaleForm({
                           }
                           className={`${inputCls} max-w-20`}
                         />
+                        <input
+                          name={`item_${i}_restockQty`}
+                          type="number"
+                          min="0"
+                          step="0.001"
+                          inputMode="decimal"
+                          placeholder={sf.toFixed(3)}
+                          title="补货数量：可多进备货（多出部分不计入该客户）"
+                          value={row.restockQty}
+                          onChange={(e) =>
+                            setRows((prev) =>
+                              prev.map((r, j) => (j === i ? { ...r, restockQty: e.target.value } : r))
+                            )
+                          }
+                          className={`${inputCls} max-w-24 border-blue-200`}
+                        />
                         <span className="shrink-0 whitespace-nowrap text-xs text-amber-600">
                           缺 {sf.toFixed(3)}
                         </span>
+                        {extra > 0 && (
+                          <span className="shrink-0 whitespace-nowrap text-xs font-medium text-blue-600">
+                            含备货 +{extra.toFixed(3)}
+                          </span>
+                        )}
                         {row.productId && !row.hasLastSupplier && (
                           <span className="shrink-0 whitespace-nowrap text-xs text-gray-400">
                             {row.manufacturer ? `自动补货：厂商「${row.manufacturer}」` : "请选补货商"}

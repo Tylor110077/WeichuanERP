@@ -18,6 +18,8 @@ const itemSchema = z.object({
   unitPrice: z.coerce.number().min(0).max(9_999_999_999.99), // 售价
   supplyPrice: z.coerce.number().min(0).max(9_999_999_999.99), // 自动补货进价
   supplierId: z.coerce.number().int().positive().optional().nullable(), // 缺货行需供应商
+  // 计划补货数量（可大于缺口，多出部分为自有备货）；不填按缺口补足
+  restockQty: z.coerce.number().min(0).max(9_999_999.999).optional().default(0),
 });
 
 const createSchema = z.object({
@@ -50,6 +52,7 @@ function parseCreatePayload(formData: FormData) {
       unitPrice: formData.get(`item_${i}_unitPrice`),
       supplyPrice: formData.get(`item_${i}_supplyPrice`) ?? 0,
       supplierId: formData.get(`item_${i}_supplierId`) || undefined,
+      restockQty: formData.get(`item_${i}_restockQty`) || 0,
     });
     i++;
   }
@@ -176,7 +179,8 @@ export async function createSaleOrderAction(
         // ① 缺货行：生成自动补货单（按供应商聚合并即时入库）
         interface AutoItem {
           productId: number;
-          quantity: number;
+          quantity: number; // 本次补货总量（含备货）
+          stockExtra: number; // 其中属于自有备货的部分（不计入该客户）
           supplyPrice: number;
           unitId: number;
         }
@@ -195,10 +199,16 @@ export async function createSaleOrderAction(
             if (supplierId == null) {
               throw new Error(`商品 #${product.id} 缺货且无法确定补货供应商`);
             }
+            // 补货量允许大于缺口（多出部分为自有备货，客户只承担自己那份）；
+            // 若填写的数量低于缺口则按缺口补足，保证库存足以扣减。
+            const planned = round3(Math.max(it.restockQty ?? 0, 0));
+            const restockTotal = planned > shortfall ? planned : shortfall;
+            const stockExtra = round3(restockTotal - shortfall);
             const g = autoGroups.get(supplierId) ?? [];
             g.push({
               productId: it.productId,
-              quantity: shortfall,
+              quantity: restockTotal,
+              stockExtra,
               supplyPrice: round2(it.supplyPrice),
               unitId: product.unitId,
             });
@@ -263,6 +273,7 @@ export async function createSaleOrderAction(
                 purchaseOrderId: po.id,
                 productId: a.productId,
                 quantity: a.quantity,
+                restockQty: a.stockExtra,
                 unitId: a.unitId,
                 unitPrice: a.supplyPrice,
                 amount: round2(a.quantity * a.supplyPrice),
@@ -274,7 +285,17 @@ export async function createSaleOrderAction(
             action: "create",
             entityType: "purchase_order",
             entityId: po.id,
-            after: { orderNo: poNo, supplierId, sourceSaleOrderId: saleOrder.id, auto: true },
+            after: {
+              orderNo: poNo,
+              supplierId,
+              sourceSaleOrderId: saleOrder.id,
+              auto: true,
+              items: autoItems.map((a) => ({
+                productId: a.productId,
+                qty: a.quantity,
+                stockExtra: a.stockExtra,
+              })),
+            },
           });
         }
 

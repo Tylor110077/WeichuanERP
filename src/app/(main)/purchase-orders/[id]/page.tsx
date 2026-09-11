@@ -113,19 +113,30 @@ export default async function PurchaseOrderDetailPage({
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {order.items.map((item) => (
-              <tr key={item.id}>
-                <td className="px-4 py-2.5 text-gray-600">{item.product.code}</td>
-                <td className="px-4 py-2.5 text-gray-900">{item.product.name}</td>
-                <td className="px-4 py-2.5 text-gray-600">{item.product.spec ?? "—"}</td>
-                <td className="px-4 py-2.5 text-gray-900">{Number(item.quantity).toFixed(3)}</td>
-                <td className="px-4 py-2.5 text-gray-600">{item.unit.name}</td>
-                <td className="px-4 py-2.5 text-gray-600">¥{Number(item.unitPrice).toFixed(2)}</td>
-                <td className="px-4 py-2.5 text-right text-gray-900">
-                  ¥{Number(item.amount).toFixed(2)}
-                </td>
-              </tr>
-            ))}
+            {order.items.map((item) => {
+              const qty = Number(item.quantity);
+              const restock = Number(item.restockQty);
+              return (
+                <tr key={item.id}>
+                  <td className="px-4 py-2.5 text-gray-600">{item.product.code}</td>
+                  <td className="px-4 py-2.5 text-gray-900">{item.product.name}</td>
+                  <td className="px-4 py-2.5 text-gray-600">{item.product.spec ?? "—"}</td>
+                  <td className="px-4 py-2.5 text-gray-900">
+                    <div>{qty.toFixed(3)}</div>
+                    {restock > 0 && (
+                      <div className="text-xs text-blue-600">
+                        客户 {(qty - restock).toFixed(3)} + 备货 {restock.toFixed(3)}
+                      </div>
+                    )}
+                  </td>
+                  <td className="px-4 py-2.5 text-gray-600">{item.unit.name}</td>
+                  <td className="px-4 py-2.5 text-gray-600">¥{Number(item.unitPrice).toFixed(2)}</td>
+                  <td className="px-4 py-2.5 text-right text-gray-900">
+                    ¥{Number(item.amount).toFixed(2)}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
           <tfoot className="bg-gray-50">
             <tr>
