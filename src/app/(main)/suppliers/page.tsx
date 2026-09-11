@@ -1,75 +1,9 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
-import { getCurrentUser } from "@/lib/auth/session";
-import { prisma } from "@/lib/prisma";
-import { MasterDataManager } from "@/components/master-data-manager";
-import { deleteSupplierAction, saveSupplierAction, toggleSupplierStatusAction } from "./actions";
 
-export const metadata = { title: "供应商管理 - 玮川进销存" };
-
-export default async function SuppliersPage() {
-  const user = await getCurrentUser();
-  if (!user) redirect("/login");
-
-  const suppliers = await prisma.supplier.findMany({
-    orderBy: { createdAt: "asc" },
-    select: { id: true, name: true, contact: true, phone: true, address: true, remark: true, status: true },
-  });
-
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-gray-900">供应商管理</h1>
-        {user.role === "admin" && (
-          <Link
-            href="/suppliers/new"
-            className="rounded-md bg-blue-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
-          >
-            + 新建供应商
-          </Link>
-        )}
-      </div>
-      <MasterDataManager
-        entityLabel="供应商"
-        columns={[
-          { key: "name", label: "名称" },
-          { key: "contact", label: "联系人" },
-          { key: "phone", label: "电话" },
-          { key: "address", label: "地址" },
-          { key: "remark", label: "备注" },
-        ]}
-        fields={[
-          { name: "name", label: "供应商名称", required: true, maxLength: 100 },
-          { name: "contact", label: "联系人", maxLength: 50 },
-          { name: "phone", label: "电话", maxLength: 30 },
-          { name: "address", label: "地址", maxLength: 200 },
-          { name: "remark", label: "备注", maxLength: 200 },
-        ]}
-        rows={suppliers.map((s) => ({
-          id: s.id,
-          status: s.status,
-          cells: {
-            name: s.name,
-            contact: s.contact ?? "",
-            phone: s.phone ?? "",
-            address: s.address ?? "",
-            remark: s.remark ?? "",
-          },
-          formValues: {
-            name: s.name,
-            contact: s.contact ?? "",
-            phone: s.phone ?? "",
-            address: s.address ?? "",
-            remark: s.remark ?? "",
-          },
-        }))}
-        isAdmin={user.role === "admin"}
-        saveAction={saveSupplierAction}
-        toggleAction={toggleSupplierStatusAction}
-        deleteAction={deleteSupplierAction}
-        hideForm
-        editBase="/suppliers"
-      />
-    </div>
-  );
+/**
+ * 厂家（供应商）管理已并入「商品与厂家」页面：按厂家查看其供应商品。
+ * 旧路由保留重定向，避免书签/历史链接失效。
+ */
+export default function SuppliersPage() {
+  redirect("/products");
 }

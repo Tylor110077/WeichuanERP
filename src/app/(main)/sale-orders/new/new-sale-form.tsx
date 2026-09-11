@@ -924,17 +924,29 @@ export function NewSaleForm({
                     />
                   </td>
                   <td className="px-4 py-2">
-                    <input
-                      name={`item_${i}_productQuery`}
-                      type="text"
-                      autoComplete="off"
-                      placeholder="名称/型号/厂商…"
-                      value={row.productQuery}
-                      onChange={(e) => onProductInputChange(i, "name", e.target.value)}
-                      onFocus={(e) => openProductPanel(e, i)}
-                      onBlur={() => setProductPanel(null)}
-                      className={inputCls}
-                    />
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        name={`item_${i}_productQuery`}
+                        type="text"
+                        autoComplete="off"
+                        placeholder="名称/型号/厂商…"
+                        value={row.productQuery}
+                        onChange={(e) => onProductInputChange(i, "name", e.target.value)}
+                        onFocus={(e) => openProductPanel(e, i)}
+                        onBlur={() => setProductPanel(null)}
+                        className={`${inputCls} min-w-0 flex-1`}
+                      />
+                      {row.productId && (
+                        <span
+                          className={`shrink-0 rounded px-1.5 py-0.5 text-xs ${
+                            row.manufacturer ? "bg-blue-50 text-blue-700" : "bg-amber-50 text-amber-600"
+                          }`}
+                          title="厂家：缺货时自动向该厂家补货"
+                        >
+                          {row.manufacturer || "未填厂家"}
+                        </span>
+                      )}
+                    </div>
                     <input type="hidden" name={`item_${i}_productId`} value={row.productId} />
                   </td>
                   <td className="px-4 py-2 text-gray-600">{row.unitName ? row.stockQty.toFixed(3) : "—"}</td>
@@ -983,25 +995,15 @@ export function NewSaleForm({
                   </td>
                   <td className="px-4 py-2">
                     {sf > 0 ? (
-                      <div className="flex items-center gap-1">
-                        <select
-                          name={`item_${i}_supplierId`}
-                          required={sf > 0}
-                          value={row.supplierId}
-                          onChange={(e) =>
-                            setRows((prev) =>
-                              prev.map((r, j) => (j === i ? { ...r, supplierId: e.target.value } : r))
-                            )
-                          }
-                          className={`${inputCls} min-w-24 flex-1`}
+                      <div className="flex flex-wrap items-center gap-1">
+                        <span
+                          className={`shrink-0 whitespace-nowrap rounded px-1.5 py-0.5 text-xs ${
+                            row.manufacturer ? "bg-blue-50 text-blue-700" : "bg-amber-50 text-amber-600"
+                          }`}
+                          title="补货商家：自动取商品厂家"
                         >
-                          <option value="">补货供应商</option>
-                          {suppliers.map((s) => (
-                            <option key={s.id} value={s.id}>
-                              {s.name}
-                            </option>
-                          ))}
-                        </select>
+                          {row.manufacturer || "商品未填厂家"}
+                        </span>
                         <input
                           name={`item_${i}_supplyPrice`}
                           type="number"
@@ -1015,6 +1017,7 @@ export function NewSaleForm({
                             )
                           }
                           className={`${inputCls} max-w-20`}
+                          title="补货进价"
                         />
                         <input
                           name={`item_${i}_restockQty`}
@@ -1040,9 +1043,9 @@ export function NewSaleForm({
                             含备货 +{extra.toFixed(3)}
                           </span>
                         )}
-                        {row.productId && !row.hasLastSupplier && (
-                          <span className="shrink-0 whitespace-nowrap text-xs text-gray-400">
-                            {row.manufacturer ? `自动补货：厂商「${row.manufacturer}」` : "请选补货商"}
+                        {!row.manufacturer && (
+                          <span className="shrink-0 whitespace-nowrap text-xs text-red-500">
+                            请先给商品填厂家
                           </span>
                         )}
                       </div>
@@ -1137,11 +1140,20 @@ export function NewSaleForm({
                 onClick={() => chooseProduct(productPanel.index, p)}
                 className="block w-full px-3 py-2 text-left text-sm text-gray-900 hover:bg-blue-50"
               >
-                <span className="font-medium">{p.code} {p.name}</span>
-                <span className="ml-2 text-xs text-gray-500">
-                  {p.manufacturer}
-                  {p.spec ? ` ｜ ${p.spec}` : ""}
-                  ｜ 库存 {p.stockQty.toFixed(3)}
+                <span className="flex flex-wrap items-center gap-1.5">
+                  <span className="font-medium">
+                    {p.code} {p.name}
+                  </span>
+                  <span
+                    className={`rounded px-1.5 py-0.5 text-xs ${
+                      p.manufacturer ? "bg-blue-50 text-blue-700" : "bg-amber-50 text-amber-600"
+                    }`}
+                  >
+                    {p.manufacturer || "未填厂家"}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    {p.spec ? `${p.spec} ｜ ` : ""}库存 {p.stockQty.toFixed(3)}
+                  </span>
                 </span>
               </button>
             ))}

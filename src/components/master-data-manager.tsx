@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useState } from "react";
+import { useActionState, useState, type ReactNode } from "react";
 
 export interface FieldDef {
   name: string;
@@ -20,8 +20,8 @@ export interface FieldDef {
 export interface RowData {
   id: number;
   status: number;
-  /** 表格展示文本 */
-  cells: Record<string, string>;
+  /** 表格展示内容（可传字符串或带样式的节点，如厂家标签） */
+  cells: Record<string, ReactNode>;
   /** 编辑表单预填值（与字段 name 对应） */
   formValues: Record<string, string>;
 }

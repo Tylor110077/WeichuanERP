@@ -46,8 +46,8 @@ const NAV_GROUPS: {
   {
     label: "基础资料",
     items: [
-      { href: "/products", label: "商品管理", roles: ALL_ROLES },
-      { href: "/suppliers", label: "供应商管理", roles: ALL_ROLES },
+      // 厂家（供应商）档案已并入商品页：按厂家查看其供应商品
+      { href: "/products", label: "商品与厂家", roles: ALL_ROLES },
       { href: "/customers", label: "客户管理", roles: ALL_ROLES },
     ],
   },
