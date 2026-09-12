@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState, useTransition } from "react";
+import { useActionState, useEffect, useState, useTransition } from "react";
 import { btnPrimary, btnSmallPrimary, btnSmallSolid, tagInfo, tagPending } from "@/lib/ui";
 import { SearchSelect } from "@/components/search-select";
 import { createSaleOrderAction, type FormState } from "../actions";
@@ -16,6 +16,13 @@ import { createQuickCategoryAction, type QuickCategoryResult } from "../../categ
 import { createQuickUnitAction, type QuickUnitResult } from "../../units/actions";
 import { createQuickSupplierAction } from "../../suppliers/actions";
 import { FormStateAlert } from "@/components/form-alert";
+import {
+  productHintsForOrder,
+  searchCustomersForOrder,
+  searchProductsForOrder,
+  type OrderCustomerOption,
+  type OrderProductOption,
+} from "./search-actions";
 
 interface CustomerOption {
   id: number;
@@ -64,6 +71,8 @@ interface Row {
   quantity: string;
   unitPrice: string;
   lastGlobalSalePrice: number; // 全局最近成交价/参考价（参考展示用）
+  /** "上次卖给该客户的价格"，选中商品后按需查询（不再预先把全表拉进内存） */
+  lastCustomerPrice: number | null;
   supplierId: string;
   supplyPrice: string;
   /** 多补：在客户需求量（自动补足缺口）之外额外多进的备货量；留空＝不多补 */
@@ -85,7 +94,6 @@ export function NewSaleForm({
   categories,
   customerGroups,
   customerTags,
-  lastCustomerPrices,
   canCreateCustomer,
   canCreateProduct,
   canSeeCost,
@@ -98,7 +106,6 @@ export function NewSaleForm({
   customerGroups: { id: number; name: string }[];
   customerTags: { id: number; name: string }[];
   /** 客户-商品 → 最近成交价（参考展示，不覆盖输入） */
-  lastCustomerPrices: Record<string, number>;
   canCreateCustomer: boolean;
   canCreateProduct: boolean;
   /** 成本可见性（与单据详情页 canSeeCost 同口径：业务员不可见成本/毛利） */
@@ -107,6 +114,11 @@ export function NewSaleForm({
   const [rows, setRows] = useState<Row[]>([emptyRow()]);
   const [productOptions, setProductOptions] = useState<ProductOption[]>(products);
   const [customerOptions, setCustomerOptions] = useState<CustomerOption[]>(customers);
+  // 服务端搜索结果（商品/客户目录可能上千，首屏只带"最近往来"，输入时按需搜索）
+  const [remoteProducts, setRemoteProducts] = useState<OrderProductOption[]>([]);
+  const [remoteCustomers, setRemoteCustomers] = useState<OrderCustomerOption[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const [customerId, setCustomerId] = useState("");
   const [customerQuery, setCustomerQuery] = useState("");
   const [showCandidates, setShowCandidates] = useState(false);
@@ -114,8 +126,77 @@ export function NewSaleForm({
   const selectedCustomer = customerOptions.find((c) => String(c.id) === customerId);
   const candidates = (() => {
     const kw = customerQuery.trim();
-    return (kw ? customerOptions.filter((c) => c.name.includes(kw)) : customerOptions).slice(0, 30);
+    const local = kw
+      ? customerOptions.filter((c) => c.name.includes(kw) || c.id === Number(customerId))
+      : customerOptions;
+    const seen = new Set(local.map((c) => c.id));
+    const remote = kw ? remoteCustomers.filter((c) => !seen.has(c.id)) : [];
+    return [...local, ...remote].slice(0, 30);
   })();
+
+  // 输入即搜（防抖 250ms）：目录可能上千，只把"最近往来"放在首屏，其余按需向服务端要。
+  // 所有 setState 都在定时器/异步回调里执行（不在 effect 体内同步 setState，避免级联渲染）。
+  const productQueryForSearch = rows.map((r) => r.productQuery.trim()).join("\u0000");
+  useEffect(() => {
+    const kw = rows
+      .map((r) => r.productQuery.trim())
+      .filter(Boolean)
+      .join(" ")
+      .trim();
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      if (cancelled) return;
+      if (!kw) {
+        setRemoteProducts([]);
+        return;
+      }
+      setSearching(true);
+      searchProductsForOrder(kw)
+        .then((list) => {
+          if (!cancelled) {
+            setRemoteProducts(list);
+            setSearchError(null);
+          }
+        })
+        .catch((e: unknown) => {
+          if (!cancelled) {
+            setRemoteProducts([]);
+            setSearchError(e instanceof Error ? e.message : "搜索失败");
+          }
+        })
+        .finally(() => {
+          if (!cancelled) setSearching(false);
+        });
+    }, 250);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [productQueryForSearch]);
+
+  useEffect(() => {
+    const kw = customerQuery.trim();
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      if (cancelled) return;
+      if (!kw) {
+        setRemoteCustomers([]);
+        return;
+      }
+      searchCustomersForOrder(kw)
+        .then((list) => {
+          if (!cancelled) setRemoteCustomers(list);
+        })
+        .catch(() => {
+          if (!cancelled) setRemoteCustomers([]);
+        });
+    }, 250);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [customerQuery]);
 
   function onCustomerQueryChange(value: string) {
     setCustomerQuery(value);
@@ -288,6 +369,7 @@ export function NewSaleForm({
       stockQty: 0,
 
       avgCost: 0,
+      lastCustomerPrice: null,
       quantity: "",
       unitPrice: "",
       lastGlobalSalePrice: 0,
@@ -305,20 +387,26 @@ export function NewSaleForm({
   // 商品候选弹层（fixed 定位，避免被表格 overflow 裁剪）
   const [productPanel, setProductPanel] = useState<{ index: number; top: number; left: number; width: number } | null>(null);
 
+  /** 候选 = 本地（已加载的"最近往来"）命中 + 服务端搜索结果，按 id 去重 */
   function searchProducts(row: Row | undefined): ProductOption[] {
     if (!row) return [];
     const kws = [row.productCode.trim(), row.productQuery.trim()]
       .map((v) => v.toLowerCase())
       .filter(Boolean);
     if (kws.length === 0) return [];
-    return productOptions
-      .filter((p) => {
-        const hay = [p.code, p.name, p.manufacturer, p.spec]
-          .join(" ")
-          .toLowerCase();
-        return kws.every((kw) => hay.includes(kw));
-      })
-      .slice(0, 30);
+    const local = productOptions.filter((p) => {
+      const hay = [p.code, p.name, p.manufacturer, p.spec].join(" ").toLowerCase();
+      return kws.every((kw) => hay.includes(kw));
+    });
+    const seen = new Set(local.map((p) => p.id));
+    const remote = remoteProducts
+      .filter((p) => !seen.has(p.id))
+      .map((p) => ({
+        ...p,
+        label: `${p.code} ${p.name}`,
+        lastSupplierName: "",
+      }));
+    return [...local, ...remote].slice(0, 30);
   }
 
   function openProductPanel(e: React.FocusEvent<HTMLInputElement>, index: number) {
@@ -345,6 +433,7 @@ export function NewSaleForm({
             stockQty: 0,
 
             avgCost: 0,
+      lastCustomerPrice: null,
             unitPrice: "",
             supplierId: "",
             supplyPrice: "",
@@ -394,6 +483,24 @@ export function NewSaleForm({
       )
     );
     setProductPanel(null);
+    // 选中后再按需取"最近成交价 / 上次卖给该客户的价格"，避免预先把全部历史明细拉进内存
+    productHintsForOrder(p.id, customerId ? Number(customerId) : null)
+      .then((hints) => {
+        setRows((prev) =>
+          prev.map((row, i) =>
+            i === index
+              ? {
+                  ...row,
+                  lastGlobalSalePrice: hints.lastSalePrice || row.lastGlobalSalePrice,
+                  lastCustomerPrice: hints.lastCustomerPrice,
+                }
+              : row
+          )
+        );
+      })
+      .catch(() => {
+        /* 取不到就保持原样，不影响开单 */
+      });
   }
 
   /** 本次使用的现有库存量：留空＝尽量用库存（上限为库存与需求量），可改小甚至填 0（全部现场进货）。 */
@@ -486,6 +593,7 @@ export function NewSaleForm({
           stockQty: 0,
 
           avgCost: 0,
+      lastCustomerPrice: null,
           quantity: "",
           unitPrice: String(result.refSalePrice),
           lastGlobalSalePrice: result.refSalePrice,
@@ -574,7 +682,9 @@ export function NewSaleForm({
               {showCandidates && customerQuery && (
                 <div className="absolute z-20 mt-1 max-h-64 w-full overflow-auto rounded-md border border-gray-200 bg-white shadow-lg">
                   {candidates.length === 0 && (
-                    <div className="px-3 py-2 text-xs text-gray-400">无匹配客户</div>
+                    <div className="px-3 py-2 text-xs text-gray-400">
+                      {searching ? "搜索中…" : "无匹配客户（试试名称/联系人/电话）"}
+                    </div>
                   )}
                   {candidates.map((c) => (
                     <button
@@ -1048,12 +1158,12 @@ export function NewSaleForm({
                         }
                         className={inputCls}
                       />
-                      {customerId && lastCustomerPrices[`${customerId}-${row.productId}`] != null && (
+                      {customerId && row.lastCustomerPrice != null && (
                         <div className="mt-1 text-xs text-blue-500">
-                          上次（{selectedCustomer?.name ?? "该客户"}）¥{lastCustomerPrices[`${customerId}-${row.productId}`].toFixed(2)}
+                          上次（{selectedCustomer?.name ?? "该客户"}）¥{row.lastCustomerPrice.toFixed(2)}
                         </div>
                       )}
-                      {(!customerId || lastCustomerPrices[`${customerId}-${row.productId}`] == null) && row.lastGlobalSalePrice > 0 && (
+                      {(!customerId || row.lastCustomerPrice == null) && row.lastGlobalSalePrice > 0 && (
                         <div className="mt-1 text-xs text-gray-400">参考价 ¥{row.lastGlobalSalePrice.toFixed(2)}</div>
                       )}
                     </InlineField>
@@ -1202,7 +1312,7 @@ export function NewSaleForm({
           >
             {hits.length === 0 && (
               <div className="px-3 py-2 text-xs text-gray-400">
-                无匹配商品（试试厂家、型号、名称、编码）
+                {searching ? "搜索中…" : searchError ? `搜索失败：${searchError}` : "无匹配商品（试试厂家、型号、名称、编码）"}
               </div>
             )}
             {canCreateProduct && row && row.productQuery.trim() && (
