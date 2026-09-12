@@ -33,7 +33,7 @@ services:
       TZ: Asia/Shanghai
       BACKUP_DIR: /backups # 供 /api/health 检查备份新鲜度
     volumes:
-      - ./backups:/backups:ro # 只读挂载备份目录（外部监控探测用）
+      - ./backups:/backups # 可读写：应用自己生成备份包，界面上可下载/导入恢复
     ports:
       - "127.0.0.1:3000:3000" # 仅本机回环，公网由 Nginx 反代（见部署指南）
 

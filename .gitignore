@@ -43,3 +43,6 @@ next-env.d.ts
 # project-local mysql instance
 /.mysql/
 !.env.example
+
+# 备份文件含全部业务数据，绝不入库（生产由 docker-compose 挂到 ./backups）
+/backups/
