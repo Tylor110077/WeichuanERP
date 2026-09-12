@@ -419,3 +419,29 @@ export async function deleteCustomerAction(_prev: FormState, formData: FormData)
   revalidatePath("/customers");
   return { ok: "已删除" };
 }
+
+/**
+ * 独立新建页专用：成功后回列表页。
+ * （列表页的内联表单仍用原来的 action——那个不能跳转，它要留在原地刷新表格。）
+ */
+export async function saveCustomerGroupAndReturnAction(
+  prev: FormState,
+  formData: FormData
+): Promise<FormState> {
+  const result = await saveCustomerGroupAction(prev, formData);
+  if (result?.error) return result;
+  redirect("/customers?tab=groups");
+}
+
+/**
+ * 独立新建页专用：成功后回列表页。
+ * （列表页的内联表单仍用原来的 action——那个不能跳转，它要留在原地刷新表格。）
+ */
+export async function saveCustomerTagAndReturnAction(
+  prev: FormState,
+  formData: FormData
+): Promise<FormState> {
+  const result = await saveCustomerTagAction(prev, formData);
+  if (result?.error) return result;
+  redirect("/customers?tab=tags");
+}

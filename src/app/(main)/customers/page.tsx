@@ -31,8 +31,9 @@ const TAB_KEYS = ["customers", "groups", "tags", "profile"] as const;
 /** 右上角「新建」按钮：按当前页签给出对应的名称与去向（画像页签无新建，置空） */
 const NEW_ENTRY: Record<(typeof TAB_KEYS)[number], { href: string; label: string } | null> = {
   customers: { href: "/customers/new", label: "+ 新建客户" },
-  groups: { href: "/customers?tab=groups#new-entry", label: "+ 新建客户组织" },
-  tags: { href: "/customers?tab=tags#new-entry", label: "+ 新建客户标签" },
+  // 同上：改成独立新建页，页签里的内联新建表单已隐藏
+  groups: { href: "/customers/groups/new", label: "+ 新建客户组织" },
+  tags: { href: "/customers/tags/new", label: "+ 新建客户标签" },
   profile: null,
 };
 
@@ -334,6 +335,7 @@ export default async function CustomersPage({
                 <SectionHeading title="客户组织" hint="客户归属组织可移动，未被引用可删除" />
                 <MasterDataManager
                   entityLabel="组织"
+            hideCreate
                   scrollClassName="max-h-[32rem]"
                   columns={[
                     { key: "name", label: "组织名称" },
@@ -361,6 +363,7 @@ export default async function CustomersPage({
           <SectionHeading title="客户标签" hint="一个客户可挂多个标签，未被引用可删除" />
                 <MasterDataManager
                   entityLabel="标签"
+            hideCreate
                   scrollClassName="max-h-[32rem]"
                   columns={[
                     { key: "name", label: "标签名称" },

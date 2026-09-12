@@ -137,3 +137,16 @@ export async function createQuickSupplierAction(data: {
   revalidatePath("/suppliers");
   return { id: supplier.id, name: supplier.name };
 }
+
+/**
+ * 独立新建页专用：成功后回列表页。
+ * （列表页的内联表单仍用原来的 action——那个不能跳转，它要留在原地刷新表格。）
+ */
+export async function saveSupplierAndReturnAction(
+  prev: FormState,
+  formData: FormData
+): Promise<FormState> {
+  const result = await saveSupplierAction(prev, formData);
+  if (result?.error) return result;
+  redirect("/products?tab=manufacturers");
+}

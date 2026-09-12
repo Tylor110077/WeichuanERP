@@ -5,6 +5,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireMasterDataWrite } from "@/lib/auth/guards";
 import { writeAudit } from "@/lib/audit";
+import { redirect } from "next/navigation";
 
 const unitSchema = z.object({
   name: z.string().trim().min(1, "请填写单位名称").max(20),
@@ -122,4 +123,17 @@ export async function createQuickUnitAction(data: { name: string }): Promise<Qui
   });
   revalidatePath("/units");
   return { id: unit.id, name: unit.name };
+}
+
+/**
+ * 独立新建页专用：成功后回列表页。
+ * （列表页的内联表单仍用原来的 action——那个不能跳转，它要留在原地刷新表格。）
+ */
+export async function saveUnitAndReturnAction(
+  prev: FormState,
+  formData: FormData
+): Promise<FormState> {
+  const result = await saveUnitAction(prev, formData);
+  if (result?.error) return result;
+  redirect("/products?tab=units");
 }

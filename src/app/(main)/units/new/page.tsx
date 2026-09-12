@@ -4,9 +4,9 @@ import Link from "next/link";
 import { btnSecondary } from "@/lib/ui";
 import { getCurrentUser } from "@/lib/auth/session";
 import { EntityForm } from "@/components/entity-form";
-import { saveSupplierAndReturnAction } from "../actions";
+import { saveUnitAndReturnAction } from "../actions";
 
-export const metadata = { title: "新建厂家 - 玮川进销存" };
+export const metadata = { title: "新建计量单位 - 玮川进销存" };
 
 /**
  * 独立新建页：列表页右上角「+ 新建 XX」跳到这里填。
@@ -16,26 +16,22 @@ export default async function Page() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   if (user.role !== "admin") {
-    return <NoPermission text="无权限（仅管理员可维护厂家）" />;
+    return <NoPermission text="无权限（仅管理员可维护计量单位）" />;
   }
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-lg font-semibold text-gray-900">新建厂家</h1>
-        <Link href="/products?tab=manufacturers" className={btnSecondary}>
+        <h1 className="text-lg font-semibold text-gray-900">新建计量单位</h1>
+        <Link href="/products?tab=units" className={btnSecondary}>
           ← 返回商品与厂家
         </Link>
       </div>
 
       <EntityForm
-        fields={[{ name: "name", label: "厂家名称 *", required: true, maxLength: 100, placeholder: "如：远东电缆、正泰电器" },
-          { name: "contact", label: "联系人", maxLength: 50 },
-          { name: "phone", label: "电话", maxLength: 30 },
-          { name: "address", label: "地址", maxLength: 200 },
-          { name: "remark", label: "备注", maxLength: 200 }]}
-        saveAction={saveSupplierAndReturnAction}
-        submitLabel="创建厂家"
+        fields={[{ name: "name", label: "单位名称 *", required: true, maxLength: 20, placeholder: "如：米、卷、个" }]}
+        saveAction={saveUnitAndReturnAction}
+        submitLabel="创建单位"
       />
     </div>
   );

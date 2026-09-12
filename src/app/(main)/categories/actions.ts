@@ -5,6 +5,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireMasterDataWrite } from "@/lib/auth/guards";
 import { writeAudit } from "@/lib/audit";
+import { redirect } from "next/navigation";
 
 const categorySchema = z.object({
   name: z.string().trim().min(1, "请填写分类名称").max(50),
@@ -120,4 +121,17 @@ export async function createQuickCategoryAction(data: { name: string }): Promise
   });
   revalidatePath("/categories");
   return { id: cat.id, name: cat.name };
+}
+
+/**
+ * 独立新建页专用：成功后回列表页。
+ * （列表页的内联表单仍用原来的 action——那个不能跳转，它要留在原地刷新表格。）
+ */
+export async function saveCategoryAndReturnAction(
+  prev: FormState,
+  formData: FormData
+): Promise<FormState> {
+  const result = await saveCategoryAction(prev, formData);
+  if (result?.error) return result;
+  redirect("/products?tab=categories");
 }

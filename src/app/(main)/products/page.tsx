@@ -33,9 +33,10 @@ const TAB_KEYS = ["products", "manufacturers", "categories", "units"] as const;
 /** 右上角「新建」按钮：按当前页签给出对应的名称与去向 */
 const NEW_ENTRY: Record<(typeof TAB_KEYS)[number], { href: string; label: string }> = {
   products: { href: "/products/new", label: "+ 新建商品" },
-  manufacturers: { href: "/products?tab=manufacturers#new-entry", label: "+ 新建厂家" },
-  categories: { href: "/products?tab=categories#new-entry", label: "+ 新建分类" },
-  units: { href: "/products?tab=units#new-entry", label: "+ 新建计量单位" },
+  // 这几个页签原来锚到本页的内联新建表单；现在改成独立新建页（下面的内联表单已隐藏）
+  manufacturers: { href: "/suppliers/new", label: "+ 新建厂家" },
+  categories: { href: "/categories/new", label: "+ 新建分类" },
+  units: { href: "/units/new", label: "+ 新建计量单位" },
 };
 
 /** 商品与厂家会越来越多：列表按页取，不在首屏全量渲染 */
@@ -467,6 +468,7 @@ export default async function ProductsPage({
           />
           <MasterDataManager
                       entityLabel="厂家"
+                        hideCreate
                       scrollClassName="max-h-[32rem]"
                       columns={[
                         { key: "name", label: "厂家名称" },
@@ -515,6 +517,7 @@ export default async function ProductsPage({
           <SectionHeading title="商品分类" hint="有商品的分类不可删除，请停用" />
             <MasterDataManager
                         entityLabel="分类"
+                        hideCreate
                         scrollClassName="max-h-[32rem]"
                         columns={[
                           { key: "name", label: "分类名称" },
@@ -542,6 +545,7 @@ export default async function ProductsPage({
           <SectionHeading title="计量单位" hint="被商品引用的单位不可删除，请停用" />
             <MasterDataManager
                         entityLabel="单位"
+                        hideCreate
                         scrollClassName="max-h-[32rem]"
                         columns={[
                           { key: "name", label: "单位名称" },

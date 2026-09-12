@@ -60,6 +60,11 @@ interface Props {
    * 比把单项挤变形更好读。默认不加，只有确实需要的表传。
    */
   minWidthClass?: string;
+  /**
+   * 隐藏"新建"那一块内联表单（编辑时仍会显示）。
+   * 列表页右上角已经有「+ 新建 XX」跳独立页了，两处入口重复，按用户要求去掉下面这块。
+   */
+  hideCreate?: boolean;
 }
 
 const fieldCls = `mt-1 w-full ${inputBase}`;
@@ -77,6 +82,7 @@ export function MasterDataManager({
   editBase,
   scrollClassName,
   minWidthClass = "min-w-full",
+  hideCreate = false,
 }: Props) {
   const [editing, setEditing] = useState<RowData | null>(null);
   const [saveState, formAction, savePending] = useActionState<FormState, FormData>(saveAction, null);
@@ -182,6 +188,8 @@ export function MasterDataManager({
 
   return (
     <div className="space-y-6">
+      {/* hideCreate：只在编辑时显示表单；新建走列表页右上角那个按钮 */}
+      {(!hideCreate || editing) && (
       <form
         key={editing?.id ?? "new"}
         action={formAction}
@@ -253,6 +261,7 @@ export function MasterDataManager({
           <FormStateAlert state={saveState} compact />
         </div>
       </form>
+      )}
 
       {table}
     </div>
