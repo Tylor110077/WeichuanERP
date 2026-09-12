@@ -31,3 +31,28 @@ input[type="number"] {
   -moz-appearance: textfield;
   appearance: textfield;
 }
+
+/*
+ * 常显细滚动条（用于左栏筛选轴等内部滚动区域）。
+ * 为什么需要显式样式：macOS 默认是"覆盖式滚动条"，不滚动时完全不可见，
+ * 用户看到列表被截断却不知道还能往下翻；WebKit 一旦自定义 ::-webkit-scrollbar，
+ * 就会改为常显的经典滚动条，配合细轨道更轻。
+ */
+.scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: #d1d5db transparent;
+}
+.scroll-thin::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.scroll-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scroll-thin::-webkit-scrollbar-thumb {
+  background-color: #d1d5db;
+  border-radius: 9999px;
+}
+.scroll-thin:hover::-webkit-scrollbar-thumb {
+  background-color: #9ca3af;
+}

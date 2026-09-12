@@ -96,8 +96,13 @@ export function MasterRail({
         .filter(Boolean)
         .join(" ")}
     >
-      <div className="px-4 py-3 text-sm font-semibold text-gray-900">
-        {title}
+      <div className="flex items-baseline gap-2 px-4 py-3">
+        <span className="text-sm font-semibold text-gray-900">{title}</span>
+        {items.length > 0 && (
+          <span className="text-xs text-gray-400">
+            {keyword.trim() ? `匹配 ${visibleItems.length} / 共 ${items.length}` : `共 ${items.length}`}
+          </span>
+        )}
       </div>
 
       <div className="px-3 py-2">
@@ -129,7 +134,7 @@ export function MasterRail({
         </div>
       ) : null}
 
-      <div className="max-h-[28rem] overflow-y-auto">
+      <div className="scroll-thin max-h-64 overflow-y-auto overscroll-contain">
         {visibleItems.length === 0 ? (
           <p className="px-3 py-6 text-center text-xs text-gray-400">
             {emptyText}
