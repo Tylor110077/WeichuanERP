@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/session";
+import Image from "next/image";
 import { LoginForm } from "./login-form";
 
 export const metadata = { title: "登录 - 玮川进销存" };
@@ -12,6 +13,14 @@ export default async function LoginPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-sm rounded-xl border border-gray-200 bg-white p-8 shadow-sm">
+        <Image
+          src="/logo.png"
+          alt="鑫玮川"
+          width={88}
+          height={88}
+          className="mx-auto mb-3 h-22 w-22"
+          priority
+        />
         <h1 className="mb-1 text-center text-xl font-semibold text-gray-900">
           玮川进销存
         </h1>

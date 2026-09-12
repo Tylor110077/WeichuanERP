@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import Image from "next/image";
 import { SidebarNav, type NavGroup } from "./sidebar-nav";
 import { SIDEBAR_COOKIE } from "@/lib/sidebar";
 
@@ -57,7 +58,17 @@ export function AppShell({
       ) : (
         <aside className="flex w-52 shrink-0 flex-col border-r border-gray-200 bg-white">
           <div className="flex items-center justify-between border-b border-gray-200 px-4 py-4">
-            <div className="text-base font-semibold text-gray-900">玮川进销存</div>
+            <div className="flex min-w-0 items-center gap-2">
+              <Image
+                src="/logo.png"
+                alt=""
+                width={28}
+                height={28}
+                className="h-7 w-7 shrink-0"
+                priority
+              />
+              <span className="truncate text-base font-semibold text-gray-900">玮川进销存</span>
+            </div>
             <button
               type="button"
               onClick={toggle}
