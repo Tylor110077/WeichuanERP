@@ -175,7 +175,7 @@ export default async function StockMovementsPage({
                     {m.product.code} {m.product.name}
                   </td>
                   <td className="px-4 py-2.5">
-                    <span className={`rounded px-1.5 py-0.5 text-xs ${meta.cls}`}>{meta.label}</span>
+                    <span className={`whitespace-nowrap rounded px-1.5 py-0.5 text-xs ${meta.cls}`}>{meta.label}</span>
                   </td>
                   <td className={`px-4 py-2.5 text-right tabular-nums font-medium ${Number(m.changeQty) < 0 ? "text-red-600" : "text-green-700"}`}>
                     {Number(m.changeQty) > 0 ? "+" : ""}

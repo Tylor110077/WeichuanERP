@@ -54,6 +54,12 @@ interface Props {
    * （客户组织、客户标签、商品分类、计量单位、厂家）。
    */
   scrollClassName?: string;
+  /**
+   * 表格最小宽度类。列多又挤在窄容器里时（如商品页左栏 + 商品表），
+   * 短内容会被压成竖排（「分类」折两行、名字折三行）——给个最小宽度、允许横向滚动，
+   * 比把单项挤变形更好读。默认不加，只有确实需要的表传。
+   */
+  minWidthClass?: string;
 }
 
 const fieldCls = `mt-1 w-full ${inputBase}`;
@@ -70,6 +76,7 @@ export function MasterDataManager({
   hideForm,
   editBase,
   scrollClassName,
+  minWidthClass = "min-w-full",
 }: Props) {
   const [editing, setEditing] = useState<RowData | null>(null);
   const [saveState, formAction, savePending] = useActionState<FormState, FormData>(saveAction, null);
@@ -86,7 +93,7 @@ export function MasterDataManager({
         scrollClassName ? `scroll-thin ${scrollClassName} overflow-auto` : "overflow-x-auto",
       ].join(" ")}
     >
-      <table className="min-w-full divide-y divide-gray-200 text-sm">
+      <table className={`divide-y divide-gray-200 text-sm ${minWidthClass}`}>
         <thead
           className={[
             "bg-gray-50 text-left text-xs text-gray-500",

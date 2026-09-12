@@ -64,7 +64,7 @@ export default async function PurchaseReturnsPage() {
               <tr key={r.id}>
                 <td className="whitespace-nowrap px-4 py-2.5 font-medium text-gray-900">{r.orderNo}</td>
                 <td className="px-4 py-2.5 text-gray-600">{r.purchaseOrder.orderNo}</td>
-                <td className="px-4 py-2.5 text-gray-900">{r.supplier.name}</td>
+                <td className="min-w-[5.5rem] px-4 py-2.5 text-gray-900">{r.supplier.name}</td>
                 <td className="px-4 py-2.5">
                   <span
                     className={

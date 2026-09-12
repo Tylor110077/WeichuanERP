@@ -349,6 +349,7 @@ export default async function ProductsPage({
               </div>
               <MasterDataManager
                         entityLabel="商品"
+                        minWidthClass="min-w-[56rem]"
                         hideForm
                         editBase="/products"
                         columns={[

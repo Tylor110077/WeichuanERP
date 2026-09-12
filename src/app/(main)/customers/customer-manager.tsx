@@ -156,7 +156,7 @@ export function CustomerManager({
           )}
           {customers.map((c) => (
             <tr key={c.id}>
-              <td className="px-4 py-2.5 text-gray-900">{c.name}</td>
+              <td className="min-w-[5.5rem] px-4 py-2.5 text-gray-900">{c.name}</td>
               <td className="px-4 py-2.5 text-gray-600">{c.contact || "—"}</td>
               <td className="px-4 py-2.5 text-gray-600">{c.phone || "—"}</td>
               <td className="px-4 py-2.5">

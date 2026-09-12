@@ -378,7 +378,7 @@ export default async function CustomersPage({
                   hint="按客户统计单数、销售额、成本、毛利与平均利润率；点行内「看明细」进入该客户详情"
                 />
                 <div className="overflow-x-auto rounded-xl border border-gray-200">
-                  <table className="min-w-full divide-y divide-gray-200 text-sm">
+                  <table className="min-w-[40rem] divide-y divide-gray-200 text-sm">
                     <thead className="bg-gray-50 text-left text-xs text-gray-500">
                       <tr>
                         <th className="whitespace-nowrap px-4 py-3 font-medium">客户</th>
