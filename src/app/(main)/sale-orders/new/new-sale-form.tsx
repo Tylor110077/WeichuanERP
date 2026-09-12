@@ -1112,6 +1112,9 @@ export function NewSaleForm({
       <div className="divide-y divide-gray-100 border-y border-gray-100">
         {rows.map((row, i) => {
           const used = usedStock(row);
+          // 两个价格提示都要能「点一下填入售价」：取成 const，闭包里 TS 的窄化才成立
+          const lastCustomerPrice = row.lastCustomerPrice;
+          const globalRefPrice = row.lastGlobalSalePrice;
           const need = needPurchase(row);
           const extra = extraRestock(row);
           const qtyNum = Number(row.quantity) || 0;
@@ -1206,13 +1209,33 @@ export function NewSaleForm({
                         }
                         className={inputCls}
                       />
-                      {customerId && row.lastCustomerPrice != null && (
-                        <div className="mt-1 text-xs text-blue-500">
-                          上次（{selectedCustomer?.name ?? "该客户"}）¥{row.lastCustomerPrice.toFixed(2)}
-                        </div>
+                      {customerId && lastCustomerPrice != null && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setRows((prev) =>
+                              prev.map((r, j) => (j === i ? { ...r, unitPrice: lastCustomerPrice.toFixed(2) } : r))
+                            )
+                          }
+                          title="点一下填入这个售价"
+                          className="mt-1 block cursor-pointer text-xs text-blue-600 underline decoration-dotted underline-offset-2 hover:decoration-solid"
+                        >
+                          上次（{selectedCustomer?.name ?? "该客户"}）¥{lastCustomerPrice.toFixed(2)}
+                        </button>
                       )}
-                      {(!customerId || row.lastCustomerPrice == null) && row.lastGlobalSalePrice > 0 && (
-                        <div className="mt-1 text-xs text-gray-400">参考价 ¥{row.lastGlobalSalePrice.toFixed(2)}</div>
+                      {(!customerId || lastCustomerPrice == null) && globalRefPrice > 0 && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setRows((prev) =>
+                              prev.map((r, j) => (j === i ? { ...r, unitPrice: globalRefPrice.toFixed(2) } : r))
+                            )
+                          }
+                          title="点一下填入这个售价"
+                          className="mt-1 block cursor-pointer text-xs text-gray-500 underline decoration-dotted underline-offset-2 hover:text-blue-600 hover:decoration-solid"
+                        >
+                          参考价 ¥{globalRefPrice.toFixed(2)}
+                        </button>
                       )}
                     </InlineField>
                     <InlineField label="金额">
