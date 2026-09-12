@@ -10,21 +10,34 @@ export const metadata = { title: "进货退货单 - 玮川进销存" };
 
 const STATUS_LABELS: Record<string, string> = { confirmed: "已开单", voided: "已作废" };
 
-export default async function PurchaseReturnsPage() {
+/** 单据会一直累积：按页取，不在首屏全量渲染（与售卖单/进货单同一套 PAGE_SIZE 与写法） */
+const PAGE_SIZE = 50;
+
+export default async function PurchaseReturnsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
+  const params = await searchParams;
+  const total = await prisma.purchaseReturn.count();
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  // 页码夹在范围内：单据被作废/清理后，别把用户留在一个空的第 N 页
+  const page = Math.min(Math.max(1, Number(params.page) || 1), totalPages);
+
   const returns = await prisma.purchaseReturn.findMany({
     orderBy: { createdAt: "desc" },
-    take: 200,
+    skip: (page - 1) * PAGE_SIZE,
+    take: PAGE_SIZE,
     include: {
-      // 取 id 是为了让「原进货单」可点（跳到那张进货单详情）
+      // 取 id 是为了让「原进货单」可点（跳到那张单据详情）
       purchaseOrder: { select: { id: true, orderNo: true } },
       supplier: { select: { name: true } },
       operator: { select: { displayName: true } },
     },
   });
-
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -39,7 +52,12 @@ export default async function PurchaseReturnsPage() {
         </div>
       </div>
       {/* 单据一多就长了：封顶滚动，避免页面无限变长（列表本身取最近 200 张） */}
-      <div className="scroll-thin max-h-[32rem] overflow-auto rounded-xl border border-gray-200 bg-white">
+      <p className="text-xs text-gray-500">
+        共 {total} 张
+        {totalPages > 1 && ` ・ 第 ${page} / ${totalPages} 页`}
+      </p>
+
+      <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
         <table className="min-w-full divide-y divide-gray-200 text-sm">
           <thead className="bg-gray-50 text-left text-xs text-gray-500">
             <tr>
@@ -98,6 +116,22 @@ export default async function PurchaseReturnsPage() {
           </tbody>
         </table>
       </div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center gap-3 text-sm">
+          {page > 1 ? (
+            <Link href={`/purchase-returns?page=${page - 1}`} className="text-blue-600 hover:underline">上一页</Link>
+          ) : (
+            <span className="text-gray-400">上一页</span>
+          )}
+          <span className="text-gray-600">第 {page} / {totalPages} 页</span>
+          {page < totalPages ? (
+            <Link href={`/purchase-returns?page=${page + 1}`} className="text-blue-600 hover:underline">下一页</Link>
+          ) : (
+            <span className="text-gray-400">下一页</span>
+          )}
+        </div>
+      )}
     </div>
   );
 }
