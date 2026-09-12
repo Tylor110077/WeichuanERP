@@ -911,23 +911,23 @@ export function NewSaleForm({
           </div>
 <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
               <div>
-                <label className="block text-xs font-medium text-gray-600">商品名称（完整名称，含规格）*</label>
+                <label className="block text-xs font-medium text-gray-600">商品名称 *</label>
                 <input
                   type="text"
                   maxLength={100}
-                  placeholder="商品名称（必填）"
+                  placeholder="完整名称，含规格，如：BV 2.5平方 单芯铜线"
                   value={newProduct.name}
                   onChange={(e) => setNewProduct((p) => ({ ...p, name: e.target.value }))}
                   className={`${inputBase} mt-1 w-full text-gray-900`}
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600">厂家 *（缺货时自动向其补货，可当场新建）</label>
+                <label className="block text-xs font-medium text-gray-600">厂家 *</label>
                 <div className="relative mt-1">
                   <input
                     type="text"
                     autoComplete="off"
-                    placeholder="输入厂家名搜索厂家档案…"
+                    placeholder="缺货时自动向其补货，可当场新建"
                     value={mfrQuery}
                     onChange={(e) => { setMfrQuery(e.target.value); setMfrOpen(true); }}
                     onFocus={() => setMfrOpen(true)}
@@ -1058,12 +1058,12 @@ export function NewSaleForm({
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600">库存预警线（默认 1）</label>
+                <label className="block text-xs font-medium text-gray-600">库存预警线</label>
                 <input
                   type="number"
                   min="0"
                   step="0.001"
-                  placeholder="库存预警线"
+                  placeholder="留空按 1 计"
                   value={newProduct.minStock}
                   onChange={(e) => setNewProduct((p) => ({ ...p, minStock: e.target.value }))}
                   className={`${inputBase} mt-1 w-full text-gray-900`}

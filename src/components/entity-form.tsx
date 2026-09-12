@@ -53,6 +53,7 @@ export function EntityForm({
                 key={f.name}
                 name={f.name}
                 label={f.label}
+                placeholder={f.placeholder}
                 required={f.required}
                 initial={value}
                 suppliers={manufacturerSuppliers ?? []}
@@ -100,7 +101,8 @@ export function EntityForm({
                   options={f.options}
                   defaultValue={value}
                   noneLabel={f.noneLabel}
-                  emptyHint={f.placeholder ? `无匹配项（可先到列表页新建）` : "无匹配项"}
+                  placeholder={f.placeholder ?? "输入关键词搜索…"}
+                  emptyHint="无匹配项（可先到列表页新建）"
                   className="mt-1"
                 />
               </div>
@@ -161,6 +163,7 @@ export function EntityForm({
 function ManufacturerField({
   name,
   label,
+  placeholder,
   required,
   initial,
   suppliers,
@@ -168,6 +171,8 @@ function ManufacturerField({
 }: {
   name: string;
   label: string;
+  /** 字段说明（原先写在 label 的括号里，现在统一用 placeholder 承载） */
+  placeholder?: string;
   required?: boolean;
   initial: string;
   suppliers: { id: number; name: string }[];
@@ -218,7 +223,7 @@ function ManufacturerField({
           autoComplete="off"
           required={required}
           maxLength={100}
-          placeholder="输入厂家名搜索厂家档案…"
+          placeholder={placeholder ?? "输入厂家名搜索厂家档案…"}
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);

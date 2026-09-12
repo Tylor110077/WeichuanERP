@@ -54,14 +54,15 @@ export default async function EditCustomerPage({
           { name: "remark", label: "备注", maxLength: 200 },
           {
             name: "groupId",
-            label: "所属组织（改组织即移动，可搜索）",
+            label: "所属组织",
+            placeholder: "改组织即移动，输入关键词搜索",
             type: "searchselect",
             noneLabel: "未分组",
             options: groups.map((g) => ({ value: String(g.id), label: g.status === 1 ? g.name : `${g.name}（停用）` })),
           },
           {
             name: "tagIds",
-            label: "标签（可多选）",
+            label: "标签",
             type: "multiselect",
             options: tags.map((t) => ({ value: String(t.id), label: t.status === 1 ? t.name : `${t.name}（停用）` })),
           },

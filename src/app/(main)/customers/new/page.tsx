@@ -40,12 +40,13 @@ export default async function NewCustomerPage() {
           { name: "remark", label: "备注", maxLength: 200 },
           {
             name: "groupId",
-            label: "所属组织（可选，输入关键词可搜索）",
+            label: "所属组织",
+            placeholder: "可选，输入关键词搜索",
             type: "searchselect",
             noneLabel: "未分组",
             options: groups.map((g) => ({ value: String(g.id), label: g.name })),
           },
-          { name: "tagIds", label: "标签（可多选）", type: "multiselect", options: tags.map((t) => ({ value: String(t.id), label: t.name })) },
+          { name: "tagIds", label: "标签", type: "multiselect", options: tags.map((t) => ({ value: String(t.id), label: t.name })) },
         ]}
         saveAction={saveCustomerAction}
         submitLabel="创建客户"

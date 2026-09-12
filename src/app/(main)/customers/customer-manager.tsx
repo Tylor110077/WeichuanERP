@@ -272,7 +272,7 @@ export function CustomerManager({
               onChange={(e) => setForm((f) => ({ ...f, remark: e.target.value }))} className={inputCls} />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600">所属组织（可搜索）</label>
+            <label className="block text-xs font-medium text-gray-600">所属组织</label>
             <div className="mt-1 flex items-center gap-1">
               <SearchSelect
                 key={`grp-${form.groupId}-${groupOptions.length}`}
@@ -315,7 +315,7 @@ export function CustomerManager({
         </div>
 
         <div className="mt-3">
-          <label className="block text-xs font-medium text-gray-600">标签（可多选）</label>
+          <label className="block text-xs font-medium text-gray-600">标签</label>
           <div className="mt-1 flex flex-wrap items-center gap-2">
             {tagOptions.map((t) => (
               <label

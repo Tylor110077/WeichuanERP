@@ -35,17 +35,18 @@ export default async function NewProductPage() {
       </div>
       <EntityForm
         fields={[
-          { name: "name", label: "商品名称（完整名称，含规格）*", required: true, maxLength: 100 },
+          { name: "name", label: "商品名称 *", placeholder: "完整名称，含规格，如：BV 2.5平方 单芯铜线", required: true, maxLength: 100 },
           {
             name: "manufacturer",
-            label: "厂家 *（缺货时自动向其补货，可当场新建）",
+            label: "厂家 *",
+            placeholder: "缺货时自动向其补货，可当场新建",
             required: true,
             type: "manufacturer",
           },
-          { name: "categoryId", label: "分类（可搜索）", type: "searchselect", noneLabel: "未分类", options: categories.map((c) => ({ value: String(c.id), label: c.name })) },
-          { name: "unitId", label: "单位 *（可搜索）", required: true, type: "searchselect", options: units.map((u) => ({ value: String(u.id), label: u.name })) },
+          { name: "categoryId", label: "分类", type: "searchselect", noneLabel: "未分类", options: categories.map((c) => ({ value: String(c.id), label: c.name })) },
+          { name: "unitId", label: "单位 *", required: true, type: "searchselect", options: units.map((u) => ({ value: String(u.id), label: u.name })) },
           { name: "refPurchasePrice", label: "参考进价", type: "number", step: "0.01" },
-          { name: "minStock", label: "库存预警线（默认 1）", type: "number", step: "0.001" },
+          { name: "minStock", label: "库存预警线", placeholder: "留空按 1 计", type: "number", step: "0.001" },
         ]}
         saveAction={saveProductAction}
         submitLabel="创建商品"
