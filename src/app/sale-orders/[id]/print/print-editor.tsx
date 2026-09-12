@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useState, useSyncExternalStore, type ReactNode } from "react";
 import { btnPrimary, btnSecondary } from "@/lib/ui";
 import { rmbUpper } from "@/lib/rmb";
 
@@ -25,6 +25,71 @@ import { rmbUpper } from "@/lib/rmb";
 const DEFAULT_COMPANY = "重庆鑫玮川物资有限公司";
 const DEFAULT_FOOTER_ADDRESS = "";
 const DEFAULT_FOOTER_PHONE = "";
+
+/** 公司抬头（公司名/地址/电话）对本店是固定的：填一次存本地，之后每次打印自动带上 */
+const LETTERHEAD_STORAGE_KEY = "weichuan.print.letterhead";
+
+type Letterhead = { company: string; address: string; phone: string };
+
+const LETTERHEAD_DEFAULTS: Letterhead = {
+  company: DEFAULT_COMPANY,
+  address: DEFAULT_FOOTER_ADDRESS,
+  phone: DEFAULT_FOOTER_PHONE,
+};
+
+const letterheadListeners = new Set<() => void>();
+/** useSyncExternalStore 要求同一份数据返回同一个引用，所以按原始字符串缓存解析结果 */
+let letterheadCache: { raw: string | null; value: Letterhead } | null = null;
+
+function readLetterheadRaw(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.localStorage.getItem(LETTERHEAD_STORAGE_KEY);
+  } catch {
+    return null; // 隐私模式等读不到，就当没存过，仍可当场填写
+  }
+}
+
+function readLetterhead(): Letterhead {
+  const raw = readLetterheadRaw();
+  if (letterheadCache && letterheadCache.raw === raw) return letterheadCache.value;
+  let value = LETTERHEAD_DEFAULTS;
+  if (raw) {
+    try {
+      const saved = JSON.parse(raw) as Partial<Letterhead>;
+      value = {
+        company: saved.company || LETTERHEAD_DEFAULTS.company,
+        address: saved.address ?? "",
+        phone: saved.phone ?? "",
+      };
+    } catch {
+      value = LETTERHEAD_DEFAULTS;
+    }
+  }
+  letterheadCache = { raw, value };
+  return value;
+}
+
+function writeLetterhead(patch: Partial<Letterhead>) {
+  const value = { ...readLetterhead(), ...patch };
+  const raw = JSON.stringify(value);
+  try {
+    window.localStorage.setItem(LETTERHEAD_STORAGE_KEY, raw);
+  } catch {
+    // 存不进就算了，不影响本次打印
+  }
+  letterheadCache = { raw, value };
+  letterheadListeners.forEach((notify) => notify());
+}
+
+function subscribeLetterhead(notify: () => void) {
+  letterheadListeners.add(notify);
+  return () => {
+    letterheadListeners.delete(notify);
+  };
+}
+
+const getServerLetterhead = () => LETTERHEAD_DEFAULTS;
 
 export interface PrintOrderData {
   orderNo: string;
@@ -77,7 +142,15 @@ const inputBase = "bg-transparent outline-none focus:bg-blue-50 rounded px-1 tex
 const inputFill = `${inputBase} w-full`;
 
 export function PrintEditor({ data }: { data: PrintOrderData }) {
-  const [company, setCompany] = useState(DEFAULT_COMPANY);
+  // 抬头三件套存浏览器本地（不落库、不回写订单）：只需填一次
+  const letterhead = useSyncExternalStore(
+    subscribeLetterhead,
+    readLetterhead,
+    getServerLetterhead
+  );
+  const company = letterhead.company;
+  const footerAddress = letterhead.address;
+  const footerPhone = letterhead.phone;
   const [title, setTitle] = useState("销售单");
   const [orderNo, setOrderNo] = useState(data.orderNo);
   const [orderDate, setOrderDate] = useState(data.createdAt);
@@ -89,8 +162,6 @@ export function PrintEditor({ data }: { data: PrintOrderData }) {
   const [account, setAccount] = useState("");
   const [received, setReceived] = useState(data.receivedAmount ? data.receivedAmount.toFixed(2) : "");
   const [discount, setDiscount] = useState("0");
-  const [footerAddress, setFooterAddress] = useState(DEFAULT_FOOTER_ADDRESS);
-  const [footerPhone, setFooterPhone] = useState(DEFAULT_FOOTER_PHONE);
   const [rows, setRows] = useState(
     data.rows.map((r) => ({
       code: r.code,
@@ -143,7 +214,7 @@ export function PrintEditor({ data }: { data: PrintOrderData }) {
         <div className="text-center text-xl font-bold tracking-widest leading-8">
           <input
             value={company}
-            onChange={(e) => setCompany(e.target.value)}
+            onChange={(e) => writeLetterhead({ company: e.target.value })}
             className={`${inputBase} inline-block text-center text-xl font-bold tracking-widest`}
             style={{ width: `${Math.max(company.length, 6) + 2}em` }}
           />
@@ -318,18 +389,18 @@ export function PrintEditor({ data }: { data: PrintOrderData }) {
             <span className="shrink-0 font-medium">公司地址：</span>
             <input
               value={footerAddress}
-              onChange={(e) => setFooterAddress(e.target.value)}
+              onChange={(e) => writeLetterhead({ address: e.target.value })}
               className={`${inputBase} h-6 min-w-0 flex-1 px-1`}
-              placeholder="公司地址（可在打印稿上直接填写）"
+              placeholder="公司地址（填一次即记住，也可在打印稿上直接写）"
             />
           </div>
           <div className="flex items-center gap-1">
             <span className="shrink-0">电话：</span>
             <input
               value={footerPhone}
-              onChange={(e) => setFooterPhone(e.target.value)}
+              onChange={(e) => writeLetterhead({ phone: e.target.value })}
               className={`${inputBase} h-6 w-72 shrink-0 px-1`}
-              placeholder="联系电话（微信同号）"
+              placeholder="联系电话（同地址，填一次即记住）"
             />
             {showSign && <span className="ml-auto shrink-0">客户签收：＿＿＿＿＿＿</span>}
           </div>
