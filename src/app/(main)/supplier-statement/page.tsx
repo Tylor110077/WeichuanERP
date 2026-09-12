@@ -159,10 +159,12 @@ export default async function SupplierStatementPage({
         </button>
         <span className="text-xs text-gray-500">
           共 {rows.length} 单 ｜ 应付 ¥{totalAmount.toFixed(2)} ｜ 已付 ¥{totalPaid.toFixed(2)} ｜ 未付 ¥{totalUnpaid.toFixed(2)}
+        {rows.length >= 500 && "（最多列示最近 500 单）"}
         </span>
       </FilterForm>
 
-      <div className="space-y-3">
+      {/* 单据是折叠卡片而不是表格：单子多时整页会被拉得很长，这里封顶滚动 */}
+      <div className="scroll-thin max-h-[40rem] space-y-3 overflow-y-auto pr-1">
         {rows.length === 0 && (
           <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-sm text-gray-400">
             该期间无进货单

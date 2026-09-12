@@ -37,7 +37,8 @@ export default async function PurchaseReturnsPage() {
           </Link>
         </div>
       </div>
-      <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+      {/* 单据一多就长了：封顶滚动，避免页面无限变长（列表本身取最近 200 张） */}
+      <div className="scroll-thin max-h-[32rem] overflow-auto rounded-xl border border-gray-200 bg-white">
         <table className="min-w-full divide-y divide-gray-200 text-sm">
           <thead className="bg-gray-50 text-left text-xs text-gray-500">
             <tr>

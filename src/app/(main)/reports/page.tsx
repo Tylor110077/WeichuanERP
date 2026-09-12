@@ -93,9 +93,10 @@ export default async function ReportsPage({
         </p>
       )}
 
-      <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+      <div className="scroll-thin max-h-[32rem] overflow-auto rounded-xl border border-gray-200 bg-white">
         <table className="min-w-full divide-y divide-gray-200 text-sm">
-          <thead className="bg-gray-50 text-left text-xs text-gray-500">
+          {/* 结果已封顶 300 行，这里再给个高度上限 + 表头吸顶，翻看长报表时不用来回滚 */}
+          <thead className="sticky top-0 z-10 bg-gray-50 text-left text-xs text-gray-500">
             <tr>
               {result.columns.map((c) => (
                 <th key={c.key} className={`px-4 py-3 font-medium ${c.align === "right" ? "text-right tabular-nums" : ""}`}>

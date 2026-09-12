@@ -400,7 +400,11 @@ export default async function ReceivablesPage({
           <div className="text-2xl font-semibold text-red-600">¥{totalOutstanding.toFixed(2)}</div>
         </div>
         {byCounter.length > 0 && (
-          <div className="mt-3 space-y-1 border-t border-gray-100 pt-3">
+          // 对方（客户/厂家）可能上百个：封顶滚动，避免把合计卡撑得很长
+          <div className="scroll-thin mt-3 max-h-64 space-y-1 overflow-y-auto border-t border-gray-100 pt-3">
+            <p className="text-xs text-gray-400">
+              按{isReceivable ? "客户" : "厂家"}列示 ・ 共 {byCounter.length} 个
+            </p>
             {byCounter.map((v) => (
               <div key={v.id} className="flex items-center justify-between gap-3 text-sm">
                 <span className="text-gray-700">

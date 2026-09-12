@@ -7,6 +7,9 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { pinyinQuery } from "@/lib/pinyin";
+import { Prisma } from "@prisma/client";
+
+const PAGE_SIZE = 50;
 
 export const metadata = { title: "库存查询 - 玮川进销存" };
 
@@ -15,6 +18,7 @@ export default async function InventoryPage({
 }: {
   searchParams: Promise<{
     q?: string;
+    page?: string;
     warnOnly?: string;
     batch?: string;
     /** 分类筛选：分类 id，或 "none" 表示未分类 */
@@ -44,8 +48,25 @@ export default async function InventoryPage({
   const toDate = params.to && /^\d{4}-\d{2}-\d{2}$/.test(params.to) ? new Date(`${params.to}T23:59:59.999`) : undefined;
   const hasDateFilter = fromDate != null || toDate != null;
 
-  const products = await prisma.product.findMany({
-    where: {
+  /** 翻页链接：保留当前全部筛选条件（只改 page） */
+  const pageHref = (target: number) => {
+    const sp = new URLSearchParams();
+    if (params.q) sp.set("q", params.q);
+    if (params.warnOnly) sp.set("warnOnly", params.warnOnly);
+    if (params.category) sp.set("category", params.category);
+    if (params.manufacturer) sp.set("manufacturer", params.manufacturer);
+    if (params.from) sp.set("from", params.from);
+    if (params.to) sp.set("to", params.to);
+    if (params.batch) sp.set("batch", params.batch);
+    if (target > 1) sp.set("page", String(target));
+    const qs = sp.toString();
+    return `/inventory${qs ? `?${qs}` : ""}`;
+  };
+
+  // 库存列表会随商品目录一起变长：分页（与商品列表同一套 PAGE_SIZE 与写法），
+  // 过滤条件全部下推数据库，count 与列表用同一个 where，保证"共 N 个"与翻页口径一致。
+  const page = Math.max(1, Number(params.page) || 1);
+  const where: Prisma.ProductWhereInput = {
       ...(q
         ? {
             OR: [
@@ -70,13 +91,22 @@ export default async function InventoryPage({
             },
           }
         : {}),
-    },
-    orderBy: { code: "asc" },
-    include: {
-      unit: { select: { name: true } },
-      category: { select: { name: true } },
-    },
-  });
+  };
+  const [productTotal, products] = await Promise.all([
+    prisma.product.count({ where }),
+    prisma.product.findMany({
+      where,
+      orderBy: { code: "asc" },
+      include: {
+        unit: { select: { name: true } },
+        category: { select: { name: true } },
+      },
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+    }),
+  ]);
+
+  const totalPages = Math.max(1, Math.ceil(productTotal / PAGE_SIZE));
 
   // 最近进价：各商品最近一次非作废进货（purchase_in 流水 → 单据状态过滤）
   const activePoNos = await prisma.purchaseOrder.findMany({
@@ -227,7 +257,8 @@ export default async function InventoryPage({
 
       <p className="text-xs text-gray-500">
         共 {q || categoryRaw || mfrRaw || hasDateFilter || warnOnly ? "筛选出 " : ""}
-        {rows.length} 个商品
+        {productTotal} 个商品
+        {totalPages > 1 && ` ・ 第 ${page} / ${totalPages} 页`}
         {hasDateFilter && ` ・ 进货时间：${params.from || "最早"} ~ ${params.to || "今天"}`}
         {q || categoryRaw || mfrRaw ? " ・ 已应用筛选" : ""}
       </p>
@@ -325,6 +356,22 @@ export default async function InventoryPage({
           </tbody>
         </table>
       </div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm">
+          {page > 1 ? (
+            <Link href={pageHref(page - 1)} className="text-blue-600 hover:underline">上一页</Link>
+          ) : (
+            <span className="text-gray-400">上一页</span>
+          )}
+          <span className="text-gray-600">第 {page} / {totalPages} 页</span>
+          {page < totalPages ? (
+            <Link href={pageHref(page + 1)} className="text-blue-600 hover:underline">下一页</Link>
+          ) : (
+            <span className="text-gray-400">下一页</span>
+          )}
+        </div>
+      )}
 
       {/* 批次台账：同一商品不同批次进价不同，这里列出各次进货记录 */}
       {batchProduct && (

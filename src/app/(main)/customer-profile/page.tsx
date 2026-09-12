@@ -156,9 +156,10 @@ export default async function CustomerProfilePage({
         </div>
       )}
 
-      <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+      {/* 一客户一行：客户多了整页会很长，封顶滚动 + 表头吸顶（合计行仍在表格末尾） */}
+      <div className="scroll-thin max-h-[36rem] overflow-auto rounded-xl border border-gray-200 bg-white">
         <table className="min-w-full divide-y divide-gray-200 text-sm">
-          <thead className="bg-gray-50 text-left text-xs text-gray-500">
+          <thead className="sticky top-0 z-10 bg-gray-50 text-left text-xs text-gray-500">
             <tr>
               <th className="whitespace-nowrap px-4 py-3 font-medium">客户</th>
               <th className="whitespace-nowrap px-4 py-3 font-medium">组织</th>
