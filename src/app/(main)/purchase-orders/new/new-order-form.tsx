@@ -6,10 +6,27 @@ import { btnPrimary, btnSmallPrimary, inputBase } from "@/lib/ui";
 import { SearchSelect } from "@/components/search-select";
 import { createPurchaseOrderAction, type FormState } from "../actions";
 import { FormStateAlert } from "@/components/form-alert";
+import { createQuickSupplierAction } from "../../suppliers/actions";
+import { createQuickProductAction } from "../../products/actions";
+import {
+  searchProductsForPurchase,
+  searchSuppliersForPurchase,
+} from "./search-actions";
 
 interface SupplierOption {
   id: number;
   name: string;
+  py?: string;
+}
+interface CategoryOption {
+  id: number;
+  name: string;
+  py?: string;
+}
+interface UnitOption {
+  id: number;
+  name: string;
+  py?: string;
 }
 
 interface ProductOption {
@@ -34,12 +51,41 @@ const inputCls = `w-full ${inputBase}`;
 export function NewOrderForm({
   suppliers,
   products,
+  categories,
+  units,
 }: {
   suppliers: SupplierOption[];
   products: ProductOption[];
+  /** 商品可能上千：首屏只带"最近进过货的"，其余靠 onSearch 按需搜 */
+  categories: CategoryOption[];
+  units: UnitOption[];
 }) {
   const [rows, setRows] = useState<Row[]>([emptyRow()]);
   const [supplierId, setSupplierId] = useState("");
+  // 现场新建的厂家/商品并入候选（远程搜到的也记下来，选中时才能取到单位与默认价）
+  const [extraSuppliers, setExtraSuppliers] = useState<SupplierOption[]>([]);
+  const [knownProducts, setKnownProducts] = useState<Record<string, ProductOption>>(() =>
+    Object.fromEntries(products.map((p) => [String(p.id), p]))
+  );
+  const [extraProducts, setExtraProducts] = useState<ProductOption[]>([]);
+  // 现场新建厂家 / 商品（商品记录是哪一行触发的）
+  const [creatingSupplier, setCreatingSupplier] = useState(false);
+  const [newSupplierName, setNewSupplierName] = useState("");
+  const [supplierMsg, setSupplierMsg] = useState<{ error?: string; ok?: string } | null>(null);
+  const [creatingProductRow, setCreatingProductRow] = useState<number | null>(null);
+  const [newProduct, setNewProduct] = useState({
+    name: "",
+    /** 厂家：存厂家档案 id（下拉按 id 选），提交时解析成名称交给 action */
+    manufacturerId: "",
+    categoryId: "",
+    unitId: "",
+    refPurchasePrice: "",
+  });
+  const [productMsg, setProductMsg] = useState<{ error?: string; ok?: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const supplierOptions = [...suppliers, ...extraSuppliers];
+  const productOptions = [...products, ...extraProducts];
   const [state, formAction, pending] = useActionState<FormState, FormData>(
     createPurchaseOrderAction,
     null
@@ -49,20 +95,129 @@ export function NewOrderForm({
     return { productId: "", unitName: "", quantity: "", unitPrice: "", remark: "" };
   }
 
-  function onProductChange(index: number, productId: string) {
-    const p = products.find((x) => String(x.id) === productId);
+  /** 把某个候选填进某一行（新建商品后也走这里：闭包里还没有这个候选，必须显式传进来） */
+  function applyProduct(index: number, p: ProductOption | undefined) {
     setRows((prev) =>
       prev.map((row, i) =>
         i === index
           ? {
               ...row,
-              productId,
-              unitName: p ? `${p.unitName}` : "",
+              productId: p ? String(p.id) : "",
+              unitName: p?.unitName ?? "",
               unitPrice: p ? String(p.refPrice) : "",
             }
           : row
       )
     );
+  }
+
+  function onProductChange(index: number, productId: string) {
+    applyProduct(index, knownProducts[productId]);
+  }
+
+  /** 远程搜厂家：结果并入候选表，供选中时取名字 */
+  async function searchSuppliers(keyword: string) {
+    const list = await searchSuppliersForPurchase(keyword);
+    setExtraSuppliers((prev) => {
+      const seen = new Set(prev.map((x) => x.id));
+      return [...prev, ...list.filter((x) => !seen.has(x.id)).map((x) => ({ id: x.id, name: x.name, py: initials(x.name) }))];
+    });
+    return list.map((x) => ({ value: String(x.id), label: x.name, py: initials(x.name) }));
+  }
+
+  /** 远程搜商品：结果并入候选表（拿到单位与默认进价，选中时才能预填） */
+  async function searchProducts(keyword: string) {
+    const list = await searchProductsForPurchase(keyword);
+    setKnownProducts((prev) => {
+      const next = { ...prev };
+      for (const o of list) next[String(o.id)] = o;
+      return next;
+    });
+    return list.map((o) => ({ value: String(o.id), label: o.label, py: initials(o.label) }));
+  }
+
+  // ---- 就地新建厂家（下拉里点「＋ 新建厂家：「名字」」）----
+  function startCreateSupplier(name: string) {
+    setNewSupplierName(name);
+    setSupplierMsg(null);
+    setCreatingSupplier(true);
+  }
+
+  async function submitSupplier() {
+    const name = newSupplierName.trim();
+    if (!name) {
+      setSupplierMsg({ error: "请填写厂家名称" });
+      return;
+    }
+    setBusy(true);
+    const r = await createQuickSupplierAction({ name });
+    setBusy(false);
+    if ("error" in r) {
+      setSupplierMsg({ error: r.error });
+      return;
+    }
+    setExtraSuppliers((prev) => [...prev.filter((x) => x.id !== r.id), { id: r.id, name: r.name, py: initials(r.name) }]);
+    setSupplierId(String(r.id)); // 建完直接选中，省一次点选
+    setCreatingSupplier(false);
+    setNewSupplierName("");
+    setSupplierMsg({ ok: `已新建厂家「${r.name}」并选中` });
+  }
+
+  // ---- 就地新建商品（商品行下拉里点「＋ 新建商品：「名字」」）----
+  function startCreateProduct(index: number, name: string) {
+    setNewProduct({
+      name,
+      // 默认就地取上面已选的厂家：开单时"这批货就是这个厂家的"是最常见的情况
+      manufacturerId: supplierId || "",
+      categoryId: "",
+      unitId: units[0] ? String(units[0].id) : "",
+      refPurchasePrice: "",
+    });
+    setCreatingProductRow(index);
+    setProductMsg(null);
+  }
+
+  async function submitProduct() {
+    if (creatingProductRow == null) return;
+    const data = newProduct;
+    const manufacturerName = supplierOptions.find((x) => String(x.id) === data.manufacturerId)?.name ?? "";
+    if (!data.name.trim()) {
+      setProductMsg({ error: "请填写商品名称" });
+      return;
+    }
+    if (!manufacturerName) {
+      setProductMsg({ error: "请选择厂家（缺货补货、对账都按厂家走）" });
+      return;
+    }
+    if (!data.unitId) {
+      setProductMsg({ error: "请选择单位" });
+      return;
+    }
+    setBusy(true);
+    const r = await createQuickProductAction({
+      name: data.name.trim(),
+      manufacturer: manufacturerName,
+      categoryId: data.categoryId ? Number(data.categoryId) : null,
+      unitId: Number(data.unitId),
+      refPurchasePrice: Number(data.refPurchasePrice) || 0,
+    });
+    setBusy(false);
+    if ("error" in r) {
+      setProductMsg({ error: r.error });
+      return;
+    }
+    const opt: ProductOption = {
+      id: r.id,
+      label: `${r.code} ${r.name}（${r.manufacturer || "未填厂家"}）`,
+      unitId: r.unitId,
+      unitName: r.unitName,
+      refPrice: Number(data.refPurchasePrice) || 0,
+    };
+    setKnownProducts((prev) => ({ ...prev, [String(opt.id)]: opt }));
+    setExtraProducts((prev) => [...prev, opt]);
+    applyProduct(creatingProductRow, opt); // 建完直接选到那一行（单位、进价一起带上）
+    setCreatingProductRow(null);
+    setProductMsg({ ok: `已新建商品「${r.name}」并选到第 ${creatingProductRow + 1} 行` });
   }
 
   function lineAmount(row: Row): number {
@@ -86,20 +241,52 @@ export function NewOrderForm({
           </span>
         </summary>
         <div className="border-t border-gray-100 p-5">
-        <div className="min-w-56">
+        <div className="min-w-72">
           <label htmlFor="supplierId" className="block text-xs font-medium text-gray-600">
             厂家 *
           </label>
+          {/* 首屏只带最近打过交道的厂家，其余输入关键词按需搜；
+              搜不到时下拉顶部就是「＋ 新建厂家：「名字」」，点开就地建并自动选中 */}
           <SearchSelect
             key={`po-sup-${supplierId}`}
             name="supplierId"
-            options={suppliers.map((s) => ({ value: String(s.id), label: s.name, py: initials(s.name) }))}
+            options={supplierOptions.map((s) => ({ value: String(s.id), label: s.name, py: s.py ?? initials(s.name) }))}
             defaultValue={supplierId}
             noneLabel="请选择厂家"
-            placeholder="厂家（可搜索）"
+            placeholder="厂家（可搜索；没有就输入名称新建）"
             className="mt-1"
             onChange={setSupplierId}
+            onSearch={searchSuppliers}
+            createLabel={(k) => `＋ 新建厂家：「${k}」`}
+            onCreate={startCreateSupplier}
           />
+          {creatingSupplier && (
+            <div className="mt-2 flex flex-wrap items-center gap-2 rounded-md border border-blue-200 bg-blue-50/50 p-2">
+              <span className="text-xs text-gray-600">新建厂家</span>
+              <input
+                value={newSupplierName}
+                onChange={(e) => setNewSupplierName(e.target.value)}
+                maxLength={100}
+                placeholder="厂家名称"
+                className={`${inputBase} w-56`}
+              />
+              <button type="button" onClick={submitSupplier} disabled={busy} className={btnSmallPrimary}>
+                {busy ? "创建中…" : "创建并选中"}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setCreatingSupplier(false); setNewSupplierName(""); setSupplierMsg(null); }}
+                className="text-xs text-gray-500 hover:underline"
+              >
+                取消
+              </button>
+              <p className="basis-full text-xs text-gray-500">
+                联系人、电话、地址等可稍后在「商品与厂家 → 厂家管理」里补
+              </p>
+            </div>
+          )}
+          {supplierMsg?.error && <p className="mt-1 text-xs text-red-600">{supplierMsg.error}</p>}
+          {supplierMsg?.ok && <p className="mt-1 text-xs text-green-700">{supplierMsg.ok}</p>}
         </div>
         </div>
       </details>
@@ -128,6 +315,105 @@ export function NewOrderForm({
         />
       </div>
 
+      {/* 就地新建商品：在商品行下拉里点「＋ 新建商品：「名字」」后出现，建完自动选到那一行 */}
+      {creatingProductRow != null && (
+        <div className="rounded-xl border border-blue-200 bg-blue-50/40 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 className="text-sm font-semibold text-gray-900">
+              新建商品（建完自动选到第 {creatingProductRow + 1} 行）
+            </h3>
+            <button
+              type="button"
+              onClick={() => {
+                setCreatingProductRow(null);
+                setProductMsg(null);
+              }}
+              className="text-xs text-gray-500 hover:underline"
+            >
+              取消
+            </button>
+          </div>
+          <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-3">
+            <div className="col-span-2 lg:col-span-1">
+              <label className="block text-xs font-medium text-gray-600">商品名称 *</label>
+              <input
+                value={newProduct.name}
+                onChange={(e) => setNewProduct((p) => ({ ...p, name: e.target.value }))}
+                maxLength={100}
+                placeholder="写全名称，如：BV 2.5平方 单芯铜线"
+                className={`mt-1 ${inputCls}`}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600">厂家 *</label>
+              <SearchSelect
+                key={`np-mfr-${newProduct.manufacturerId}`}
+                name="quickManufacturer"
+                options={supplierOptions.map((x) => ({ value: String(x.id), label: x.name, py: x.py ?? initials(x.name) }))}
+                defaultValue={newProduct.manufacturerId}
+                noneLabel="请选择厂家"
+                placeholder="搜索厂家"
+                className="mt-1"
+                onChange={(v) => setNewProduct((p) => ({ ...p, manufacturerId: v }))}
+                onSearch={searchSuppliers}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600">单位 *</label>
+              <SearchSelect
+                key={`np-unit-${newProduct.unitId}`}
+                name="quickUnit"
+                options={units.map((u) => ({ value: String(u.id), label: u.name, py: u.py ?? initials(u.name) }))}
+                defaultValue={newProduct.unitId}
+                noneLabel="请选择单位"
+                placeholder="搜索单位"
+                className="mt-1"
+                onChange={(v) => setNewProduct((p) => ({ ...p, unitId: v }))}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600">分类</label>
+              <SearchSelect
+                key={`np-cat-${newProduct.categoryId}`}
+                name="quickCategory"
+                options={categories.map((c) => ({ value: String(c.id), label: c.name, py: c.py ?? initials(c.name) }))}
+                defaultValue={newProduct.categoryId}
+                noneLabel="未分类"
+                placeholder="搜索分类"
+                className="mt-1"
+                onChange={(v) => setNewProduct((p) => ({ ...p, categoryId: v }))}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600">参考进价</label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={newProduct.refPurchasePrice}
+                onChange={(e) => setNewProduct((p) => ({ ...p, refPurchasePrice: e.target.value }))}
+                placeholder="选填"
+                className={`mt-1 ${inputCls}`}
+              />
+            </div>
+          </div>
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <button type="button" onClick={submitProduct} disabled={busy} className={btnSmallPrimary}>
+              {busy ? "创建中…" : "创建并选中"}
+            </button>
+            <span className="text-xs text-gray-500">
+              没有这个厂家？先在「厂家信息」里新建，或在上面的厂家框输入名称新建
+            </span>
+          </div>
+          {productMsg?.error && <p className="mt-2 text-xs text-red-600">{productMsg.error}</p>}
+        </div>
+      )}
+
+      {/* 新建成功的提示放在面板外：面板一关，里面的字就看不到了 */}
+      {productMsg?.ok && creatingProductRow == null && (
+        <p className="text-xs text-green-700">{productMsg.ok}</p>
+      )}
+
       {/* 商品清单：每行一个商品，字段标签内联、行间以分隔线区隔 */}
       <div className="divide-y divide-gray-100 border-y border-gray-100">
         {rows.map((row, i) => (
@@ -135,14 +421,18 @@ export function NewOrderForm({
             {/* 商品 */}
             <div className="flex items-center gap-2">
               <div className="min-w-0 flex-1">
+                {/* 商品同样按需搜索；搜不到可当场新建（建完自动选到本行） */}
                 <SearchSelect
                   key={`po-prod-${i}-${row.productId}`}
                   name={`item_${i}_productId`}
-                  options={products.map((p) => ({ value: String(p.id), label: p.label, py: initials(p.label) }))}
+                  options={productOptions.map((p) => ({ value: String(p.id), label: p.label, py: initials(p.label) }))}
                   defaultValue={row.productId}
                   noneLabel="搜索并选择商品"
-                  placeholder="商品（可搜索名称 / 编码）"
+                  placeholder="商品（可搜索名称 / 编码 / 厂家；没有就输入名称新建）"
                   onChange={(v) => onProductChange(i, v)}
+                  onSearch={searchProducts}
+                  createLabel={(k) => `＋ 新建商品：「${k}」`}
+                  onCreate={(k) => startCreateProduct(i, k)}
                 />
               </div>
               <button
