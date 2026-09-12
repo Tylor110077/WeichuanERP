@@ -8,6 +8,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { DateShortcuts } from "@/components/date-shortcuts";
 import { SearchSelect } from "@/components/search-select";
+import { UnpaidOrderTable } from "./unpaid-order-table";
 
 export const metadata = { title: "应收应付 - 玮川进销存" };
 
@@ -24,6 +25,8 @@ export default async function ReceivablesPage({
     to?: string;
     counterId?: string;
     page?: string;
+    /** order=以单据为主（可展开看商品）｜item=以商品为主（平铺，不分组） */
+    mode?: string;
   }>;
 }) {
   const user = await getCurrentUser();
@@ -42,6 +45,7 @@ export default async function ReceivablesPage({
   // 单据表按页展示（合计仍用 SQL 聚合，不受分页影响）
   const page = Math.max(1, Number(params.page) || 1);
   const PAGE_SIZE = 50;
+  const mode: "order" | "item" = params.mode === "item" ? "item" : "order";
 
   const orders = isReceivable
     ? await prisma.saleOrder.findMany({
@@ -49,6 +53,13 @@ export default async function ReceivablesPage({
         include: {
           customer: { select: { name: true } },
           returns: { where: { status: "confirmed" } },
+          items: {
+            orderBy: { id: "asc" },
+            include: {
+              product: { select: { code: true, name: true, spec: true } },
+              unit: { select: { name: true } },
+            },
+          },
         },
         orderBy: { createdAt: "desc" },
         take: 200,
@@ -58,6 +69,13 @@ export default async function ReceivablesPage({
         include: {
           supplier: { select: { name: true } },
           returns: { where: { status: "confirmed" } },
+          items: {
+            orderBy: { id: "asc" },
+            include: {
+              product: { select: { code: true, name: true, spec: true } },
+              unit: { select: { name: true } },
+            },
+          },
         },
         orderBy: { createdAt: "desc" },
         take: 200,
@@ -109,8 +127,63 @@ export default async function ReceivablesPage({
     const total = Number((o as { totalAmount: unknown }).totalAmount);
     return total - paid - returned > 0;
   });
+  // 单据视角：一次给当前页（≤50 张）的全部未结清单据，展开明细用的数据就在里面
   const pageCount = Math.max(1, Math.ceil(unpaidOrders.length / PAGE_SIZE));
   const pagedOrders = unpaidOrders.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  // 单据视角：给客户端表格准备可展开的行（含各自明细）
+  type AnyOrder = (typeof unpaidOrders)[number];
+  const itemRowsOf = (o: AnyOrder) =>
+    o.items.map((it) => ({
+      id: it.id,
+      code: it.product.code,
+      name: it.product.name,
+      spec: it.product.spec ?? "",
+      unit: it.unit.name,
+      qty: Number(it.quantity),
+      price: Number(it.unitPrice),
+      amount: Number(it.amount),
+      remark: it.remark ?? "",
+    }));
+  const unpaidOrderRows = pagedOrders.map((o) => {
+    const returned = o.returns.reduce((r, x) => r + Number(x.totalAmount), 0);
+    const paid = isReceivable
+      ? Number((o as { receivedAmount: unknown }).receivedAmount)
+      : Number((o as { paidAmount: unknown }).paidAmount);
+    const total = Number((o as { totalAmount: unknown }).totalAmount);
+    return {
+      id: o.id,
+      orderNo: o.orderNo,
+      date: o.createdAt.toLocaleDateString("zh-CN"),
+      counterName: isReceivable
+        ? (o as { customer: { name: string } }).customer.name
+        : (o as { supplier: { name: string } }).supplier.name,
+      total,
+      paid,
+      returned,
+      unpaid: Math.max(0, total - paid - returned),
+      detailHref: isReceivable ? `/sale-orders/${o.id}` : `/purchase-orders/${o.id}`,
+      items: itemRowsOf(o),
+    };
+  });
+
+  // 商品视角：把符合条件的单据里的商品平铺（不做分组），带"来源单据"列
+  const flatItems = unpaidOrders.flatMap((o) =>
+    itemRowsOf(o).map((it) => ({
+      ...it,
+      orderNo: o.orderNo,
+      orderId: o.id,
+      detailHref: isReceivable ? `/sale-orders/${o.id}` : `/purchase-orders/${o.id}`,
+      counterName: isReceivable
+        ? (o as { customer: { name: string } }).customer.name
+        : (o as { supplier: { name: string } }).supplier.name,
+      date: o.createdAt.toLocaleDateString("zh-CN"),
+    }))
+  );
+  const itemPageCount = Math.max(1, Math.ceil(flatItems.length / PAGE_SIZE));
+  const pagedItems = flatItems.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const flatQty = flatItems.reduce((sum, it) => sum + it.qty, 0);
+  const flatAmount = flatItems.reduce((sum, it) => sum + it.amount, 0);
 
   const counterOptions =
     isReceivable
@@ -119,12 +192,23 @@ export default async function ReceivablesPage({
 
   const isDefaultRange = !params.from && !params.to;
 
+  /** 视角切换链接：保留视图、期间、对象筛选（切视角回到第 1 页） */
+  const modeHref = (m: "order" | "item") => {
+    const sp = new URLSearchParams({ view });
+    if (m === "item") sp.set("mode", "item");
+    if (params.from) sp.set("from", params.from);
+    if (params.to) sp.set("to", params.to);
+    if (params.counterId) sp.set("counterId", params.counterId);
+    return `/receivables-payables?${sp.toString()}`;
+  };
+
   /** 分页链接：保留视图、期间与对象筛选 */
   const pageHref = (p: number) => {
     const sp = new URLSearchParams({ view });
     if (params.from) sp.set("from", params.from);
     if (params.to) sp.set("to", params.to);
     if (params.counterId) sp.set("counterId", params.counterId);
+    if (mode === "item") sp.set("mode", "item");
     if (p > 1) sp.set("page", String(p));
     return `/receivables-payables?${sp.toString()}`;
   };
@@ -134,6 +218,7 @@ export default async function ReceivablesPage({
     if (params.from) sp.set("from", params.from);
     if (params.to) sp.set("to", params.to);
     if (params.counterId) sp.set("counterId", params.counterId);
+    if (mode === "item") sp.set("mode", "item");
 
     return `/receivables-payables?${sp.toString()}`;
   };
@@ -156,6 +241,24 @@ export default async function ReceivablesPage({
             应付（厂家）
           </a>
         </div>
+      </div>
+
+      {/* 视角切换：以单据为主（可展开看商品）/ 以商品为主（平铺、不分组） */}
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs text-gray-500">查看方式</span>
+        <div className="flex rounded-lg border border-gray-200 bg-gray-50 p-0.5 text-sm">
+          <a href={modeHref("order")} className={`px-3 py-1.5 ${mode === "order" ? segActive : segIdle}`}>
+            按单据（可展开商品）
+          </a>
+          <a href={modeHref("item")} className={`px-3 py-1.5 ${mode === "item" ? segActive : segIdle}`}>
+            只看商品（不分组）
+          </a>
+        </div>
+        {mode === "item" && (
+          <span className="text-xs text-gray-400">
+            共 {flatItems.length} 条商品行（来自 {unpaidOrders.length} 张未结清单据）・总数量 {flatQty.toFixed(3)} ・合计 ¥{flatAmount.toFixed(2)}
+          </span>
+        )}
       </div>
 
       <DateShortcuts
@@ -186,67 +289,75 @@ export default async function ReceivablesPage({
         )}
       </FilterForm>
 
-      <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
-        <div className="border-b border-gray-100 px-4 py-3 text-sm font-semibold text-gray-900">
-          未结清单据（{isReceivable ? "应收" : "应付"}）
-          <span className="ml-2 text-xs font-normal text-gray-400">
-            共 {unsettledCount} 张 ・ 点右侧「详情 / 登记」进单据登记
-            {unsettledCount > unpaidOrders.length && `（下表仅显示最近 ${unpaidOrders.length} 张，合计已含全部）`}
-          </span>
-        </div>
-        <table className="min-w-full divide-y divide-gray-200 text-sm">
-          <thead className="bg-gray-50 text-left text-xs text-gray-500">
-            <tr>
-              <th className="px-4 py-3 font-medium">日期</th>
-              <th className="px-4 py-3 font-medium">单号</th>
-              <th className="px-4 py-3 font-medium">{isReceivable ? "客户" : "厂家"}</th>
-              <th className="px-4 py-3 text-right font-medium tabular-nums">{isReceivable ? "应收" : "应付"}</th>
-              <th className="px-4 py-3 text-right font-medium tabular-nums">{isReceivable ? "已收" : "已付"}</th>
-              <th className="px-4 py-3 text-right font-medium tabular-nums">退货冲减</th>
-              <th className="px-4 py-3 text-right font-medium tabular-nums">{isReceivable ? "未收" : "未付"}</th>
-              <th className="px-4 py-3 font-medium"></th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100 [&>tr]:transition-colors [&>tr:hover]:bg-gray-100/70">
-            {unpaidOrders.length === 0 && (
+      {/* 两种视角：按单据（行内可展开商品）/ 只看商品（平铺不分组） */}
+      {mode === "item" ? (
+        <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+          <div className="border-b border-gray-100 px-4 py-3 text-sm font-semibold text-gray-900">
+            未结清单据里的商品
+            <span className="ml-2 text-xs font-normal text-gray-400">
+              来自 {unpaidOrders.length} 张未结清单据 ・ 共 {flatItems.length} 条商品行
+              {itemPageCount > 1 && ` ・ 第 ${page} / ${itemPageCount} 页`}
+            </span>
+          </div>
+          <table className="min-w-full divide-y divide-gray-200 text-sm [&_td]:align-top">
+            <thead className="bg-gray-50 text-left text-xs text-gray-500">
               <tr>
-                <td colSpan={8}>
-                  <EmptyState
-                    title="当前筛选条件下单据已全部结清"
-                    hint="调整上方筛选条件可查看其他单据"
-                  />
-                </td>
+                <th className="px-4 py-3 font-medium">日期</th>
+                <th className="px-4 py-3 font-medium">来源单据</th>
+                <th className="px-4 py-3 font-medium">{isReceivable ? "客户" : "厂家"}</th>
+                <th className="px-4 py-3 font-medium">编码</th>
+                <th className="px-4 py-3 font-medium">品名</th>
+                <th className="px-4 py-3 font-medium">单位</th>
+                <th className="px-4 py-3 text-right font-medium tabular-nums">数量</th>
+                <th className="px-4 py-3 text-right font-medium tabular-nums">单价</th>
+                <th className="px-4 py-3 text-right font-medium tabular-nums">金额</th>
+                <th className="px-4 py-3 font-medium">备注</th>
               </tr>
-            )}
-            {pagedOrders.map((o) => {
-              const returned = o.returns.reduce((r, x) => r + Number(x.totalAmount), 0);
-              const paid = isReceivable ? Number((o as { receivedAmount: unknown }).receivedAmount) : Number((o as { paidAmount: unknown }).paidAmount);
-              const total = Number((o as { totalAmount: unknown }).totalAmount);
-              const unpaid = Math.max(0, total - paid - returned);
-              const counterName = isReceivable
-                ? (o as { customer: { name: string } }).customer.name
-                : (o as { supplier: { name: string } }).supplier.name;
-              const detailHref = isReceivable ? `/sale-orders/${o.id}` : `/purchase-orders/${o.id}`;
-              return (
-                <tr key={o.id}>
-                  <td className="px-4 py-2.5 text-gray-600">{o.createdAt.toLocaleDateString("zh-CN")}</td>
-                  <td className="px-4 py-2.5">
-                    <Link href={detailHref} className="font-medium text-blue-600 hover:underline">{o.orderNo}</Link>
-                  </td>
-                  <td className="px-4 py-2.5 text-gray-900">{counterName}</td>
-                  <td className="px-4 py-2.5 text-right text-gray-900 tabular-nums">¥{total.toFixed(2)}</td>
-                  <td className="px-4 py-2.5 text-right text-gray-600 tabular-nums">¥{paid.toFixed(2)}</td>
-                  <td className="px-4 py-2.5 text-right text-orange-600 tabular-nums">¥{returned.toFixed(2)}</td>
-                  <td className="px-4 py-2.5 text-right font-medium text-red-600 tabular-nums">¥{unpaid.toFixed(2)}</td>
-                  <td className="px-4 py-2.5">
-                    <Link href={detailHref} className="text-xs text-blue-600 hover:underline">详情 / 登记</Link>
+            </thead>
+            <tbody className="divide-y divide-gray-100 [&>tr]:transition-colors [&>tr:hover]:bg-gray-100/70">
+              {pagedItems.length === 0 && (
+                <tr>
+                  <td colSpan={10}>
+                    <EmptyState title="没有未结清单据里的商品" hint="调整上方筛选条件试试" />
                   </td>
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+              )}
+              {pagedItems.map((it) => (
+                <tr key={`${it.orderId}-${it.id}`}>
+                  <td className="px-4 py-2.5 text-gray-600 tabular-nums">{it.date}</td>
+                  <td className="px-4 py-2.5">
+                    <Link href={it.detailHref} className="text-blue-600 hover:underline">
+                      {it.orderNo}
+                    </Link>
+                  </td>
+                  <td className="px-4 py-2.5 text-gray-900">{it.counterName}</td>
+                  <td className="px-4 py-2.5 text-gray-600">{it.code}</td>
+                  <td className="px-4 py-2.5 text-gray-900">{it.name}</td>
+                  <td className="px-4 py-2.5 text-gray-600">{it.unit}</td>
+                  <td className="px-4 py-2.5 text-right tabular-nums">{it.qty.toFixed(3)}</td>
+                  <td className="px-4 py-2.5 text-right tabular-nums">¥{it.price.toFixed(2)}</td>
+                  <td className="px-4 py-2.5 text-right tabular-nums">¥{it.amount.toFixed(2)}</td>
+                  <td className="px-4 py-2.5 text-gray-500">{it.remark || "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <>
+          <div className="border-b border-gray-100 rounded-t-xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900">
+            未结清单据（{isReceivable ? "应收" : "应付"}）
+            <span className="ml-2 text-xs font-normal text-gray-400">
+              共 {unsettledCount} 张 ・ 点行首「展开」看该单商品 ・ 点右侧「详情 / 登记」进单据登记
+              {unsettledCount > unpaidOrders.length && `（下表仅显示最近 ${unpaidOrders.length} 张，合计已含全部）`}
+            </span>
+          </div>
+          <UnpaidOrderTable
+            rows={unpaidOrderRows}
+            labels={{ total: isReceivable ? "应收" : "应付", paid: isReceivable ? "已收" : "已付" }}
+          />
+        </>
+      )}
 
       {pageCount > 1 && (
         <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm">
