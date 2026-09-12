@@ -355,7 +355,11 @@ export default async function ReceivablesPage({
           )}
           <UnpaidOrderTable
             rows={unpaidOrderRows}
-            labels={{ total: isReceivable ? "应收" : "应付", paid: isReceivable ? "已收" : "已付" }}
+            labels={{
+              total: isReceivable ? "应收" : "应付",
+              paid: isReceivable ? "已收" : "已付",
+              counter: isReceivable ? "客户" : "厂家",
+            }}
           />
         </>
       )}

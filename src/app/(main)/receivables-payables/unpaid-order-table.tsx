@@ -41,7 +41,7 @@ export function UnpaidOrderTable({
   labels,
 }: {
   rows: UnpaidOrderRow[];
-  labels: { total: string; paid: string };
+  labels: { total: string; paid: string; counter: string };
 }) {
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
 
@@ -59,8 +59,8 @@ export function UnpaidOrderTable({
   return (
     <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
       {/* 列多（开关 + 8 列）：给最小宽度，宁可窄屏左右滑动，也不要把「展开」压成竖排、
-            把商品概览挤成四行。实测 60rem 时行高回到 41px、商品列 67px→132px。 */}
-      <table className="min-w-[60rem] divide-y divide-gray-200 text-sm [&_td]:align-top">
+            把商品概览挤成四行。加「客户/厂家」列后实测 68rem 时行高 41px、无竖排；商品列另外给了个最小宽度防止再被饿死。 */}
+      <table className="min-w-[68rem] divide-y divide-gray-200 text-sm [&_td]:align-top">
         <thead className="bg-gray-50 text-left text-xs text-gray-500">
           <tr>
             <th className="w-20 px-4 py-3">
@@ -77,7 +77,9 @@ export function UnpaidOrderTable({
             </th>
             <th className="whitespace-nowrap px-4 py-3 font-medium">日期</th>
             <th className="whitespace-nowrap px-4 py-3 font-medium">单号</th>
-            <th className="whitespace-nowrap px-4 py-3 font-medium">商品</th>
+            {/* 单据要能看出是谁的：应收视角是客户、应付视角是厂家 */}
+            <th className="whitespace-nowrap px-4 py-3 font-medium">{labels.counter}</th>
+            <th className="min-w-[9rem] whitespace-nowrap px-4 py-3 font-medium">商品</th>
             <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">{labels.total}</th>
             <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">{labels.paid}</th>
             <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">退货冲减</th>
@@ -109,10 +111,11 @@ export function UnpaidOrderTable({
                   </td>
                   <td className="px-4 py-2.5 text-gray-600 tabular-nums">{o.date}</td>
                   <td className="px-4 py-2.5">
-                    <Link href={o.detailHref} className="font-medium text-blue-600 hover:underline">
+                    <Link href={o.detailHref} className="whitespace-nowrap font-medium text-blue-600 hover:underline">
                       {o.orderNo}
                     </Link>
                   </td>
+                  <td className="min-w-[6rem] px-4 py-2.5 text-gray-900">{o.counterName}</td>
                   {/* 未展开时给一个"含 N 种商品"的概览，便于判断要不要展开 */}
                   <td className="px-4 py-2.5 text-gray-600">
                     {open ? (
@@ -146,7 +149,7 @@ export function UnpaidOrderTable({
                 </tr>
                 {open && (
                   <tr key={`${o.id}-items`} className="bg-gray-50/60">
-                    <td colSpan={9} className="px-4 py-3">
+                    <td colSpan={10} className="px-4 py-3">
                       {o.items.length === 0 ? (
                         <p className="text-xs text-gray-400">该单没有商品明细</p>
                       ) : (
