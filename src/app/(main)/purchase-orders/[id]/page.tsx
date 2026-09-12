@@ -37,7 +37,19 @@ export default async function PurchaseOrderDetailPage({
       supplier: true,
       operator: true,
       items: { include: { product: true, unit: true } },
-      returns: { orderBy: { createdAt: "desc" } }, // 本单退货记录
+      // 本单退货记录：连明细一起取（详情页要写清退了哪些商品、多少、什么价）
+      returns: {
+        orderBy: { createdAt: "desc" },
+        include: {
+          operator: { select: { displayName: true } },
+          items: {
+            include: {
+              product: { select: { code: true, name: true } },
+              unit: { select: { name: true } },
+            },
+          },
+        },
+      },
     },
   });
   if (!order) notFound();
@@ -216,27 +228,56 @@ export default async function PurchaseOrderDetailPage({
         </table>
       </div>
 
-      {/* 本单退货记录 */}
+      {/* 本单退货记录：写清每次退货退了哪些商品、多少、什么价，而不是只给一个金额 */}
       {order.returns.length > 0 && (
         <div className="rounded-xl border border-gray-200 bg-white p-5 text-sm">
-          <h2 className="mb-2 font-semibold text-gray-900">本单退货记录</h2>
-          <div className="space-y-1.5">
+          <h2 className="mb-3 font-semibold text-gray-900">
+            本单退货记录
+            <span className="ml-2 text-xs font-normal text-gray-400">
+              共 {order.returns.length} 次 ・ 合计退 ¥{returnedSum.toFixed(2)}
+            </span>
+          </h2>
+          <div className="space-y-4">
             {order.returns.map((r) => (
-              <div key={r.id} className="flex flex-wrap items-center gap-3 text-gray-700">
-                <span className="font-medium text-gray-900">{r.orderNo}</span>
-                <span>¥{Number(r.totalAmount).toFixed(2)}</span>
-                <span
-                  className={
-                    r.status === "confirmed"
-                      ? badgeOk
-                      : badgeMuted
-                  }
-                >
-                  {r.status === "confirmed" ? "已退" : "已作废"}
-                </span>
-                <Link href="/purchase-returns" className="whitespace-nowrap text-xs text-blue-600 hover:underline">
-                  查看退货单
-                </Link>
+              <div key={r.id} className="rounded-lg border border-gray-100">
+                <div className="flex flex-wrap items-center gap-3 border-b border-gray-100 px-3 py-2 text-gray-700">
+                  <span className="font-medium text-gray-900">{r.orderNo}</span>
+                  <span className={r.status === "confirmed" ? badgeOk : badgeMuted}>
+                    {r.status === "confirmed" ? "已退" : "已作废"}
+                  </span>
+                  <span className="text-xs text-gray-500">{r.createdAt.toLocaleString("zh-CN")}</span>
+                  <span className="text-xs text-gray-500">经办：{r.operator.displayName}</span>
+                  <span className="ml-auto font-medium text-gray-900">
+                    退 ¥{Number(r.totalAmount).toFixed(2)}
+                  </span>
+                </div>
+                {r.status !== "confirmed" && r.voidReason && (
+                  <p className="px-3 pt-2 text-xs text-gray-500">作废原因：{r.voidReason}</p>
+                )}
+                <table className="w-full text-xs">
+                  <thead className="text-left text-gray-500">
+                    <tr>
+                      <th className="w-28 px-3 py-1.5 font-medium">编码</th>
+                      <th className="px-3 py-1.5 font-medium">品名</th>
+                      <th className="w-16 px-3 py-1.5 font-medium">单位</th>
+                      <th className="w-28 px-3 py-1.5 text-right font-medium">退货数量</th>
+                      <th className="w-28 px-3 py-1.5 text-right font-medium">退货价</th>
+                      <th className="w-32 px-3 py-1.5 text-right font-medium">金额</th>
+                    </tr>
+                  </thead>
+                  <tbody className="text-gray-800">
+                    {r.items.map((it) => (
+                      <tr key={it.id} className="border-t border-gray-50">
+                        <td className="px-3 py-1.5 text-gray-600">{it.product.code}</td>
+                        <td className="px-3 py-1.5">{it.product.name}</td>
+                        <td className="px-3 py-1.5 text-gray-600">{it.unit.name}</td>
+                        <td className="px-3 py-1.5 text-right tabular-nums">{Number(it.quantity).toFixed(3)}</td>
+                        <td className="px-3 py-1.5 text-right tabular-nums">¥{Number(it.unitPrice).toFixed(2)}</td>
+                        <td className="px-3 py-1.5 text-right tabular-nums">¥{Number(it.amount).toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             ))}
           </div>
