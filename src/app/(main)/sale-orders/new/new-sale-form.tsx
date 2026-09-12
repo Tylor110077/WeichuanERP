@@ -359,6 +359,17 @@ export function NewSaleForm({
     });
   }
 
+  /** 打开"新建客户"表单并把名字预填好（候选面板里的「＋ 新建客户：「xx」」与右上角按钮共用） */
+  function startCreateCustomer(name: string) {
+    setNewCustomer({ name, contact: "", phone: "" });
+    setNewCustomerGroupId("");
+    setNewCustomerTagIds([]);
+    setCreateCustomerMsg(null);
+    setShowCreateCustomer(true);
+    setShowCandidates(false);
+    setQuickOrgMsg(null);
+  }
+
   function emptyRow(): Row {
     return {
       productId: "",
@@ -682,8 +693,19 @@ export function NewSaleForm({
                 <div className="absolute z-20 mt-1 max-h-64 w-full overflow-auto rounded-md border border-gray-200 bg-white shadow-lg">
                   {candidates.length === 0 && (
                     <div className="px-3 py-2 text-xs text-gray-400">
-                      {searching ? "搜索中…" : "无匹配客户（试试名称/联系人/电话）"}
+                      {searching ? "搜索中…" : "无匹配客户（也可直接点上方「新建客户」）"}
                     </div>
+                  )}
+                  {canCreateCustomer && customerQuery.trim() && (
+                    /* 搜索里找不到就直接建：点它会把名字带进下面的新建表单（与商品选择器的做法一致） */
+                    <button
+                      type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => startCreateCustomer(customerQuery.trim())}
+                      className="block w-full border-b border-gray-100 px-3 py-2 text-left text-sm text-blue-600 hover:bg-blue-50"
+                    >
+                      ＋ 新建客户：「{customerQuery.trim()}」
+                    </button>
                   )}
                   {candidates.map((c) => (
                     <button
@@ -709,8 +731,13 @@ export function NewSaleForm({
               <button
                 type="button"
                 onClick={() => {
-                  setShowCreateCustomer((v) => !v);
-                  setCreateCustomerMsg(null);
+                  if (showCreateCustomer) {
+                    setShowCreateCustomer(false);
+                    setCreateCustomerMsg(null);
+                    return;
+                  }
+                  // 已经输入了名字就带过去，省得再打一遍
+                  startCreateCustomer(customerQuery.trim());
                 }}
                 className={`shrink-0 ${btnSmallPrimary}`}
               >
