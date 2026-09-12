@@ -251,17 +251,15 @@ export default async function ReceivablesPage({
               <div key={v.id} className="flex items-center justify-between gap-3 text-sm">
                 <span className="text-gray-700">
                   {v.name}
-                  {/* 按对方给"对账明细"的入口：厂家→对账单，客户→客户画像（此前都没有入口） */}
-                  <Link
-                    href={
-                      isReceivable
-                        ? `/customer-profile?customerId=${v.id}`
-                        : `/supplier-statement?supplierId=${v.id}`
-                    }
-                    className="ml-2 text-xs text-blue-600 hover:underline"
-                  >
-                    {isReceivable ? "看客户画像" : "看对账明细"}
-                  </Link>
+                  {/* 只有应付侧给对账入口；客户画像归「客户管理」，不在账务页出现 */}
+                  {!isReceivable && (
+                    <Link
+                      href={`/supplier-statement?supplierId=${v.id}`}
+                      className="ml-2 text-xs text-blue-600 hover:underline"
+                    >
+                      看对账明细
+                    </Link>
+                  )}
                 </span>
                 <span className="text-gray-900 tabular-nums">¥{v.total.toFixed(2)}</span>
               </div>

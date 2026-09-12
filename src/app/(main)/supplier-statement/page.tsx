@@ -50,7 +50,12 @@ export default async function SupplierStatementPage({
   if (!effectiveSupplierId) {
     return (
       <div className="space-y-6">
-        <h1 className="text-lg font-semibold text-gray-900">厂家对账</h1>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="text-lg font-semibold text-gray-900">厂家对账</h1>
+          <Link href="/receivables-payables?view=payable" className={btnSecondary}>
+            ← 返回应收应付
+          </Link>
+        </div>
         <div className="rounded-xl border border-gray-200 bg-white p-8 text-sm text-gray-500">
           请先建立厂家档案
         </div>
@@ -106,6 +111,17 @@ export default async function SupplierStatementPage({
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-lg font-semibold text-gray-900">厂家对账</h1>
+        <Link
+          href={`/receivables-payables?${new URLSearchParams({
+            view: "payable",
+            counterId: String(effectiveSupplierId),
+            ...(params.from ? { from: params.from } : {}),
+            ...(params.to ? { to: params.to } : {}),
+          }).toString()}`}
+          className={btnSecondary}
+        >
+          ← 返回应收应付
+        </Link>
       </div>
 
       <DateShortcuts basePath="/supplier-statement" extraQuery={{ supplierId: String(effectiveSupplierId), status: status ?? "" }} />
