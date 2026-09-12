@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { FilterForm } from "@/components/filter-form";
 import { SearchInput } from "@/components/search-input";
 import { EmptyState } from "@/components/empty-state";
-import { btnSecondary, inputBase } from "@/lib/ui";
+import { btnSecondary, inputBase, selectCls } from "@/lib/ui";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
@@ -12,7 +12,18 @@ export const metadata = { title: "库存查询 - 玮川进销存" };
 export default async function InventoryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; warnOnly?: string; batch?: string }>;
+  searchParams: Promise<{
+    q?: string;
+    warnOnly?: string;
+    batch?: string;
+    /** 分类筛选：分类 id，或 "none" 表示未分类 */
+    category?: string;
+    /** 厂家筛选：厂家名，或 "none" 表示未填厂家 */
+    manufacturer?: string;
+    /** 进货时间筛选：该期间内有过进货入库的商品 */
+    from?: string;
+    to?: string;
+  }>;
 }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
@@ -21,11 +32,34 @@ export default async function InventoryPage({
   const q = params.q?.trim();
   const warnOnly = params.warnOnly === "1";
   const batchId = params.batch ? Number(params.batch) : undefined;
+  const categoryRaw = params.category;
+  const categoryId = categoryRaw && categoryRaw !== "none" ? Number(categoryRaw) : undefined;
+  const uncategorized = categoryRaw === "none";
+  const mfrRaw = params.manufacturer;
+  const manufacturer = mfrRaw && mfrRaw !== "none" ? mfrRaw : undefined;
+  const noManufacturer = mfrRaw === "none";
+  // 进货时间：只在填了日期时才限制（不填=不限）
+  const fromDate = params.from && /^\d{4}-\d{2}-\d{2}$/.test(params.from) ? new Date(`${params.from}T00:00:00`) : undefined;
+  const toDate = params.to && /^\d{4}-\d{2}-\d{2}$/.test(params.to) ? new Date(`${params.to}T23:59:59.999`) : undefined;
+  const hasDateFilter = fromDate != null || toDate != null;
 
   const products = await prisma.product.findMany({
     where: {
-      ...(q
-        ? { OR: [{ name: { contains: q } }, { code: { contains: q } }] }
+      ...(q ? { OR: [{ name: { contains: q } }, { code: { contains: q } }] } : {}),
+      // 分类 / 厂家 / 进货时间都下推到数据库过滤（不在内存里筛，避免与分页/统计口径不一致）
+      ...(uncategorized ? { categoryId: null } : categoryId ? { categoryId } : {}),
+      ...(noManufacturer ? { manufacturer: "" } : manufacturer ? { manufacturer } : {}),
+      ...(hasDateFilter
+        ? {
+            stockMovements: {
+              some: {
+                bizType: "purchase_in",
+                ...(fromDate || toDate
+                  ? { createdAt: { ...(fromDate ? { gte: fromDate } : {}), ...(toDate ? { lte: toDate } : {}) } }
+                  : {}),
+              },
+            },
+          }
         : {}),
     },
     orderBy: { code: "asc" },
@@ -46,12 +80,27 @@ export default async function InventoryPage({
       bizOrderNo: { in: activePoNos.map((o) => o.orderNo) },
     },
     orderBy: { createdAt: "desc" },
-    select: { productId: true, unitCost: true },
+    select: { productId: true, unitCost: true, createdAt: true },
   });
   const lastPrice = new Map<number, number>();
+  /** 最近一次进货入库时间（用于列表展示"最近进货"，也是进货时间筛选的口径） */
+  const lastPurchaseAt = new Map<number, Date>();
   for (const m of purchaseIns) {
-    if (!lastPrice.has(m.productId)) lastPrice.set(m.productId, Number(m.unitCost));
+    if (!lastPrice.has(m.productId)) {
+      lastPrice.set(m.productId, Number(m.unitCost));
+      lastPurchaseAt.set(m.productId, m.createdAt);
+    }
   }
+
+  // 筛选下拉的选项：分类档案 + 商品里用到的厂家（与商品页同一口径）
+  const [categoryOptions, mfrGroups] = await Promise.all([
+    prisma.productCategory.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    prisma.product.groupBy({ by: ["manufacturer"], _count: { _all: true } }),
+  ]);
+  const mfrNames = [...new Set(mfrGroups.map((g) => g.manufacturer.trim()).filter(Boolean))].sort((a, b) =>
+    a.localeCompare(b, "zh-CN")
+  );
+  const hasNoMfr = mfrGroups.some((g) => !g.manufacturer.trim());
 
   // 批次台账：某商品的各次进货记录（仅未作废进货单），用于查看不同批次进价
   const batchProduct =
@@ -103,14 +152,55 @@ export default async function InventoryPage({
         )}
       </div>
 
-      <FilterForm className="flex flex-wrap items-center gap-3 rounded-xl border border-gray-200 bg-white p-4">
-        <SearchInput
-          name="q"
-          type="text"
-          placeholder="编码 / 名称搜索"
-          defaultValue={q}
-          className={`${inputBase} w-52`}
-        />
+      <FilterForm className="flex flex-wrap items-end gap-3 rounded-xl border border-gray-200 bg-white p-4">
+        <div>
+          <label htmlFor="q" className="block text-xs font-medium text-gray-600">搜索</label>
+          <SearchInput
+            id="q"
+            name="q"
+            type="text"
+            placeholder="编码 / 名称"
+            defaultValue={q}
+            className={`mt-1 ${inputBase} w-44`}
+          />
+        </div>
+        <div>
+          <label htmlFor="category" className="block text-xs font-medium text-gray-600">分类</label>
+          <select id="category" name="category" defaultValue={categoryRaw ?? ""} className={`mt-1 ${selectCls} w-36`}>
+            <option value="">全部分类</option>
+            {categoryOptions.map((c) => (
+              <option key={c.id} value={String(c.id)}>
+                {c.name}
+              </option>
+            ))}
+            <option value="none">未分类</option>
+          </select>
+        </div>
+        <div>
+          <label htmlFor="manufacturer" className="block text-xs font-medium text-gray-600">厂家</label>
+          <select
+            id="manufacturer"
+            name="manufacturer"
+            defaultValue={mfrRaw ?? ""}
+            className={`mt-1 ${selectCls} w-40`}
+          >
+            <option value="">全部厂家</option>
+            {mfrNames.map((m) => (
+              <option key={m} value={m}>
+                {m}
+              </option>
+            ))}
+            {hasNoMfr && <option value="none">未填厂家</option>}
+          </select>
+        </div>
+        <div>
+          <label htmlFor="from" className="block text-xs font-medium text-gray-600">进货时间（起）</label>
+          <input id="from" type="date" name="from" defaultValue={params.from} className={`mt-1 ${inputBase} w-36`} />
+        </div>
+        <div>
+          <label htmlFor="to" className="block text-xs font-medium text-gray-600">（止）</label>
+          <input id="to" type="date" name="to" defaultValue={params.to} className={`mt-1 ${inputBase} w-36`} />
+        </div>
         {/* 复选框与同行的输入框/按钮齐平：给它一个与控件同高的行高（h-9）并垂直居中 */}
         <label className="flex h-9 items-center gap-1.5 text-sm text-gray-600">
           <input type="checkbox" name="warnOnly" value="1" defaultChecked={warnOnly} className="h-4 w-4" />
@@ -119,7 +209,19 @@ export default async function InventoryPage({
         <button type="submit" className={btnSecondary}>
           筛选
         </button>
+        {(q || categoryRaw || mfrRaw || params.from || params.to || warnOnly) && (
+          <Link href="/inventory" className="text-xs text-blue-600 hover:underline">
+            清除条件
+          </Link>
+        )}
       </FilterForm>
+
+      <p className="text-xs text-gray-500">
+        共 {q || categoryRaw || mfrRaw || hasDateFilter || warnOnly ? "筛选出 " : ""}
+        {rows.length} 个商品
+        {hasDateFilter && ` ・ 进货时间：${params.from || "最早"} ~ ${params.to || "今天"}`}
+        {q || categoryRaw || mfrRaw ? " ・ 已应用筛选" : ""}
+      </p>
 
       <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
         <table className="min-w-full divide-y divide-gray-200 text-sm">
@@ -133,6 +235,7 @@ export default async function InventoryPage({
               <th className="px-4 py-3 text-right font-medium tabular-nums">成本金额</th>
               <th className="px-4 py-3 text-right font-medium tabular-nums">均价</th>
               <th className="px-4 py-3 text-right font-medium tabular-nums">最近进价</th>
+              <th className="px-4 py-3 font-medium">最近进货</th>
               <th className="px-4 py-3 text-right font-medium tabular-nums">预警线</th>
               <th className="px-4 py-3 font-medium">批次</th>
               <th className="px-4 py-3 font-medium">状态</th>
@@ -141,7 +244,7 @@ export default async function InventoryPage({
           <tbody className="divide-y divide-gray-100 [&>tr]:transition-colors [&>tr:hover]:bg-gray-100/70">
             {rows.length === 0 && (
               <tr>
-                <td colSpan={11}>
+                <td colSpan={12}>
                   <EmptyState title="还没有商品" hint="先到「商品与厂家」建立商品档案" action={{ href: "/products", label: "去建立商品" }} />
                 </td>
               </tr>
@@ -160,6 +263,9 @@ export default async function InventoryPage({
                 <td className="px-4 py-2.5 text-right text-gray-600 tabular-nums">
                   {lastPrice.get(p.id) != null ? `¥${lastPrice.get(p.id)?.toFixed(2)}` : "—"}
                 </td>
+                <td className="px-4 py-2.5 whitespace-nowrap text-gray-600 tabular-nums">
+                  {lastPurchaseAt.get(p.id)?.toLocaleDateString("zh-CN") ?? "—"}
+                </td>
                 <td className="px-4 py-2.5 text-right text-gray-600 tabular-nums">{minStock.toFixed(3)}</td>
                 <td className="px-4 py-2.5">
                   <div className="flex items-center gap-2 whitespace-nowrap">
@@ -167,6 +273,10 @@ export default async function InventoryPage({
                       href={`/inventory?${new URLSearchParams({
                         ...(q ? { q } : {}),
                         ...(warnOnly ? { warnOnly: "1" } : {}),
+                        ...(categoryRaw ? { category: categoryRaw } : {}),
+                        ...(mfrRaw ? { manufacturer: mfrRaw } : {}),
+                        ...(params.from ? { from: params.from } : {}),
+                        ...(params.to ? { to: params.to } : {}),
                         batch: String(p.id),
                       }).toString()}`}
                       className="text-xs text-blue-600 hover:underline"
