@@ -118,12 +118,24 @@ export function UnpaidOrderTable({
                     </Link>
                   </td>
                   <td className="min-w-[6rem] px-4 py-2.5 text-gray-900">{o.counterName}</td>
-                  {/* 未展开时给一个"含 N 种商品"的概览，便于判断要不要展开 */}
+                  {/* 未展开时给一个"含 N 种商品"的概览，便于判断要不要展开。
+                      这里必须**严格有界**：一张单可能有十几个商品、品名还很长
+                      （如「BV 2.5平方 单芯铜线 国标阻燃」），所以
+                      · 最多带 2 个品名，且整格只占一个固定宽度、超出用省略号截断；
+                      · 完整清单（品名×数量）挂在 title 上，鼠标悬停即可看全；
+                      · 要看逐行明细就点行首「展开」。 */}
                   <td className="px-4 py-2.5 text-gray-600">
                     {open ? (
                       <span className="text-xs text-gray-400">见下方明细</span>
                     ) : (
-                      <span className="text-xs text-gray-500">
+                      <span
+                        className="block max-w-48 truncate text-xs text-gray-500"
+                        title={
+                          o.items.length === 0
+                            ? "该单没有商品明细"
+                            : o.items.map((it) => `${it.name} ×${it.qty.toFixed(3)}${it.unit}`).join("\n")
+                        }
+                      >
                         {o.items.length} 种
                         {o.items.length > 0 && (
                           <span className="ml-1 text-gray-400">
@@ -134,6 +146,7 @@ export function UnpaidOrderTable({
                             {o.items.length > 2 ? "…" : ""}
                           </span>
                         )}
+                        {o.items.length === 0 && <span className="ml-1 text-gray-400">（无明细）</span>}
                       </span>
                     )}
                   </td>
