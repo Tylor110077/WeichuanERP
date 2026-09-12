@@ -18,7 +18,8 @@ export default async function PurchaseReturnsPage() {
     orderBy: { createdAt: "desc" },
     take: 200,
     include: {
-      purchaseOrder: { select: { orderNo: true } },
+      // 取 id 是为了让「原进货单」可点（跳到那张进货单详情）
+      purchaseOrder: { select: { id: true, orderNo: true } },
       supplier: { select: { name: true } },
       operator: { select: { displayName: true } },
     },
@@ -63,7 +64,15 @@ export default async function PurchaseReturnsPage() {
             {returns.map((r) => (
               <tr key={r.id}>
                 <td className="whitespace-nowrap px-4 py-2.5 font-medium text-gray-900">{r.orderNo}</td>
-                <td className="px-4 py-2.5 text-gray-600">{r.purchaseOrder.orderNo}</td>
+                <td className="px-4 py-2.5">
+                  <Link
+                    href={`/purchase-orders/${r.purchaseOrder.id}`}
+                    className="whitespace-nowrap text-blue-600 hover:underline"
+                    title="打开这张进货单"
+                  >
+                    {r.purchaseOrder.orderNo}
+                  </Link>
+                </td>
                 <td className="min-w-[5.5rem] px-4 py-2.5 text-gray-900">{r.supplier.name}</td>
                 <td className="px-4 py-2.5">
                   <span
