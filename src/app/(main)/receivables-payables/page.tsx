@@ -57,7 +57,8 @@ export default async function ReceivablesPage({
           items: {
             orderBy: { id: "asc" },
             include: {
-              product: { select: { code: true, name: true } },
+              // 明细里要标出商品来自哪个厂家（用户要求：凡出现商品处都要有厂家）
+              product: { select: { code: true, name: true, manufacturer: true } },
               unit: { select: { name: true } },
             },
           },
@@ -73,7 +74,8 @@ export default async function ReceivablesPage({
           items: {
             orderBy: { id: "asc" },
             include: {
-              product: { select: { code: true, name: true } },
+              // 明细里要标出商品来自哪个厂家（用户要求：凡出现商品处都要有厂家）
+              product: { select: { code: true, name: true, manufacturer: true } },
               unit: { select: { name: true } },
             },
           },
@@ -139,6 +141,7 @@ export default async function ReceivablesPage({
       id: it.id,
       code: it.product.code,
       name: it.product.name,
+      manufacturer: it.product.manufacturer,
       unit: it.unit.name,
       qty: Number(it.quantity),
       price: Number(it.unitPrice),
@@ -299,7 +302,7 @@ export default async function ReceivablesPage({
               {itemPageCount > 1 && ` ・ 第 ${page} / ${itemPageCount} 页`}
             </span>
           </div>
-          <table className="min-w-full divide-y divide-gray-200 text-sm [&_td]:align-top">
+          <table className="min-w-[72rem] divide-y divide-gray-200 text-sm [&_td]:align-top">
             <thead className="bg-gray-50 text-left text-xs text-gray-500">
               <tr>
                 <th className="whitespace-nowrap px-4 py-3 font-medium">日期</th>
@@ -307,6 +310,7 @@ export default async function ReceivablesPage({
                 <th className="whitespace-nowrap px-4 py-3 font-medium">{isReceivable ? "客户" : "厂家"}</th>
                 <th className="whitespace-nowrap px-4 py-3 font-medium">编码</th>
                 <th className="whitespace-nowrap px-4 py-3 font-medium">品名</th>
+                <th className="whitespace-nowrap px-4 py-3 font-medium">生产厂家</th>
                 <th className="whitespace-nowrap px-4 py-3 font-medium">单位</th>
                 <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">数量</th>
                 <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">单价</th>
@@ -317,7 +321,7 @@ export default async function ReceivablesPage({
             <tbody className="divide-y divide-gray-100 [&>tr]:transition-colors [&>tr:hover]:bg-gray-100/70">
               {pagedItems.length === 0 && (
                 <tr>
-                  <td colSpan={10}>
+                  <td colSpan={11}>
                     <EmptyState title="没有未结清单据里的商品" hint="调整上方筛选条件试试" />
                   </td>
                 </tr>
@@ -333,6 +337,7 @@ export default async function ReceivablesPage({
                   <td className="px-4 py-2.5 text-gray-900">{it.counterName}</td>
                   <td className="px-4 py-2.5 text-gray-600">{it.code}</td>
                   <td className="px-4 py-2.5 text-gray-900">{it.name}</td>
+                  <td className="px-4 py-2.5 text-gray-600">{it.manufacturer || "—"}</td>
                   <td className="px-4 py-2.5 text-gray-600">{it.unit}</td>
                   <td className="px-4 py-2.5 text-right tabular-nums">{it.qty.toFixed(3)}</td>
                   <td className="px-4 py-2.5 text-right tabular-nums">¥{it.price.toFixed(2)}</td>

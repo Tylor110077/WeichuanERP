@@ -16,6 +16,8 @@ export interface OrderItemRow {
   id: number;
   code: string;
   name: string;
+  /** 商品来自哪个厂家（用户要求：凡出现商品处都要标出） */
+  manufacturer: string;
   unit: string;
   qty: number;
   price: number;
@@ -158,6 +160,7 @@ export function UnpaidOrderTable({
                             <tr>
                               <th className="py-1 pr-4 font-medium">编码</th>
                               <th className="py-1 pr-4 font-medium">品名</th>
+                              <th className="py-1 pr-4 font-medium">生产厂家</th>
                               <th className="py-1 pr-4 font-medium">单位</th>
                               <th className="py-1 pr-4 text-right font-medium">数量</th>
                               <th className="py-1 pr-4 text-right font-medium">单价</th>
@@ -170,6 +173,7 @@ export function UnpaidOrderTable({
                               <tr key={it.id}>
                                 <td className="py-1 pr-4 text-gray-600">{it.code}</td>
                                 <td className="py-1 pr-4">{it.name}</td>
+                                <td className="py-1 pr-4 text-gray-600">{it.manufacturer || "—"}</td>
                                 <td className="py-1 pr-4 text-gray-600">{it.unit}</td>
                                 <td className="py-1 pr-4 text-right tabular-nums">{it.qty.toFixed(3)}</td>
                                 <td className="py-1 pr-4 text-right tabular-nums">¥{it.price.toFixed(2)}</td>
