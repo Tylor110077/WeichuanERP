@@ -11,7 +11,9 @@ import { saveShortcutsAction, resetShortcutsAction } from "./shortcut-actions";
  * 工作台「快捷入口」面板。
  *
  * 查看态：每块是一个链接，点一下直达（如「开售卖单」）。
- * 编辑态：每块出现 ← → 移除；下方列出还能加的入口，点一下就加进来；保存后写回当前用户。
+ * 编辑态：**直接拖动**每块来调整顺序（原生 HTML5 拖放，不引第三方库），每块右上角 ✕ 移除；
+ * 下方列出还能加的入口，点一下就加进来；保存后写回当前用户。
+ * 说明：原生拖放只支持鼠标；触屏设备建议后续再补长按拖动（工作台主要在电脑上用）。
  *
  * 上限 MAX_SHORTCUTS：工作台放太多等于没有重点，加满后给明确提示而不是静默失败。
  */
@@ -31,6 +33,9 @@ export function ShortcutBoard({
   const [draft, setDraft] = useState<ShortcutDef[]>(shortcuts);
   const [msg, setMsg] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
   const [pending, startTransition] = useTransition();
+  /** 拖动排序：dragIndex = 正在拖的那块，overIndex = 当前悬停到哪块（用于画插入位置） */
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [overIndex, setOverIndex] = useState<number | null>(null);
 
   const list = editing ? draft : shortcuts;
   const chosen = new Set(draft.map((s) => s.id));
@@ -42,12 +47,15 @@ export function ShortcutBoard({
     setEditing(true);
   }
 
-  function move(index: number, delta: number) {
-    const next = [...draft];
-    const target = index + delta;
-    if (target < 0 || target >= next.length) return;
-    [next[index], next[target]] = [next[target], next[index]];
-    setDraft(next);
+  /** 把第 from 块拖到第 to 个位置（插到目标之前/之后由落点决定，这里按"占位"处理） */
+  function dropAt(to: number) {
+    if (dragIndex == null || dragIndex === to) return;
+    setDraft((list) => {
+      const next = [...list];
+      const [moved] = next.splice(dragIndex, 1);
+      next.splice(to, 0, moved);
+      return next;
+    });
   }
 
   function remove(id: string) {
@@ -178,38 +186,56 @@ export function ShortcutBoard({
               );
             }
 
+            const dragging = dragIndex === i;
+            const isTarget = overIndex === i && dragIndex != null && dragIndex !== i;
             return (
-              <div key={s.id} className={`${tileBase} border-gray-300 border-dashed`}>
+              <div
+                key={s.id}
+                draggable
+                onDragStart={(e) => {
+                  setDragIndex(i);
+                  e.dataTransfer.effectAllowed = "move";
+                  // 部分浏览器不设 data 就不触发 drop，塞个占位即可
+                  e.dataTransfer.setData("text/plain", s.id);
+                }}
+                onDragOver={(e) => {
+                  e.preventDefault(); // 允许放置
+                  e.dataTransfer.dropEffect = "move";
+                  setOverIndex(i);
+                }}
+                onDragLeave={() => setOverIndex((v) => (v === i ? null : v))}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  dropAt(i);
+                  setDragIndex(null);
+                  setOverIndex(null);
+                }}
+                onDragEnd={() => {
+                  setDragIndex(null);
+                  setOverIndex(null);
+                }}
+                className={[
+                  tileBase,
+                  "cursor-grab border-dashed active:cursor-grabbing",
+                  dragging ? "border-blue-300 opacity-40" : "border-gray-300",
+                  isTarget ? "ring-2 ring-blue-400" : "",
+                ].join(" ")}
+                title="按住拖动可以调整位置"
+              >
+                {/* 拖拽把手：给一个能看出"可以拖"的视觉锚点 */}
+                <span aria-hidden className="shrink-0 text-gray-300">
+                  ⠿
+                </span>
                 {badge}
                 {text}
-                <span className="flex shrink-0 items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => move(i, -1)}
-                    disabled={i === 0}
-                    aria-label={`${s.label} 左移`}
-                    className="rounded border border-gray-200 px-1.5 py-0.5 text-xs text-gray-600 hover:bg-gray-50 disabled:opacity-30"
-                  >
-                    ←
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => move(i, 1)}
-                    disabled={i === list.length - 1}
-                    aria-label={`${s.label} 右移`}
-                    className="rounded border border-gray-200 px-1.5 py-0.5 text-xs text-gray-600 hover:bg-gray-50 disabled:opacity-30"
-                  >
-                    →
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => remove(s.id)}
-                    aria-label={`移除 ${s.label}`}
-                    className="rounded border border-gray-200 px-1.5 py-0.5 text-xs text-red-600 hover:bg-red-50"
-                  >
-                    ✕
-                  </button>
-                </span>
+                <button
+                  type="button"
+                  onClick={() => remove(s.id)}
+                  aria-label={`移除 ${s.label}`}
+                  className="shrink-0 rounded border border-gray-200 px-1.5 py-0.5 text-xs text-red-600 hover:bg-red-50"
+                >
+                  ✕
+                </button>
               </div>
             );
           })}
@@ -219,7 +245,7 @@ export function ShortcutBoard({
       {editing && (
         <div className="space-y-3 rounded-xl border border-gray-200 bg-gray-50 p-4">
           <p className="text-xs text-gray-500">
-            点下面的入口加到上面；加满 {MAX_SHORTCUTS} 个后先移除再添加。「恢复默认」会按你的角色重置。
+            拖动上面的入口调整顺序；点下面的入口加到上面；加满 {MAX_SHORTCUTS} 个后先移除再添加。「恢复默认」会按你的角色重置。
           </p>
           {addable.length === 0 ? (
             <p className="text-xs text-gray-400">该角色可用的入口都已放上去了。</p>
@@ -256,7 +282,7 @@ export function ShortcutBoard({
 
       {!editing && (
         <p className="text-xs text-gray-400">
-          这块由你决定：点「编辑」增删、调整顺序，保存后只影响你自己的账号。
+          这块由你决定：点「编辑」后拖动可以调整顺序、也能增删，保存后只影响你自己的账号。
         </p>
       )}
     </section>
