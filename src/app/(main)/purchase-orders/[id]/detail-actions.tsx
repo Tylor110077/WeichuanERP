@@ -34,7 +34,7 @@ export function DetailActions({
   const voidMsg = voidState?.error ?? voidState?.ok;
 
   return (
-    <div className="space-y-2">
+    <>
       <div className="flex items-center gap-3">
         {status === "pending" && canReceive && (
           <form action={receiveAction}>
@@ -90,10 +90,18 @@ export function DetailActions({
         </form>
       )}
 
+      {/* 提示独占一行：作为表头 flex 行的 basis-full 子项，换行显示在整行按钮之下，
+          不会参与按钮的垂直对齐（此前提示与按钮同列，按钮被按中线对齐而错位） */}
       {receiveMsg && (
-        <FormAlert kind={receiveState?.ok ? "ok" : "error"} text={receiveMsg} />
+        <FormAlert
+          kind={receiveState?.ok ? "ok" : "error"}
+          text={receiveMsg}
+          className="basis-full"
+        />
       )}
-      {voidMsg && <FormAlert kind={voidState?.ok ? "ok" : "error"} text={voidMsg} />}
-    </div>
+      {voidMsg && (
+        <FormAlert kind={voidState?.ok ? "ok" : "error"} text={voidMsg} className="basis-full" />
+      )}
+    </>
   );
 }

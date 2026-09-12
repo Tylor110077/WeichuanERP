@@ -103,13 +103,14 @@ export default async function SaleOrderDetailPage({
               退货
             </Link>
           )}
-          {canVoid && <DetailActions orderId={order.id} status={order.status} />}
           <Link
             href="/sale-orders"
             className={btnSecondary}
           >
             ← 返回列表
           </Link>
+          {/* 放在最后：作废的操作提示独占一行，排中间会把返回链接挤到提示下面 */}
+          {canVoid && <DetailActions orderId={order.id} status={order.status} />}
         </div>
       </div>
 

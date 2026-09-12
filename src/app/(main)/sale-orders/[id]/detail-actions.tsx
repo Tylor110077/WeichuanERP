@@ -15,7 +15,7 @@ export function DetailActions({ orderId, status }: { orderId: number; status: st
   if (status === "voided") return null;
 
   return (
-    <div className="space-y-2">
+    <>
       <div className="flex items-center gap-3">
         {!showVoidInput && (
           <button
@@ -54,7 +54,7 @@ export function DetailActions({ orderId, status }: { orderId: number; status: st
           </button>
         </form>
       )}
-      <FormStateAlert state={voidState} />
-    </div>
+      <FormStateAlert state={voidState} className="basis-full" />
+    </>
   );
 }

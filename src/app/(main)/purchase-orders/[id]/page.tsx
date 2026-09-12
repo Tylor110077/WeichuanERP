@@ -92,14 +92,6 @@ export default async function PurchaseOrderDetailPage({
           </span>
         </h1>
         <div className="flex flex-wrap items-center gap-2">
-          {showActions && (
-            <DetailActions
-              orderId={order.id}
-              status={order.status}
-              canReceive={canReceive}
-              canVoid={canVoid}
-            />
-          )}
           {canReturn && (
             <Link
               href={`/purchase-returns/new?orderId=${order.id}`}
@@ -114,6 +106,16 @@ export default async function PurchaseOrderDetailPage({
           >
             ← 返回列表
           </Link>
+          {/* 放在按钮组最后：它的操作提示是 basis-full 独占一行，
+              若排在中间会把后面的按钮挤到提示下面 */}
+          {showActions && (
+            <DetailActions
+              orderId={order.id}
+              status={order.status}
+              canReceive={canReceive}
+              canVoid={canVoid}
+            />
+          )}
         </div>
       </div>
 
