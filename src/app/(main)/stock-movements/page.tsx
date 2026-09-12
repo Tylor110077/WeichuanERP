@@ -61,7 +61,8 @@ export default async function StockMovementsPage({
       take: PAGE_SIZE,
       include: { product: { select: { code: true, name: true } } },
     }),
-    prisma.product.findMany({ orderBy: { code: "asc" }, select: { id: true, code: true, name: true } }),
+    // 带上厂家：同名商品可能来自不同厂家（金牛/华旗都有 YJV 3*2.5），筛选下拉里要标出来
+    prisma.product.findMany({ orderBy: { code: "asc" }, select: { id: true, code: true, name: true, manufacturer: true } }),
   ]);
 
   // 单号 → 单据详情：一次查出本页涉及的进货/售卖单 id，行内单号可直接点开
@@ -117,8 +118,8 @@ export default async function StockMovementsPage({
           name="productId"
           options={products.map((p) => ({
             value: String(p.id),
-            label: `${p.code} ${p.name}`,
-            py: initials(`${p.code} ${p.name}`),
+            label: `${p.code} ${p.name}（${p.manufacturer || "未填厂家"}）`,
+            py: initials(`${p.code} ${p.name} ${p.manufacturer}`),
           }))}
           defaultValue={productId != null ? String(productId) : ""}
           noneLabel="全部商品"

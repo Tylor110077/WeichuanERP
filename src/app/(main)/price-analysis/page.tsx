@@ -35,7 +35,9 @@ export default async function PriceAnalysisPage({
 
   const products = await prisma.product.findMany({
     where: { status: 1 },
-    select: { id: true, code: true, name: true },
+    // 带上厂家：不同厂家会有同名商品（如金牛与华旗都有 YJV 3*2.5），
+    // 选择器里必须标出来源厂家才能区分
+    select: { id: true, code: true, name: true, manufacturer: true },
     orderBy: { code: "asc" },
   });
 
