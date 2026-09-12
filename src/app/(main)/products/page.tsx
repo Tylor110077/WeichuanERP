@@ -56,7 +56,14 @@ function MfrTag({ name }: { name: string }) {
 export default async function ProductsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ manufacturer?: string; tab?: string; q?: string; page?: string }>;
+  searchParams: Promise<{
+    manufacturer?: string;
+    /** 分类筛选：分类 id，或 "none" 表示未分类 */
+    category?: string;
+    tab?: string;
+    q?: string;
+    page?: string;
+  }>;
 }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
@@ -66,10 +73,14 @@ export default async function ProductsPage({
   const tab = resolveTab(TAB_KEYS, params.tab, "products");
   const q = params.q?.trim();
   const page = Math.max(1, Number(params.page) || 1);
+  const categoryRaw = params.category;
+  const categoryId = categoryRaw && categoryRaw !== "none" ? Number(categoryRaw) : undefined;
+  const uncategorized = categoryRaw === "none";
 
   const productWhere = {
-    // 厂家筛选必须下推到数据库：分页后只过滤当前页会得到错误结果
+    // 厂家/分类筛选必须下推到数据库：分页后只过滤当前页会得到错误结果
     ...(selected ? { manufacturer: selected === NO_MFR ? "" : selected } : {}),
+    ...(uncategorized ? { categoryId: null } : categoryId ? { categoryId } : {}),
     ...(q
       ? {
           OR: [
@@ -115,6 +126,15 @@ export default async function ProductsPage({
     prisma.product.groupBy({ by: ["manufacturer"], _count: { _all: true } }),
     prisma.product.count(),
   ]);
+  // 分类计数同样用 SQL 聚合（列表分页，数当前页会错）
+  const catGroups = await prisma.product.groupBy({ by: ["categoryId"], _count: { _all: true } });
+  const catCounts = new Map<number, number>();
+  let uncategorizedCount = 0;
+  for (const g of catGroups) {
+    if (g.categoryId == null) uncategorizedCount += g._count._all;
+    else catCounts.set(g.categoryId, g._count._all);
+  }
+
   const mfrCounts = new Map<string, number>();
   for (const g of mfrGroups) {
     const key = g.manufacturer.trim() || NO_MFR;
@@ -130,30 +150,34 @@ export default async function ProductsPage({
 
   const totalPages = Math.max(1, Math.ceil(productTotal / PAGE_SIZE));
 
-  /** 分页链接：保留厂家筛选与关键词 */
-  const pageHref = (p: number) => {
+  /** 统一的链接构造：厂家 / 分类 / 关键词 / 页码 四个条件互相保留 */
+  const listHref = (opts: { manufacturer?: string; category?: string; page?: number; clear?: "manufacturer" | "category" | "all" }) => {
     const sp = new URLSearchParams();
-    if (selected) sp.set("manufacturer", selected);
+    const mfr = opts.clear === "manufacturer" || opts.clear === "all" ? "" : (opts.manufacturer ?? selected);
+    const cat =
+      opts.clear === "category" || opts.clear === "all"
+        ? ""
+        : (opts.category ?? categoryRaw ?? "");
+    if (mfr) sp.set("manufacturer", mfr);
+    if (cat) sp.set("category", cat);
     if (q) sp.set("q", q);
-    if (p > 1) sp.set("page", String(p));
+    if (opts.page && opts.page > 1) sp.set("page", String(opts.page));
     const qs = sp.toString();
     return `/products${qs ? `?${qs}` : ""}`;
   };
 
-  /** 左栏（厂家）链接：保留右侧列表的关键词，切厂家回到第 1 页 */
-  const railHref = (name: string) => {
-    const sp = new URLSearchParams();
-    if (name) sp.set("manufacturer", name);
-    if (q) sp.set("q", q);
-    const qs = sp.toString();
-    return `/products${qs ? `?${qs}` : ""}`;
-  };
+  const pageHref = (p: number) => listHref({ page: p });
+  /** 左栏（厂家）链接 */
+  const railHref = (name: string) => listHref({ manufacturer: name, page: 1 });
+  /** 左栏（分类）链接 */
+  const catHref = (key: string) => listHref({ category: key, page: 1 });
 
   /** 页签链接：保留当前筛选，切换页签不丢条件 */
   const tabHref = (key: string) => {
     const sp = new URLSearchParams();
     if (key !== "products") sp.set("tab", key);
     if (selected) sp.set("manufacturer", selected);
+    if (categoryRaw) sp.set("category", categoryRaw);
     if (q) sp.set("q", q);
     const qs = sp.toString();
     return `/products${qs ? `?${qs}` : ""}`;
@@ -203,9 +227,10 @@ export default async function ProductsPage({
         ]}
       />
 
-      {/* 主从同屏：左栏厂家（可搜索、带商品数）→ 右栏该厂家的商品 */}
+      {/* 主从同屏：左栏是筛选轴（厂家 / 商品分类，可搜索、带商品数）→ 右栏商品列表 */}
       {tab === "products" && (
         <div className="grid gap-6 lg:grid-cols-[16rem_1fr]">
+          <div className="space-y-4">
           <MasterRail
             title="厂家"
             allLabel="全部厂家"
@@ -233,6 +258,34 @@ export default async function ProductsPage({
             emptyText="无匹配厂家"
           />
 
+          <MasterRail
+            title="商品分类"
+            allLabel="全部分类"
+            allCount={allProductTotal}
+            allHref={catHref("")}
+            allActive={!categoryRaw}
+            items={categories.map((c) => ({
+              key: String(c.id),
+              label: c.status === 1 ? c.name : `${c.name}（停用）`,
+              count: catCounts.get(c.id) ?? 0,
+              href: catHref(String(c.id)),
+              active: categoryId === c.id,
+            }))}
+            unassigned={
+              uncategorizedCount > 0
+                ? {
+                    label: "未分类",
+                    count: uncategorizedCount,
+                    href: catHref("none"),
+                    active: uncategorized,
+                  }
+                : undefined
+            }
+            searchPlaceholder="搜索分类…"
+            emptyText="无匹配分类"
+          />
+          </div>
+
           <div className="min-w-0 space-y-3">
             <div className="rounded-xl border border-gray-200 bg-white p-4">
               <FilterForm className="flex flex-wrap items-end gap-2">
@@ -250,13 +303,13 @@ export default async function ProductsPage({
                 {selected && <input type="hidden" name="manufacturer" value={selected} />}
                 <button type="submit" className={btnSecondary}>查询</button>
                 {q && (
-                  <Link href={railHref(selected)} className="text-xs text-blue-600 hover:underline">
+                  <Link href={listHref({ page: 1 })} className="text-xs text-blue-600 hover:underline">
                     清除关键词
                   </Link>
                 )}
               </FilterForm>
               <p className="mt-3 border-t border-gray-100 pt-2.5 text-xs text-gray-400">
-                厂家名与「厂家管理」页签里的档案同名时，缺货开单会自动向该厂家补货；带「（未建档）」的厂家建议补齐档案。
+                厂家名与「厂家管理」页签里的档案同名时，缺货开单会自动向该厂家补货；带「（未建档）」的厂家建议补齐档案。左侧「厂家 / 商品分类」两个条件可叠加使用。
               </p>
             </div>
 
@@ -273,13 +326,18 @@ export default async function ProductsPage({
               <div className="flex items-baseline gap-2">
                 <h2 className="text-sm font-semibold text-gray-900">
                   {selected ? `${selected} 供应的商品` : "全部商品"}
+                  {categoryRaw ? (
+                    <span className="ml-1.5 text-xs font-normal text-gray-500">
+                      · 分类：{uncategorized ? "未分类" : (categories.find((c) => c.id === categoryId)?.name ?? "—")}
+                    </span>
+                  ) : null}
                 </h2>
                 <span className="text-xs text-gray-400">
                   共 {productTotal} 个{totalPages > 1 ? `　第 ${page} / ${totalPages} 页` : ""}
                 </span>
-                {selected && (
-                  <Link href={railHref("")} className="text-xs text-blue-600 hover:underline">
-                    清除厂家筛选
+                {(selected || categoryRaw) && (
+                  <Link href={listHref({ clear: "all" })} className="text-xs text-blue-600 hover:underline">
+                    清除筛选
                   </Link>
                 )}
               </div>
