@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { FilterForm } from "@/components/filter-form";
 import { SearchInput } from "@/components/search-input";
+import { SearchSelectFilter } from "@/components/search-select-filter";
+import { initials } from "@/lib/pinyin";
 import { EmptyState } from "@/components/empty-state";
 import { btnSecondary, inputBase, selectCls } from "@/lib/ui";
 import { getCurrentUser } from "@/lib/auth/session";
@@ -217,20 +219,21 @@ export default async function InventoryPage({
         </div>
         <div>
           <label htmlFor="manufacturer" className="block text-xs font-medium text-gray-600">厂家</label>
-          <select
-            id="manufacturer"
+          {/* 厂家可能上百个：原生下拉只能滚，这里改成可搜索下拉（中文/拼音首字母都能搜），
+              选完即筛（与其它筛选一致，不必再点「筛选」） */}
+          <SearchSelectFilter
             name="manufacturer"
+            label="厂家"
+            options={[
+              ...mfrNames.map((m) => ({ value: m, label: m, py: initials(m) })),
+              ...(hasNoMfr ? [{ value: "none", label: "未填厂家" }] : []),
+            ]}
             defaultValue={mfrRaw ?? ""}
-            className={`mt-1 ${selectCls} w-40`}
-          >
-            <option value="">全部厂家</option>
-            {mfrNames.map((m) => (
-              <option key={m} value={m}>
-                {m}
-              </option>
-            ))}
-            {hasNoMfr && <option value="none">未填厂家</option>}
-          </select>
+            noneLabel="全部厂家"
+            placeholder="搜索厂家（拼音也行）"
+            emptyHint="没有匹配的厂家"
+            className="mt-1 w-48"
+          />
         </div>
         <div>
           <label htmlFor="from" className="block text-xs font-medium text-gray-600">进货时间（起）</label>

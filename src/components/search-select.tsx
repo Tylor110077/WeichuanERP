@@ -36,6 +36,7 @@ export function SearchSelect({
   onSearch,
   createLabel,
   onCreate,
+  ariaLabel,
 }: {
   name: string;
   options: SearchSelectOption[];
@@ -53,6 +54,8 @@ export function SearchSelect({
   createLabel?: (keyword: string) => string;
   /** 点击「＋ 新建 XX」时把当前关键词交给调用方（通常用来打开新建表单并预填名字） */
   onCreate?: (keyword: string) => void;
+  /** 无障碍标签（筛选栏里用，读屏能报出这是哪个字段） */
+  ariaLabel?: string;
 }) {
   const all = useMemo(
     () => (noneLabel != null ? [{ value: "", label: noneLabel }, ...options] : options),
@@ -129,6 +132,7 @@ export function SearchSelect({
         autoComplete="off"
         value={query}
         placeholder={placeholder}
+        aria-label={ariaLabel}
         onChange={(e) => onChange2(e.target.value)}
         onFocus={(e) => {
           // 聚焦即全选：框里通常留着已选名称，直接打字不该变成追加
