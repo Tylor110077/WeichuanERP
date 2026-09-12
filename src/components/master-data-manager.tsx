@@ -185,7 +185,9 @@ export function MasterDataManager({
       <form
         key={editing?.id ?? "new"}
         action={formAction}
-        className="rounded-xl border border-gray-200 bg-white p-5"
+        // 右上角「+ 新建 XX」按钮锚到这里：页签自带新建表单时不必再做一个独立页
+        id="new-entry"
+        className="scroll-mt-4 rounded-xl border border-gray-200 bg-white p-5"
       >
         <input type="hidden" name="id" value={editing?.id ?? ""} />
         <h2 className="mb-3 text-sm font-semibold text-gray-900">

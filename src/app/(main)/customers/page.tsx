@@ -28,6 +28,14 @@ export const metadata = { title: "客户管理 - 玮川进销存" };
 /** 页签白名单：非法的 ?tab= 回落到「客户」 */
 const TAB_KEYS = ["customers", "groups", "tags", "profile"] as const;
 
+/** 右上角「新建」按钮：按当前页签给出对应的名称与去向（画像页签无新建，置空） */
+const NEW_ENTRY: Record<(typeof TAB_KEYS)[number], { href: string; label: string } | null> = {
+  customers: { href: "/customers/new", label: "+ 新建客户" },
+  groups: { href: "/customers?tab=groups#new-entry", label: "+ 新建客户组织" },
+  tags: { href: "/customers?tab=tags#new-entry", label: "+ 新建客户标签" },
+  profile: null,
+};
+
 /** 客户会越来越多：列表按页取，不在首屏全量渲染 */
 const PAGE_SIZE = 50;
 
@@ -57,6 +65,8 @@ export default async function CustomersPage({
   const tagId = params.tagId ? Number(params.tagId) : undefined;
   const q = params.q?.trim();
   const tab = resolveTab(TAB_KEYS, params.tab, "customers");
+  // resolveTab 返回 string，安全取一次；画像页签对应 null，即不显示按钮
+  const newEntry = NEW_ENTRY[tab as keyof typeof NEW_ENTRY] ?? null;
   const page = Math.max(1, Number(params.page) || 1);
 
   // 客户一多就没有别的办法找人了：名称 / 联系人 / 电话都能搜
@@ -155,9 +165,11 @@ export default async function CustomersPage({
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-lg font-semibold text-gray-900">客户管理</h1>
-        {user.role === "admin" && (
-          <Link href="/customers/new" className={btnPrimary}>
-            + 新建客户
+        {user.role === "admin" && newEntry && (
+          // 与商品页同一套约定：按钮跟着页签走（客户→独立新建页，组织/标签→锚到本页表单）。
+          // 客户画像页签没有"新建"这回事，那里不显示按钮。
+          <Link href={newEntry.href} className={btnPrimary}>
+            {newEntry.label}
           </Link>
         )}
       </div>

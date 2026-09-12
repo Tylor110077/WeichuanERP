@@ -30,6 +30,14 @@ const NO_MFR = "（未填写厂家）";
 /** 页签白名单：非法的 ?tab= 值回落到「商品」，避免出现空白页 */
 const TAB_KEYS = ["products", "manufacturers", "categories", "units"] as const;
 
+/** 右上角「新建」按钮：按当前页签给出对应的名称与去向 */
+const NEW_ENTRY: Record<(typeof TAB_KEYS)[number], { href: string; label: string }> = {
+  products: { href: "/products/new", label: "+ 新建商品" },
+  manufacturers: { href: "/products?tab=manufacturers#new-entry", label: "+ 新建厂家" },
+  categories: { href: "/products?tab=categories#new-entry", label: "+ 新建分类" },
+  units: { href: "/products?tab=units#new-entry", label: "+ 新建计量单位" },
+};
+
 /** 商品与厂家会越来越多：列表按页取，不在首屏全量渲染 */
 const PAGE_SIZE = 50;
 
@@ -73,6 +81,8 @@ export default async function ProductsPage({
   const params = await searchParams;
   const selected = params.manufacturer ?? "";
   const tab = resolveTab(TAB_KEYS, params.tab, "products");
+  // resolveTab 返回 string，这里安全取一次；页签异常时不显示按钮即可
+  const newEntry = NEW_ENTRY[tab as keyof typeof NEW_ENTRY] ?? null;
   const q = params.q?.trim();
   const page = Math.max(1, Number(params.page) || 1);
   const categoryRaw = params.category;
@@ -190,9 +200,11 @@ export default async function ProductsPage({
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-lg font-semibold text-gray-900">商品与厂家</h1>
-        {user.role === "admin" && (
-          <Link href="/products/new" className={btnPrimary}>
-            + 新建商品
+        {user.role === "admin" && newEntry && (
+          // 按钮跟着页签走：商品去独立新建页；厂家/分类/单位这些页签自带新建表单，
+          // 就锚到本页那张表单（点完还在原页面，逻辑闭环）
+          <Link href={newEntry.href} className={btnPrimary}>
+            {newEntry.label}
           </Link>
         )}
       </div>
