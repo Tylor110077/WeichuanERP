@@ -9,6 +9,7 @@ import { FilterForm } from "@/components/filter-form";
 import { SearchInput } from "@/components/search-input";
 import { UserRowActions } from "./user-row-actions";
 import type { UserRole } from "@prisma/client";
+import { pinyinQuery } from "@/lib/pinyin";
 
 export const metadata = { title: "用户管理 - 玮川进销存" };
 
@@ -39,7 +40,13 @@ export default async function UsersPage({
   const users = await prisma.user.findMany({
     where: {
       ...(q
-        ? { OR: [{ username: { contains: q } }, { displayName: { contains: q } }] }
+        ? {
+            OR: [
+              { username: { contains: q } },
+              { displayName: { contains: q } },
+              { searchPinyin: { contains: pinyinQuery(q) } },
+            ],
+          }
         : {}),
       ...(role ? { role: role as UserRole } : {}),
       ...(status ? { status: status === "disabled" ? 0 : 1 } : {}),

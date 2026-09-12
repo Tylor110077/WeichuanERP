@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth/session";
+import { pinyinQuery, searchPinyin } from "@/lib/pinyin";
 
 /**
  * 开单页的"按需搜索"接口。
@@ -36,6 +37,8 @@ export interface OrderProductOption {
   refSalePrice: number;
   lastSupplierId: number | null;
   lastSupplyPrice: number;
+  /** 拼音首字母串（名称/编码/厂家），客户端本地过滤用 */
+  py: string;
 }
 
 export interface OrderCustomerOption {
@@ -43,6 +46,8 @@ export interface OrderCustomerOption {
   name: string;
   groupName: string;
   tagNames: string[];
+  /** 拼音首字母串（名称），客户端本地过滤用 */
+  py: string;
 }
 
 async function requireOrderUser() {
@@ -108,6 +113,7 @@ async function toProductOptions(ids: number[], canSeeCost: boolean): Promise<Ord
         refSalePrice: Number(p.refSalePrice),
         lastSupplierId: supplierIdByName.get(p.manufacturer.trim()) ?? last?.supplierId ?? null,
         lastSupplyPrice: last?.price ?? Number(p.refPurchasePrice),
+        py: searchPinyin(p.name, p.code, p.manufacturer),
       };
     });
 }
@@ -167,6 +173,7 @@ export async function searchProductsForOrder(keyword: string): Promise<OrderProd
         { name: { contains: kw } },
         { code: { contains: kw } },
         { manufacturer: { contains: kw } },
+        { searchPinyin: { contains: pinyinQuery(kw) } },
       ],
     },
     orderBy: { code: "asc" },
@@ -258,6 +265,7 @@ export async function recentCustomersForOrder(): Promise<OrderCustomerOption[]> 
     name: c.name,
     groupName: c.group?.name ?? "",
     tagNames: c.tagLinks.map((l) => l.tag.name),
+    py: searchPinyin(c.name),
   }));
 }
 
@@ -269,7 +277,12 @@ export async function searchCustomersForOrder(keyword: string): Promise<OrderCus
   const rows = await prisma.customer.findMany({
     where: {
       status: 1,
-      OR: [{ name: { contains: kw } }, { contact: { contains: kw } }, { phone: { contains: kw } }],
+      OR: [
+        { name: { contains: kw } },
+        { contact: { contains: kw } },
+        { phone: { contains: kw } },
+        { searchPinyin: { contains: pinyinQuery(kw) } },
+      ],
     },
     orderBy: { name: "asc" },
     take: SEARCH_LIMIT,
@@ -285,5 +298,6 @@ export async function searchCustomersForOrder(keyword: string): Promise<OrderCus
     name: c.name,
     groupName: c.group?.name ?? "",
     tagNames: c.tagLinks.map((l) => l.tag.name),
+    py: searchPinyin(c.name),
   }));
 }

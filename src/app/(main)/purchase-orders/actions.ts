@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
+import { prisma, type TxClient } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth/session";
 import { writeAudit } from "@/lib/audit";
 import { applyStockChange } from "@/lib/stock-cost";
@@ -73,7 +73,7 @@ function parseCreatePayload(formData: FormData) {
 }
 
 /** 当日序号：同前缀单据最大序号 + 1；唯一索引冲突时重试（并发防重号）。 */
-async function nextSeq(tx: Prisma.TransactionClient, prefix: string): Promise<number> {
+async function nextSeq(tx: TxClient, prefix: string): Promise<number> {
   const rows = await tx.purchaseOrder.findMany({
     where: { orderNo: { startsWith: `${prefix}${todayCompact()}-` } },
     select: { orderNo: true },

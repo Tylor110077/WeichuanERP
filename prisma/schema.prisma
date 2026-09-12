@@ -85,6 +85,8 @@ model User {
   username     String    @unique @db.VarChar(50)
   passwordHash String    @map("password_hash") @db.VarChar(255)
   displayName  String    @map("display_name") @db.VarChar(50)
+  /** 拼音首字母串（由 lib/pinyin.ts 的 searchPinyin() 自动维护），供搜索用 */
+  searchPinyin String?   @map("search_pinyin") @db.VarChar(255)
   role         UserRole
   status       Int       @default(1) // 1 启用 / 0 停用
   /** 工作台快捷入口：存 src/lib/shortcuts.ts 里的入口 id 数组；NULL 表示用该角色的默认 */
@@ -192,6 +194,8 @@ model Product {
   id               Int              @id @default(autoincrement())
   code             String           @unique @db.VarChar(20) // 自动 SKU，如 P000001
   name             String           @db.VarChar(100)
+  /** 拼音首字母串（由 lib/pinyin.ts 的 searchPinyin() 自动维护），供搜索用 */
+  searchPinyin     String?          @map("search_pinyin") @db.VarChar(255)
   spec             String?          @db.VarChar(100)
   manufacturer     String           @default("") @db.VarChar(100) // 厂商（生产厂家，必填——应用层强制）
   categoryId       Int?             @map("category_id")
@@ -227,6 +231,8 @@ model Product {
 model Supplier {
   id              Int              @id @default(autoincrement())
   name            String           @db.VarChar(100)
+  /** 拼音首字母串（由 lib/pinyin.ts 的 searchPinyin() 自动维护），供搜索用 */
+  searchPinyin    String?          @map("search_pinyin") @db.VarChar(255)
   contact         String?          @db.VarChar(50)
   phone           String?          @db.VarChar(30)
   address         String?          @db.VarChar(200)
@@ -244,6 +250,8 @@ model Supplier {
 model Customer {
   id          Int          @id @default(autoincrement())
   name        String       @db.VarChar(100)
+  /** 拼音首字母串（由 lib/pinyin.ts 的 searchPinyin() 自动维护），供搜索用 */
+  searchPinyin String?     @map("search_pinyin") @db.VarChar(255)
   contact     String?      @db.VarChar(50)
   phone       String?      @db.VarChar(30)
   address     String?      @db.VarChar(200)

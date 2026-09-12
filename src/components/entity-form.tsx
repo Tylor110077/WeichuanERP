@@ -4,6 +4,7 @@ import { useState, useTransition, useActionState } from "react";
 import type { FieldDef, FormState } from "./master-data-manager";
 import { SearchSelect } from "./search-select";
 import { btnPrimary, inputBase } from "@/lib/ui";
+import { matchesSearch } from "@/lib/pinyin";
 import { FormStateAlert } from "@/components/form-alert";
 
 const inputCls = `mt-1 w-full ${inputBase}`;
@@ -31,7 +32,7 @@ export function EntityForm({
   saveAction: (prev: FormState, fd: FormData) => Promise<FormState>;
   submitLabel: string;
   /** 厂家字段（type="manufacturer"）：厂家档案自动补全 */
-  manufacturerSuppliers?: { id: number; name: string }[];
+  manufacturerSuppliers?: { id: number; name: string; py?: string }[];
   onQuickCreateSupplier?: (data: { name: string }) => Promise<{ id: number; name: string } | { error: string }>;
 }) {
   const [state, formAction, pending] = useActionState<FormState, FormData>(saveAction, null);
@@ -176,7 +177,7 @@ function ManufacturerField({
   placeholder?: string;
   required?: boolean;
   initial: string;
-  suppliers: { id: number; name: string }[];
+  suppliers: { id: number; name: string; py?: string }[];
   onQuickCreate?: (data: { name: string }) => Promise<{ id: number; name: string } | { error: string }>;
 }) {
   const [query, setQuery] = useState(initial);
@@ -184,15 +185,10 @@ function ManufacturerField({
   const [pending, startTransition] = useTransition();
   const [msg, setMsg] = useState<string | null>(null);
 
-  const kw = query.trim().toLowerCase();
+  const kw = query.trim();
+  // 中文原样 + 拼音首字母都匹配（两个分支以前是重复的同一句，顺手合并）
   const hits = kw
-    ? suppliers
-        .filter(
-          (s) =>
-            s.name.toLowerCase().includes(kw) ||
-            (s.name.toLowerCase().includes(kw))
-        )
-        .slice(0, 30)
+    ? suppliers.filter((s) => matchesSearch(s.name, s.py ?? "", kw)).slice(0, 30)
     : [];
 
   function choose(s: { id: number; name: string }) {

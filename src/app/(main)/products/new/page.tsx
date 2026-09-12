@@ -4,6 +4,7 @@ import Link from "next/link";
 import { btnSecondary } from "@/lib/ui";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
+import { initials } from "@/lib/pinyin";
 import { EntityForm } from "@/components/entity-form";
 import { saveProductAction } from "../actions";
 import { createQuickSupplierAction } from "../../suppliers/actions";
@@ -43,14 +44,14 @@ export default async function NewProductPage() {
             required: true,
             type: "manufacturer",
           },
-          { name: "categoryId", label: "分类", type: "searchselect", noneLabel: "未分类", options: categories.map((c) => ({ value: String(c.id), label: c.name })) },
-          { name: "unitId", label: "单位 *", required: true, type: "searchselect", options: units.map((u) => ({ value: String(u.id), label: u.name })) },
+          { name: "categoryId", label: "分类", type: "searchselect", noneLabel: "未分类", options: categories.map((c) => ({ value: String(c.id), label: c.name, py: initials(c.name) })) },
+          { name: "unitId", label: "单位 *", required: true, type: "searchselect", options: units.map((u) => ({ value: String(u.id), label: u.name, py: initials(u.name) })) },
           { name: "refPurchasePrice", label: "参考进价", type: "number", step: "0.01" },
           { name: "minStock", label: "库存预警线", placeholder: "留空按 1 计", type: "number", step: "0.001" },
         ]}
         saveAction={saveProductAction}
         submitLabel="创建商品"
-        manufacturerSuppliers={suppliers.map((x) => ({ id: x.id, name: x.name }))}
+        manufacturerSuppliers={suppliers.map((x) => ({ id: x.id, name: x.name, py: initials(x.name) }))}
         onQuickCreateSupplier={createQuickSupplierAction}
       />
     </div>

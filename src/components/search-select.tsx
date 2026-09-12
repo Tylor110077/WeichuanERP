@@ -2,11 +2,14 @@
 
 import { useMemo, useState } from "react";
 import { selectAllOnClick, selectAllOnFocus } from "./select-all-on-focus";
+import { matchesSearch } from "@/lib/pinyin";
 import { inputBase } from "@/lib/ui";
 
 export interface SearchSelectOption {
   value: string;
   label: string;
+  /** 拼音首字母串（服务端算好下发）：打 zjw 就能搜到「张敬玮」 */
+  py?: string;
 }
 
 /**
@@ -51,7 +54,8 @@ export function SearchSelect({
   const filtered = useMemo(() => {
     if (exact) return [exact];
     if (!keyword) return all;
-    return all.filter((o) => o.label.includes(keyword));
+    // 中文原样匹配 + 拼音首字母匹配（matchesSearch 同时管两种）
+    return all.filter((o) => matchesSearch(o.label, o.py ?? "", keyword));
   }, [all, keyword, exact]);
 
   const pending = value === "" && keyword !== "" && !all.some((o) => o.label === keyword);

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { initials } from "@/lib/pinyin";
 import { DateShortcuts } from "@/components/date-shortcuts";
 import { SearchSelect } from "@/components/search-select";
 import { UnpaidOrderTable } from "./unpaid-order-table";
@@ -276,7 +277,7 @@ export default async function ReceivablesPage({
         </div>
         <SearchSelect
           name="counterId"
-          options={counterOptions.map((c) => ({ value: String(c.id), label: c.name }))}
+          options={counterOptions.map((c) => ({ value: String(c.id), label: c.name, py: initials(c.name) }))}
           defaultValue={params.counterId ?? ""}
           noneLabel={isReceivable ? "全部客户" : "全部厂家"}
           placeholder={isReceivable ? "客户（可搜索）" : "厂家（可搜索）"}

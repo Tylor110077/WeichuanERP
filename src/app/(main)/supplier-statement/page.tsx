@@ -5,6 +5,7 @@ import { btnSecondary, inputBase, selectCls } from "@/lib/ui";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
+import { initials } from "@/lib/pinyin";
 import { DateShortcuts } from "@/components/date-shortcuts";
 import { SearchSelect } from "@/components/search-select";
 
@@ -131,7 +132,7 @@ export default async function SupplierStatementPage({
           <label htmlFor="supplierId" className="block text-xs font-medium text-gray-600">厂家</label>
           <SearchSelect
             name="supplierId"
-            options={suppliers.map((s) => ({ value: String(s.id), label: s.name }))}
+            options={suppliers.map((s) => ({ value: String(s.id), label: s.name, py: initials(s.name) }))}
             defaultValue={String(effectiveSupplierId)}
             placeholder="厂家（可搜索）"
             className="mt-1 w-56"

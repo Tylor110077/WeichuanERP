@@ -4,6 +4,7 @@ import Link from "next/link";
 import { btnSecondary } from "@/lib/ui";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
+import { initials } from "@/lib/pinyin";
 import { EntityForm } from "@/components/entity-form";
 import { saveProductAction } from "../actions";
 import { createQuickSupplierAction } from "../../suppliers/actions";
@@ -61,14 +62,14 @@ export default async function EditProductPage({
             label: "分类",
             type: "searchselect",
             noneLabel: "未分类",
-            options: categories.map((c) => ({ value: String(c.id), label: c.status === 1 ? c.name : `${c.name}（停用）` })),
+            options: categories.map((c) => ({ value: String(c.id), label: c.status === 1 ? c.name : `${c.name}（停用）`, py: initials(c.name) })),
           },
           {
             name: "unitId",
             label: "单位 *",
             required: true,
             type: "searchselect",
-            options: units.map((u) => ({ value: String(u.id), label: u.status === 1 ? u.name : `${u.name}（停用）` })),
+            options: units.map((u) => ({ value: String(u.id), label: u.status === 1 ? u.name : `${u.name}（停用）`, py: initials(u.name) })),
           },
           { name: "refPurchasePrice", label: "参考进价", type: "number", step: "0.01" },
           { name: "minStock", label: "库存预警线", placeholder: "留空按 1 计", type: "number", step: "0.001" },
@@ -84,7 +85,7 @@ export default async function EditProductPage({
         initialId={product.id}
         saveAction={saveProductAction}
         submitLabel="保存修改"
-        manufacturerSuppliers={suppliers.map((x) => ({ id: x.id, name: x.name }))}
+        manufacturerSuppliers={suppliers.map((x) => ({ id: x.id, name: x.name, py: initials(x.name) }))}
         onQuickCreateSupplier={createQuickSupplierAction}
       />
     </div>

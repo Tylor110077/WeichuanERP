@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { initials } from "@/lib/pinyin";
 import { btnPrimary, btnSmallPrimary, inputBase } from "@/lib/ui";
 import { SearchSelect } from "@/components/search-select";
 import { createPurchaseOrderAction, type FormState } from "../actions";
@@ -92,7 +93,7 @@ export function NewOrderForm({
           <SearchSelect
             key={`po-sup-${supplierId}`}
             name="supplierId"
-            options={suppliers.map((s) => ({ value: String(s.id), label: s.name }))}
+            options={suppliers.map((s) => ({ value: String(s.id), label: s.name, py: initials(s.name) }))}
             defaultValue={supplierId}
             noneLabel="请选择厂家"
             placeholder="厂家（可搜索）"
@@ -137,7 +138,7 @@ export function NewOrderForm({
                 <SearchSelect
                   key={`po-prod-${i}-${row.productId}`}
                   name={`item_${i}_productId`}
-                  options={products.map((p) => ({ value: String(p.id), label: p.label }))}
+                  options={products.map((p) => ({ value: String(p.id), label: p.label, py: initials(p.label) }))}
                   defaultValue={row.productId}
                   noneLabel="搜索并选择商品"
                   placeholder="商品（可搜索名称 / 编码）"

@@ -20,6 +20,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { JSX } from "react";
 import { selectAllOnClick, selectAllOnFocus } from "./select-all-on-focus";
+import { matchesSearch } from "@/lib/pinyin";
 import { inputBase } from "@/lib/ui";
 
 export interface RailItem {
@@ -27,6 +28,8 @@ export interface RailItem {
   key: string;
   /** 显示名 */
   label: string;
+  /** 该条目的拼音首字母串（服务端算好下发），用于「打 zjw 就能搜到张敬玮」 */
+  py?: string;
   /** 数量徽标，如 12 */
   count: number;
   /** 完整链接（由调用方拼好，通常保留右侧列表当前的搜索词与页码） */
@@ -93,11 +96,11 @@ export function MasterRail({
   const [keyword, setKeyword] = useState("");
 
   // 输入即筛：关键词为空时显示全部；只过滤列表，不动选中项。
-  const visibleItems = useMemo(() => {
-    const kw = keyword.toLowerCase();
-    if (!kw) return items;
-    return items.filter((item) => item.label.toLowerCase().includes(kw));
-  }, [items, keyword]);
+  // 中文按原样匹配，拼音首字母（py）也参与匹配 —— 两者用同一个 matchesSearch，避免各写一套。
+  const visibleItems = useMemo(
+    () => items.filter((item) => matchesSearch(item.label, item.py ?? "", keyword)),
+    [items, keyword]
+  );
 
   return (
     <div

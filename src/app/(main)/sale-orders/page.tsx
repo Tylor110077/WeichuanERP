@@ -6,6 +6,8 @@ import { badgeDanger, badgeMuted, badgeOk, btnPrimary, btnSecondary, inputBase }
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
+import { pinyinQuery } from "@/lib/pinyin";
+import { initials } from "@/lib/pinyin";
 import { DateShortcuts } from "@/components/date-shortcuts";
 import { SearchSelect } from "@/components/search-select";
 import { ROLE_LABELS } from "@/lib/auth/roles";
@@ -62,7 +64,16 @@ export default async function SaleOrdersPage({
   const where = {
     ...(status ? { status: status as "confirmed" | "voided" } : {}),
     ...(customerId ? { customerId } : {}),
-    ...(q ? { orderNo: { contains: q } } : {}),
+    // 单据号 + 客户名（中文或拼音首字母，如 zjw 找到张敬玮的单）
+    ...(q
+      ? {
+          OR: [
+            { orderNo: { contains: q } },
+            { customer: { name: { contains: q } } },
+            { customer: { searchPinyin: { contains: pinyinQuery(q) } } },
+          ],
+        }
+      : {}),
     ...(settleIds ? { id: { in: settleIds } } : {}),
     createdAt: { gte: range.gte, lte: range.lte },
     ...(user.role === "sales" ? { operatorId: user.id } : {}),
@@ -114,13 +125,13 @@ export default async function SaleOrdersPage({
         <SearchInput
           name="q"
           type="text"
-          placeholder="单据号搜索"
+          placeholder="单据号 / 客户名"
           defaultValue={q}
           className={`${inputBase} w-40`}
         />
         <SearchSelect
           name="customerId"
-          options={customers.map((c) => ({ value: String(c.id), label: c.name }))}
+          options={customers.map((c) => ({ value: String(c.id), label: c.name, py: initials(c.name) }))}
           defaultValue={customerId != null ? String(customerId) : ""}
           noneLabel="全部客户"
           placeholder="客户（可搜索）"

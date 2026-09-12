@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useState, useTransition } from "react";
 import { btnPrimary, btnSmallPrimary, btnSmallSolid, inputBase, tagInfo, tagPending } from "@/lib/ui";
+import { initials, matchesSearch } from "@/lib/pinyin";
 import { SearchSelect } from "@/components/search-select";
 import { createSaleOrderAction, type FormState } from "../actions";
 import {
@@ -30,6 +31,8 @@ interface CustomerOption {
   name: string;
   groupName: string;
   tagNames: string[];
+  /** 拼音首字母串（服务端下发），本地过滤用 */
+  py?: string;
 }
 interface UnitOption {
   id: number;
@@ -42,6 +45,8 @@ interface CategoryOption {
 interface SupplierOption {
   id: number;
   name: string;
+  /** 拼音首字母串（服务端下发），本地过滤用 */
+  py?: string;
 }
 interface ProductOption {
   id: number;
@@ -52,6 +57,8 @@ interface ProductOption {
   manufacturer: string;
   unitName: string;
   stockQty: number;
+  /** 拼音首字母串（服务端下发），本地候选过滤用 */
+  py?: string;
   /** 当前移动加权均价（库存成本），开单时参考 */
   avgCost: number;
   refSalePrice: number;
@@ -128,7 +135,7 @@ export function NewSaleForm({
   const candidates = (() => {
     const kw = customerQuery.trim();
     const local = kw
-      ? customerOptions.filter((c) => c.name.includes(kw) || c.id === Number(customerId))
+      ? customerOptions.filter((c) => matchesSearch(c.name, c.py ?? "", kw) || c.id === Number(customerId))
       : customerOptions;
     const seen = new Set(local.map((c) => c.id));
     const remote = kw ? remoteCustomers.filter((c) => !seen.has(c.id)) : [];
@@ -227,7 +234,8 @@ export function NewSaleForm({
   const [mfrOpen, setMfrOpen] = useState(false);
   const mfrHits = (() => {
     const kw = mfrQuery.trim().toLowerCase();
-    return kw ? suppliers.filter((s) => s.name.toLowerCase().includes(kw)).slice(0, 30) : [];
+    // 厂家候选同样支持首字母：打 yddl 找到「远东电缆」
+    return kw ? suppliers.filter((s) => matchesSearch(s.name, s.py ?? "", kw)).slice(0, 30) : [];
   })();
   const [productPending, startProductTransition] = useTransition();
   const [showCreateCustomer, setShowCreateCustomer] = useState(false);
@@ -407,7 +415,8 @@ export function NewSaleForm({
       .filter(Boolean);
     if (kws.length === 0) return [];
     const local = productOptions.filter((p) => {
-      const hay = [p.code, p.name, p.manufacturer, p.spec].join(" ").toLowerCase();
+      // 拼音首字母串一并纳入匹配：打 dxtx 命中「单芯铜线」、yddl 命中「远东电缆」
+      const hay = [p.code, p.name, p.manufacturer, p.spec, p.py ?? ""].join(" ").toLowerCase();
       return kws.every((kw) => hay.includes(kw));
     });
     const seen = new Set(local.map((p) => p.id));
@@ -789,7 +798,7 @@ export function NewSaleForm({
                 <SearchSelect
                   key={`qc-grp-${newCustomerGroupId}-${quickGroupOptions.length}`}
                   name="newCustomerGroupId"
-                  options={quickGroupOptions.map((g) => ({ value: String(g.id), label: g.name }))}
+                  options={quickGroupOptions.map((g) => ({ value: String(g.id), label: g.name, py: initials(g.name) }))}
                   defaultValue={newCustomerGroupId}
                   noneLabel="所属组织（可选）"
                   placeholder="输入关键词搜索组织…"
@@ -977,7 +986,7 @@ export function NewSaleForm({
                   <SearchSelect
                     key={`np-cat-${newProduct.categoryId}-${categoryOptions.length}`}
                     name="quickCategory"
-                    options={categoryOptions.map((c) => ({ value: String(c.id), label: c.name }))}
+                    options={categoryOptions.map((c) => ({ value: String(c.id), label: c.name, py: initials(c.name) }))}
                     defaultValue={newProduct.categoryId}
                     noneLabel="未分类"
                     placeholder="分类（可搜索）"
@@ -1014,7 +1023,7 @@ export function NewSaleForm({
                   <SearchSelect
                     key={`np-unit-${newProduct.unitId}-${unitOptions.length}`}
                     name="quickUnit"
-                    options={unitOptions.map((u) => ({ value: String(u.id), label: u.name }))}
+                    options={unitOptions.map((u) => ({ value: String(u.id), label: u.name, py: initials(u.name) }))}
                     defaultValue={newProduct.unitId}
                     noneLabel="请选择"
                     placeholder="单位（可搜索）"

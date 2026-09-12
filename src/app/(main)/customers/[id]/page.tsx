@@ -4,6 +4,7 @@ import Link from "next/link";
 import { btnSecondary } from "@/lib/ui";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
+import { initials } from "@/lib/pinyin";
 import { EntityForm } from "@/components/entity-form";
 import { saveCustomerAction } from "../actions";
 
@@ -58,13 +59,13 @@ export default async function EditCustomerPage({
             placeholder: "改组织即移动，输入关键词搜索",
             type: "searchselect",
             noneLabel: "未分组",
-            options: groups.map((g) => ({ value: String(g.id), label: g.status === 1 ? g.name : `${g.name}（停用）` })),
+            options: groups.map((g) => ({ value: String(g.id), label: g.status === 1 ? g.name : `${g.name}（停用）`, py: initials(g.name) })),
           },
           {
             name: "tagIds",
             label: "标签",
             type: "multiselect",
-            options: tags.map((t) => ({ value: String(t.id), label: t.status === 1 ? t.name : `${t.name}（停用）` })),
+            options: tags.map((t) => ({ value: String(t.id), label: t.status === 1 ? t.name : `${t.name}（停用）`, py: initials(t.name) })),
           },
         ]}
         initial={{

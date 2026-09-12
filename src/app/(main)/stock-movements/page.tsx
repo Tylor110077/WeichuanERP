@@ -5,6 +5,7 @@ import { btnSecondary, inputBase } from "@/lib/ui";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
+import { initials } from "@/lib/pinyin";
 import { DateShortcuts } from "@/components/date-shortcuts";
 import { SearchSelect } from "@/components/search-select";
 
@@ -114,7 +115,11 @@ export default async function StockMovementsPage({
       <FilterForm className="flex flex-wrap items-center gap-3 rounded-xl border border-gray-200 bg-white p-4">
         <SearchSelect
           name="productId"
-          options={products.map((p) => ({ value: String(p.id), label: `${p.code} ${p.name}` }))}
+          options={products.map((p) => ({
+            value: String(p.id),
+            label: `${p.code} ${p.name}`,
+            py: initials(`${p.code} ${p.name}`),
+          }))}
           defaultValue={productId != null ? String(productId) : ""}
           noneLabel="全部商品"
           placeholder="商品（可搜索）"

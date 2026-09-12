@@ -3,6 +3,8 @@ import { btnPrimary, btnSecondary, inputBase, tagInfo, tagPending } from "@/lib/
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
+import { initials } from "@/lib/pinyin";
+import { pinyinQuery } from "@/lib/pinyin";
 import { MasterDataManager } from "@/components/master-data-manager";
 import { PageTabs, resolveTab } from "@/components/page-tabs";
 import { MasterRail } from "@/components/master-rail";
@@ -87,6 +89,8 @@ export default async function ProductsPage({
             { name: { contains: q } },
             { code: { contains: q } },
             { manufacturer: { contains: q } },
+            // 拼音首字母：q=dxtx 命中「单芯铜线」、q=yddl 命中「远东电缆」
+            { searchPinyin: { contains: pinyinQuery(q) } },
           ],
         }
       : {}),
@@ -240,6 +244,7 @@ export default async function ProductsPage({
             items={chips.map((name) => ({
               key: name,
               label: archivedNames.has(name) ? name : `${name}（未建档）`,
+              py: initials(name),
               count: mfrCounts.get(name) ?? 0,
               href: railHref(name),
               active: selected === name,
@@ -267,6 +272,7 @@ export default async function ProductsPage({
             items={categories.map((c) => ({
               key: String(c.id),
               label: c.status === 1 ? c.name : `${c.name}（停用）`,
+              py: initials(c.name),
               count: catCounts.get(c.id) ?? 0,
               href: catHref(String(c.id)),
               active: categoryId === c.id,

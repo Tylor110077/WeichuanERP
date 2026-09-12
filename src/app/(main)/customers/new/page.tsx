@@ -4,6 +4,7 @@ import Link from "next/link";
 import { btnSecondary } from "@/lib/ui";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
+import { initials } from "@/lib/pinyin";
 import { EntityForm } from "@/components/entity-form";
 import { saveCustomerAction } from "../actions";
 
@@ -44,9 +45,9 @@ export default async function NewCustomerPage() {
             placeholder: "可选，输入关键词搜索",
             type: "searchselect",
             noneLabel: "未分组",
-            options: groups.map((g) => ({ value: String(g.id), label: g.name })),
+            options: groups.map((g) => ({ value: String(g.id), label: g.name, py: initials(g.name) })),
           },
-          { name: "tagIds", label: "标签", type: "multiselect", options: tags.map((t) => ({ value: String(t.id), label: t.name })) },
+          { name: "tagIds", label: "标签", type: "multiselect", options: tags.map((t) => ({ value: String(t.id), label: t.name, py: initials(t.name) })) },
         ]}
         saveAction={saveCustomerAction}
         submitLabel="创建客户"

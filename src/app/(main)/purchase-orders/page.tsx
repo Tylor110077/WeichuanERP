@@ -6,6 +6,8 @@ import { badgeDanger, badgeMuted, badgeOk, badgePending, btnPrimary, btnSecondar
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
+import { pinyinQuery } from "@/lib/pinyin";
+import { initials } from "@/lib/pinyin";
 import { DateShortcuts } from "@/components/date-shortcuts";
 import { SearchSelect } from "@/components/search-select";
 import { ROLE_LABELS } from "@/lib/auth/roles";
@@ -63,7 +65,16 @@ export default async function PurchaseOrdersPage({
   const where = {
     ...(status ? { status: status as "pending" | "received" | "voided" } : {}),
     ...(supplierId ? { supplierId } : {}),
-    ...(q ? { orderNo: { contains: q } } : {}),
+    // 单据号 + 厂家名（中文或拼音首字母，如 yddl 找到远东电缆的单）
+    ...(q
+      ? {
+          OR: [
+            { orderNo: { contains: q } },
+            { supplier: { name: { contains: q } } },
+            { supplier: { searchPinyin: { contains: pinyinQuery(q) } } },
+          ],
+        }
+      : {}),
     ...(settleIds ? { id: { in: settleIds } } : {}),
     createdAt: { gte: range.gte, lte: range.lte },
     // 矩阵：业务员只能看自己开的单
@@ -122,13 +133,13 @@ export default async function PurchaseOrdersPage({
         <SearchInput
           name="q"
           type="text"
-          placeholder="单据号搜索"
+          placeholder="单据号 / 厂家名"
           defaultValue={q}
           className={`${inputBase} w-40`}
         />
         <SearchSelect
           name="supplierId"
-          options={suppliers.map((s) => ({ value: String(s.id), label: s.name }))}
+          options={suppliers.map((s) => ({ value: String(s.id), label: s.name, py: initials(s.name) }))}
           defaultValue={supplierId != null ? String(supplierId) : ""}
           noneLabel="全部厂家"
           placeholder="厂家（可搜索）"

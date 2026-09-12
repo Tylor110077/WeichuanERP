@@ -6,6 +6,7 @@ import { btnSecondary, inputBase, selectCls } from "@/lib/ui";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
+import { pinyinQuery } from "@/lib/pinyin";
 
 export const metadata = { title: "库存查询 - 玮川进销存" };
 
@@ -45,7 +46,15 @@ export default async function InventoryPage({
 
   const products = await prisma.product.findMany({
     where: {
-      ...(q ? { OR: [{ name: { contains: q } }, { code: { contains: q } }] } : {}),
+      ...(q
+        ? {
+            OR: [
+              { name: { contains: q } },
+              { code: { contains: q } },
+              { searchPinyin: { contains: pinyinQuery(q) } },
+            ],
+          }
+        : {}),
       // 分类 / 厂家 / 进货时间都下推到数据库过滤（不在内存里筛，避免与分页/统计口径不一致）
       ...(uncategorized ? { categoryId: null } : categoryId ? { categoryId } : {}),
       ...(noManufacturer ? { manufacturer: "" } : manufacturer ? { manufacturer } : {}),

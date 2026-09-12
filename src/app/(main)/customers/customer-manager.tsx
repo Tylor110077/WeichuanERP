@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { initials } from "@/lib/pinyin";
 import { EmptyState } from "@/components/empty-state";
 import { badgeMuted, badgeOk, btnPrimary, btnSecondary, btnSmallPrimary, btnSmallSolid } from "@/lib/ui";
 import { useActionState, useState, useTransition } from "react";
@@ -280,6 +281,7 @@ export function CustomerManager({
                 options={groupOptions.map((g) => ({
                   value: String(g.id),
                   label: g.status === 1 ? g.name : `${g.name}（停用）`,
+                  py: initials(g.name),
                 }))}
                 defaultValue={form.groupId}
                 noneLabel="未分组"

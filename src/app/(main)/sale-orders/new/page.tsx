@@ -4,6 +4,7 @@ import { btnSecondary } from "@/lib/ui";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
+import { initials } from "@/lib/pinyin";
 import { NewSaleForm } from "./new-sale-form";
 import { recentCustomersForOrder, recentProductsForOrder } from "./search-actions";
 
@@ -86,7 +87,7 @@ export default async function NewSaleOrderPage() {
       </div>
       <NewSaleForm
         customers={recentCustomers}
-        suppliers={suppliers.map((s) => ({ id: s.id, name: s.name }))}
+        suppliers={suppliers.map((s) => ({ id: s.id, name: s.name, py: initials(s.name) }))}
         products={productOptions}
         units={units.map((u) => ({ id: u.id, name: u.name }))}
         categories={categories.map((c) => ({ id: c.id, name: c.name }))}

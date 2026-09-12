@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
+import { prisma, type TxClient } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth/session";
 import { writeAudit } from "@/lib/audit";
 import { applyStockChange } from "@/lib/stock-cost";
@@ -107,7 +107,7 @@ function parseCreatePayload(formData: FormData) {
 }
 
 async function nextSeqOf(
-  tx: Prisma.TransactionClient,
+  tx: TxClient,
   model: "purchaseOrder" | "saleOrder",
   prefix: string
 ): Promise<number> {

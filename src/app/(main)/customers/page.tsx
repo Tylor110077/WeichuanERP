@@ -3,6 +3,8 @@ import { badgeMuted, btnPrimary, btnSecondary, inputBase } from "@/lib/ui";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
+import { initials } from "@/lib/pinyin";
+import { pinyinQuery } from "@/lib/pinyin";
 import { MasterDataManager } from "@/components/master-data-manager";
 import { AutoFilterForm } from "@/components/auto-filter-form";
 import { PageTabs, resolveTab } from "@/components/page-tabs";
@@ -67,6 +69,8 @@ export default async function CustomersPage({
             { name: { contains: q } },
             { contact: { contains: q } },
             { phone: { contains: q } },
+            // 拼音首字母：q=zjw 命中「张敬玮」（见 lib/pinyin.ts）
+            { searchPinyin: { contains: pinyinQuery(q) } },
           ],
         }
       : {}),
@@ -204,6 +208,7 @@ export default async function CustomersPage({
             items={groups.map((g) => ({
               key: String(g.id),
               label: g.name,
+              py: initials(g.name),
               count: g._count.customers,
               href: railHref(String(g.id)),
               active: groupId === g.id,

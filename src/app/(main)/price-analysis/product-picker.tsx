@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { initials } from "@/lib/pinyin";
 import { SearchSelect } from "@/components/search-select";
 
 export interface PickerProduct {
@@ -33,7 +34,11 @@ export function ProductPicker({
     <SearchSelect
       key={`picker-${current}`}
       name="productPicker"
-      options={products.map((p) => ({ value: String(p.id), label: `${p.code} ${p.name}` }))}
+      options={products.map((p) => ({
+        value: String(p.id),
+        label: `${p.code} ${p.name}`,
+        py: initials(`${p.code} ${p.name}`),
+      }))}
       defaultValue={current ? String(current) : ""}
       noneLabel="选择商品…"
       placeholder="商品（可搜索）"
