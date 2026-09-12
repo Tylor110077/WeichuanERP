@@ -24,6 +24,9 @@ export const metadata = { title: "客户管理 - 玮川进销存" };
 /** 页签白名单：非法的 ?tab= 回落到「客户」 */
 const TAB_KEYS = ["customers", "groups", "profile"] as const;
 
+/** 客户会越来越多：列表按页取，不在首屏全量渲染 */
+const PAGE_SIZE = 50;
+
 /** 卡片小标题 + 说明 */
 function SectionHeading({ title, hint }: { title: string; hint?: string }) {
   return (
@@ -37,7 +40,7 @@ function SectionHeading({ title, hint }: { title: string; hint?: string }) {
 export default async function CustomersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ groupId?: string; tagId?: string; q?: string; tab?: string }>;
+  searchParams: Promise<{ groupId?: string; tagId?: string; q?: string; tab?: string; page?: string }>;
 }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
@@ -47,29 +50,35 @@ export default async function CustomersPage({
   const tagId = params.tagId ? Number(params.tagId) : undefined;
   const q = params.q?.trim();
   const tab = resolveTab(TAB_KEYS, params.tab, "customers");
+  const page = Math.max(1, Number(params.page) || 1);
 
-  const [customers, groups, tags] = await Promise.all([
+  // 客户一多就没有别的办法找人了：名称 / 联系人 / 电话都能搜
+  const customerWhere = {
+    ...(groupId ? { groupId } : {}),
+    ...(tagId ? { tagLinks: { some: { tagId } } } : {}),
+    ...(q
+      ? {
+          OR: [
+            { name: { contains: q } },
+            { contact: { contains: q } },
+            { phone: { contains: q } },
+          ],
+        }
+      : {}),
+  };
+
+  const [customers, customerTotal, groups, tags] = await Promise.all([
     prisma.customer.findMany({
-      where: {
-        ...(groupId ? { groupId } : {}),
-        ...(tagId ? { tagLinks: { some: { tagId } } } : {}),
-        // 客户一多就没有别的办法找人了：名称 / 联系人 / 电话都能搜
-        ...(q
-          ? {
-              OR: [
-                { name: { contains: q } },
-                { contact: { contains: q } },
-                { phone: { contains: q } },
-              ],
-            }
-          : {}),
-      },
+      where: customerWhere,
       orderBy: { createdAt: "asc" },
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
       include: {
         group: { select: { id: true, name: true } },
         tagLinks: { include: { tag: { select: { id: true, name: true } } } },
       },
     }),
+    prisma.customer.count({ where: customerWhere }),
     prisma.customerGroup.findMany({
       orderBy: { name: "asc" },
       select: { id: true, name: true, status: true, _count: { select: { customers: true } } },
@@ -95,6 +104,20 @@ export default async function CustomersPage({
     tagIds: c.tagLinks.map((l) => l.tag.id),
     tagNames: c.tagLinks.map((l) => l.tag.name),
   }));
+
+  const totalPages = Math.max(1, Math.ceil(customerTotal / PAGE_SIZE));
+
+  /** 分页链接：保留当前筛选与页签 */
+  const pageHref = (p: number) => {
+    const sp = new URLSearchParams();
+    if (tab !== "customers") sp.set("tab", tab);
+    if (groupId != null) sp.set("groupId", String(groupId));
+    if (tagId != null) sp.set("tagId", String(tagId));
+    if (q) sp.set("q", q);
+    if (p > 1) sp.set("page", String(p));
+    const qs = sp.toString();
+    return `/customers${qs ? `?${qs}` : ""}`;
+  };
 
   /** 页签链接：保留当前筛选（组织/标签/关键词） */
   const tabHref = (key: string) => {
@@ -329,6 +352,20 @@ export default async function CustomersPage({
       )}
 
       {tab === "customers" && (
+      <>
+      {page > totalPages && (
+        <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-700">
+          当前页码超出范围（共 {totalPages} 页），下面没有数据。
+          <Link href={pageHref(totalPages)} className="ml-1 text-blue-600 hover:underline">
+            跳到最后一页
+          </Link>
+        </p>
+      )}
+      <p className="text-xs text-gray-500">
+        共 {customerTotal} 位客户
+        {q || groupId != null || tagId != null ? "（已应用筛选）" : ""}
+        {totalPages > 1 && `　第 ${page} / ${totalPages} 页`}
+      </p>
       <CustomerManager
         emptyTitle={q ? `没有匹配「${q}」的客户` : undefined}
         emptyHint={q ? "换个关键词，或点「清除关键词」看全部" : undefined}
@@ -339,6 +376,22 @@ export default async function CustomersPage({
         hideForm
         editBase="/customers"
       />
+      {totalPages > 1 && (
+        <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm">
+          {page > 1 ? (
+            <Link href={pageHref(page - 1)} className="text-blue-600 hover:underline">上一页</Link>
+          ) : (
+            <span className="text-gray-400">上一页</span>
+          )}
+          <span className="text-gray-600">第 {page} / {totalPages} 页</span>
+          {page < totalPages ? (
+            <Link href={pageHref(page + 1)} className="text-blue-600 hover:underline">下一页</Link>
+          ) : (
+            <span className="text-gray-400">下一页</span>
+          )}
+        </div>
+      )}
+      </>
       )}
     </div>
   );

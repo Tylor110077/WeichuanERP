@@ -26,6 +26,12 @@ const NO_MFR = "（未填写厂家）";
 /** 页签白名单：非法的 ?tab= 值回落到「商品」，避免出现空白页 */
 const TAB_KEYS = ["products", "manufacturers", "options"] as const;
 
+/** 商品与厂家会越来越多：列表按页取，不在首屏全量渲染 */
+const PAGE_SIZE = 50;
+
+/** 厂家少时用 chip（一眼看全），多了就换成可搜索的选择器，避免"芯片墙" */
+const MFR_CHIP_LIMIT = 12;
+
 /** 卡片小标题 + 说明（原先写在折叠区 summary 里，展开为页签后改为卡片头） */
 function SectionHeading({ title, hint }: { title: string; hint?: string }) {
   return (
@@ -78,7 +84,7 @@ function MfrChip({
 export default async function ProductsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ manufacturer?: string; tab?: string; q?: string }>;
+  searchParams: Promise<{ manufacturer?: string; tab?: string; q?: string; page?: string }>;
 }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
@@ -87,24 +93,34 @@ export default async function ProductsPage({
   const selected = params.manufacturer ?? "";
   const tab = resolveTab(TAB_KEYS, params.tab, "products");
   const q = params.q?.trim();
+  const page = Math.max(1, Number(params.page) || 1);
 
-  const [allProducts, units, categories, suppliers] = await Promise.all([
+  const productWhere = {
+    // 厂家筛选必须下推到数据库：分页后只过滤当前页会得到错误结果
+    ...(selected ? { manufacturer: selected === NO_MFR ? "" : selected } : {}),
+    ...(q
+      ? {
+          OR: [
+            { name: { contains: q } },
+            { code: { contains: q } },
+            { manufacturer: { contains: q } },
+          ],
+        }
+      : {}),
+  };
+
+  const [allProducts, productTotal, units, categories, suppliers] = await Promise.all([
     prisma.product.findMany({
-      where: q
-        ? {
-            OR: [
-              { name: { contains: q } },
-              { code: { contains: q } },
-              { manufacturer: { contains: q } },
-            ],
-          }
-        : {},
+      where: productWhere,
       orderBy: { code: "asc" },
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
       include: {
         category: { select: { name: true } },
         unit: { select: { name: true } },
       },
     }),
+    prisma.product.count({ where: productWhere }),
     prisma.unit.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, status: true, _count: { select: { products: true } } } }),
     prisma.productCategory.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, status: true, _count: { select: { products: true } } } }),
     prisma.supplier.findMany({
@@ -122,12 +138,15 @@ export default async function ProductsPage({
     label: c.status === 1 ? c.name : `${c.name}（停用）`,
   }));
 
-  // 按厂家归集商品：厂家名 = 商品的 manufacturer（与厂家档案同名即为该厂家的补货来源）
-  const mfrOf = (p: (typeof allProducts)[number]) => p.manufacturer.trim() || NO_MFR;
+  // 按厂家统计商品数：必须用 SQL 聚合（列表已分页，数当前页会得到错误的计数）
+  const [mfrGroups, allProductTotal] = await Promise.all([
+    prisma.product.groupBy({ by: ["manufacturer"], _count: { _all: true } }),
+    prisma.product.count(),
+  ]);
   const mfrCounts = new Map<string, number>();
-  for (const p of allProducts) {
-    const m = mfrOf(p);
-    mfrCounts.set(m, (mfrCounts.get(m) ?? 0) + 1);
+  for (const g of mfrGroups) {
+    const key = g.manufacturer.trim() || NO_MFR;
+    mfrCounts.set(key, (mfrCounts.get(key) ?? 0) + g._count._all);
   }
   // 标签行包含：厂家档案 + 商品中已使用但未建档的厂家
   const mfrNames = new Set<string>(suppliers.map((s) => s.name));
@@ -136,8 +155,20 @@ export default async function ProductsPage({
   }
   const archivedNames = new Set(suppliers.map((s) => s.name));
   const chips = [...mfrNames].sort((a, b) => a.localeCompare(b, "zh-CN"));
+  /** 厂家多到一定数量就不再平铺 chip（会变成"芯片墙"），改用可选的下拉筛选 */
+  const useChips = chips.length <= MFR_CHIP_LIMIT;
 
-  const products = selected ? allProducts.filter((p) => mfrOf(p) === selected) : allProducts;
+  const totalPages = Math.max(1, Math.ceil(productTotal / PAGE_SIZE));
+
+  /** 分页链接：保留厂家筛选与关键词 */
+  const pageHref = (p: number) => {
+    const sp = new URLSearchParams();
+    if (selected) sp.set("manufacturer", selected);
+    if (q) sp.set("q", q);
+    if (p > 1) sp.set("page", String(p));
+    const qs = sp.toString();
+    return `/products${qs ? `?${qs}` : ""}`;
+  };
 
   /** 页签链接：保留当前筛选，切换页签不丢条件 */
   const tabHref = (key: string) => {
@@ -169,7 +200,7 @@ export default async function ProductsPage({
           {
             key: "products",
             label: "商品",
-            count: allProducts.length,
+            count: allProductTotal,
             href: tabHref("products"),
             hint: "商品档案：按厂家筛选、看库存与参考价、编辑或停用",
           },
@@ -218,23 +249,52 @@ export default async function ProductsPage({
         </FilterForm>
         <div className="flex flex-wrap items-center gap-2 border-t border-gray-100 pt-3">
           <span className="text-sm font-medium text-gray-700">厂家</span>
-          <MfrChip label="全部" count={allProducts.length} href={tabHref("products")} active={selected === ""} />
-          {chips.map((name) => (
-            <MfrChip
-              key={name}
-              label={archivedNames.has(name) ? name : `${name}（未建档）`}
-              count={mfrCounts.get(name) ?? 0}
-              href={`/products?manufacturer=${encodeURIComponent(name)}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
-              active={selected === name}
-            />
-          ))}
-          {mfrCounts.has(NO_MFR) && (
-            <MfrChip
-              label="未填厂家"
-              count={mfrCounts.get(NO_MFR) ?? 0}
-              href={`/products?manufacturer=${encodeURIComponent(NO_MFR)}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
-              active={selected === NO_MFR}
-            />
+          {useChips ? (
+            <>
+              <MfrChip label="全部" count={allProductTotal} href={tabHref("products")} active={selected === ""} />
+              {chips.map((name) => (
+                <MfrChip
+                  key={name}
+                  label={archivedNames.has(name) ? name : `${name}（未建档）`}
+                  count={mfrCounts.get(name) ?? 0}
+                  href={`/products?manufacturer=${encodeURIComponent(name)}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
+                  active={selected === name}
+                />
+              ))}
+              {mfrCounts.has(NO_MFR) && (
+                <MfrChip
+                  label="未填厂家"
+                  count={mfrCounts.get(NO_MFR) ?? 0}
+                  href={`/products?manufacturer=${encodeURIComponent(NO_MFR)}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
+                  active={selected === NO_MFR}
+                />
+              )}
+            </>
+          ) : (
+            /* 厂家一多就换成下拉筛选：平铺成芯片墙会挤满屏幕且找不到目标 */
+            <>
+              <FilterForm className="flex flex-wrap items-center gap-2">
+                <select
+                  name="manufacturer"
+                  defaultValue={selected}
+                  className="rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+                  title="选择厂家后自动筛选"
+                >
+                  <option value="">全部厂家（{allProductTotal} 个商品）</option>
+                  {chips.map((name) => (
+                    <option key={name} value={name}>
+                      {archivedNames.has(name) ? name : `${name}（未建档）`}（{mfrCounts.get(name) ?? 0}）
+                    </option>
+                  ))}
+                  {mfrCounts.has(NO_MFR) && (
+                    <option value={NO_MFR}>未填厂家（{mfrCounts.get(NO_MFR) ?? 0}）</option>
+                  )}
+                </select>
+                {q && <input type="hidden" name="q" value={q} />}
+                <button type="submit" className={btnSecondary}>筛选</button>
+              </FilterForm>
+              <span className="text-xs text-gray-400">共 {chips.length} 个厂家，选择后自动筛选</span>
+            </>
           )}
         </div>
         <p className="text-xs text-gray-400">
@@ -345,13 +405,22 @@ export default async function ProductsPage({
         </div>
       )}
 
+      {tab === "products" && page > totalPages && (
+        <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-700">
+          当前页码超出范围（共 {totalPages} 页），下面没有数据。
+          <Link href={pageHref(totalPages)} className="ml-1 text-blue-600 hover:underline">
+            跳到最后一页
+          </Link>
+        </p>
+      )}
+
       {tab === "products" && (
       <div className="space-y-2">
         <div className="flex items-baseline gap-2">
           <h2 className="text-sm font-semibold text-gray-900">
             {selected ? `${selected} 供应的商品` : "全部商品"}
           </h2>
-          <span className="text-xs text-gray-400">{products.length} 个</span>
+          <span className="text-xs text-gray-400">共 {productTotal} 个{totalPages > 1 ? `　第 ${page} / ${totalPages} 页` : ""}</span>
           {selected && (
             <Link
               href={`/products${q ? `?q=${encodeURIComponent(q)}` : ""}`}
@@ -408,7 +477,7 @@ export default async function ProductsPage({
               placeholder: "0",
             },
           ]}
-          rows={products.map((p) => ({
+          rows={allProducts.map((p) => ({
             id: p.id,
             status: p.status,
             cells: {
@@ -444,6 +513,22 @@ export default async function ProductsPage({
           deleteAction={deleteProductAction}
         />
       </div>
+      )}
+
+      {tab === "products" && totalPages > 1 && (
+        <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm">
+          {page > 1 ? (
+            <Link href={pageHref(page - 1)} className="text-blue-600 hover:underline">上一页</Link>
+          ) : (
+            <span className="text-gray-400">上一页</span>
+          )}
+          <span className="text-gray-600">第 {page} / {totalPages} 页</span>
+          {page < totalPages ? (
+            <Link href={pageHref(page + 1)} className="text-blue-600 hover:underline">下一页</Link>
+          ) : (
+            <span className="text-gray-400">下一页</span>
+          )}
+        </div>
       )}
     </div>
   );
