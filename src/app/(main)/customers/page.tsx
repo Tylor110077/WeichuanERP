@@ -447,7 +447,7 @@ export default async function CustomersPage({
                             {r.margin.toFixed(2)}%
                           </td>
                           <td className="px-4 py-2.5">
-                            <Link href={`/customer-profile?customerId=${r.id}`} className="text-blue-600 hover:underline">
+                            <Link href={`/customers/${r.id}`} className="text-blue-600 hover:underline">
                               看明细
                             </Link>
                           </td>

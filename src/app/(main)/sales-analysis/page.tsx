@@ -137,7 +137,7 @@ export default async function SalesAnalysisPage({
         <RelatedLinks
           links={[
             { href: "/price-analysis", label: "价格分析（看价）" },
-            { href: "/customer-profile", label: "客户画像" },
+            { href: "/customers?tab=profile", label: "客户画像" },
             { href: "/reports", label: "报表中心（可导出）" },
           ]}
         />
