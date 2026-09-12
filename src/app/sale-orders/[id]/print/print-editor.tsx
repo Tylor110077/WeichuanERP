@@ -50,12 +50,22 @@ const ALL_COLS = [
   { key: "remark", label: "备注" },
 ];
 
-/** 打印联次（与纸质三联单一致） */
-const COPIES = [
-  { key: "stub", label: "第一联：存根联" },
-  { key: "settle", label: "第二联：结账联" },
-  { key: "customer", label: "第三联：客户联" },
+/**
+ * 打印方式（按"用什么纸"区分，而不是按"打几份"）：
+ * - carbon：三联复写纸 + 针式打印机。纸本身有三层，**打一遍**三层就都有字，
+ *   所以只出一份单据，联次标识按纸质单的样式并排印一行。
+ * - a4-three：普通 A4 纸，一页里打三份（各自带联次标识），打印后裁开。
+ * - a4-pages：普通 A4 纸，每联单独一页。
+ */
+const COPY_LABELS = ["第一联：存根联", "第二联：结账联", "第三联：客户联"] as const;
+
+const PRINT_MODES = [
+  { key: "carbon", label: "三联复写纸（打一遍）" },
+  { key: "a4-three", label: "A4 三联同页" },
+  { key: "a4-pages", label: "A4 每联一页" },
 ] as const;
+
+type PrintModeKey = (typeof PRINT_MODES)[number]["key"];
 
 /**
  * 打印稿里的输入框样式。
@@ -95,8 +105,8 @@ export function PrintEditor({ data }: { data: PrintOrderData }) {
   const [hiddenCols, setHiddenCols] = useState<string[]>(["idx", "remark"]);
   const [showRmb, setShowRmb] = useState(true);
   const [showSign, setShowSign] = useState(true);
-  /** three=三联同页｜page=每联一页｜single=只打一联 */
-  const [copyMode, setCopyMode] = useState<"three" | "page" | "single">("three");
+  /** 见 PRINT_MODES：三联复写纸只打一遍，A4 纸才是三份 */
+  const [printMode, setPrintMode] = useState<PrintModeKey>("carbon");
 
   const visibleCols = ALL_COLS.filter((c) => !hiddenCols.includes(c.key));
 
@@ -125,8 +135,8 @@ export function PrintEditor({ data }: { data: PrintOrderData }) {
     setHiddenCols((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
   }
 
-  /** 一联的内容（三联除联名外完全相同） */
-  function renderSlip(copyLabel: string) {
+  /** 一联的内容（除联次标识外三份完全相同） */
+  function renderSlip(copyLabel: ReactNode) {
     return (
       <div className="print-slip mx-auto w-full bg-white font-sans text-gray-900">
         {/* 抬头 */}
@@ -207,7 +217,7 @@ export function PrintEditor({ data }: { data: PrintOrderData }) {
                   {c.label}
                 </th>
               ))}
-              <th className="print:hidden border border-gray-300 px-1 text-center font-normal text-gray-400">
+              <th className="print:hidden w-12 border border-gray-300 px-1 text-center font-normal text-gray-400">
                 操作
               </th>
             </tr>
@@ -230,7 +240,7 @@ export function PrintEditor({ data }: { data: PrintOrderData }) {
                     )}
                   </td>
                 ))}
-                <td className="print:hidden border border-gray-300 px-1 text-center">
+                <td className="print:hidden w-12 border border-gray-300 px-1 text-center">
                   <button
                     type="button"
                     onClick={() => removeRow(i)}
@@ -298,36 +308,51 @@ export function PrintEditor({ data }: { data: PrintOrderData }) {
         </div>
 
         {/* 联次标识 */}
-        <div className="mt-0.5 border-t border-gray-800 pt-0.5 text-center text-[12px] font-medium">
+        <div className="mt-0.5 border-t border-gray-800 pt-0.5 text-[12px] font-medium">
           {copyLabel}
         </div>
 
-        {/* 页脚 */}
-        <div className="mt-0.5 flex items-center gap-1 border-t border-gray-800 pt-0.5 text-[12px]">
-          <span className="shrink-0">地址：</span>
-          <input
-            value={footerAddress}
-            onChange={(e) => setFooterAddress(e.target.value)}
-            className={`${inputBase} min-w-0 flex-1`}
-            placeholder="公司地址"
-          />
-          <span className="ml-3 shrink-0">电话：</span>
-          <input
-            value={footerPhone}
-            onChange={(e) => setFooterPhone(e.target.value)}
-            className={`${inputBase} w-36 shrink-0`}
-            placeholder="联系电话"
-          />
-          {showSign && <span className="ml-3 shrink-0">客户签收：＿＿＿＿＿＿</span>}
+        {/* 页脚：公司地址单独一行（留足书写/盖章空间），电话与客户签收在下一行 */}
+        <div className="mt-0.5 space-y-0.5 border-t border-gray-800 pt-0.5 text-[12px]">
+          <div className="flex items-center gap-1">
+            <span className="shrink-0 font-medium">公司地址：</span>
+            <input
+              value={footerAddress}
+              onChange={(e) => setFooterAddress(e.target.value)}
+              className={`${inputBase} h-6 min-w-0 flex-1 px-1`}
+              placeholder="公司地址（可在打印稿上直接填写）"
+            />
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="shrink-0">电话：</span>
+            <input
+              value={footerPhone}
+              onChange={(e) => setFooterPhone(e.target.value)}
+              className={`${inputBase} h-6 w-72 shrink-0 px-1`}
+              placeholder="联系电话（微信同号）"
+            />
+            {showSign && <span className="ml-auto shrink-0">客户签收：＿＿＿＿＿＿</span>}
+          </div>
         </div>
       </div>
     );
   }
 
-  const slips =
-    copyMode === "single"
-      ? [{ key: "single", label: "第一联：存根联" }]
-      : COPIES.map((c) => ({ key: c.key, label: c.label }));
+  /** 复写纸模式：联次标识按纸质单的样式并排印一行（纸自己分三层，所以只出一份） */
+  const threeLabelsRow = (
+    <div className="grid grid-cols-3">
+      {COPY_LABELS.map((t) => (
+        <span key={t} className="text-center">
+          {t}
+        </span>
+      ))}
+    </div>
+  );
+
+  const slips: { key: string; label: ReactNode }[] =
+    printMode === "carbon"
+      ? [{ key: "carbon", label: threeLabelsRow }]
+      : COPY_LABELS.map((t, i) => ({ key: `copy-${i}`, label: <span className="block text-center">{t}</span> }));
 
   return (
     <div className="mx-auto max-w-4xl p-6">
@@ -348,15 +373,9 @@ export function PrintEditor({ data }: { data: PrintOrderData }) {
             返回
           </button>
           <div className="ml-auto flex flex-wrap items-center gap-1.5">
-            <span className="text-xs font-medium text-gray-500">联次</span>
-            {(
-              [
-                { key: "three", label: "三联同页" },
-                { key: "page", label: "每联一页" },
-                { key: "single", label: "只打一联" },
-              ] as const
-            ).map((m) => (
-              <Chip key={m.key} on={copyMode === m.key} onClick={() => setCopyMode(m.key)}>
+            <span className="text-xs font-medium text-gray-500">打印方式</span>
+            {PRINT_MODES.map((m) => (
+              <Chip key={m.key} on={printMode === m.key} onClick={() => setPrintMode(m.key)}>
                 {m.label}
               </Chip>
             ))}
@@ -391,8 +410,11 @@ export function PrintEditor({ data }: { data: PrintOrderData }) {
         </div>
 
         <p className="mt-3 border-t border-gray-100 pt-2.5 text-xs text-gray-500">
-          提示：表单里的文字都可直接点击修改（含送货地址、收款账户、页脚地址电话）；行可添加 / 删除；
-          「联次」决定打几张：三联同页 = 一页里三份（复写纸或打后裁切），每联一页 = 三张单据。
+          提示：表单里的文字都可直接点击修改（含送货地址、收款账户、公司地址电话）；行可添加 / 删除。
+          <span className="ml-1 text-gray-600">
+            「三联复写纸（打一遍）」= 用三层复写纸+针式打印机，只出一份单据，纸自己会复写出三层；
+            「A4 三联同页 / 每联一页」= 普通 A4 纸，靠打印三份（打印后裁开或分页）。
+          </span>
           <span className="ml-1 font-medium text-amber-600">
             这里的修改只作用于本次打印稿，不会保存到订单；如需修改订单请用「作废后重开」或退货。
           </span>
@@ -408,7 +430,7 @@ export function PrintEditor({ data }: { data: PrintOrderData }) {
               i > 0
                 ? "mt-6 border-t border-dashed border-gray-300 pt-6 print:mt-0 print:border-t-0 print:pt-0"
                 : ""
-            } ${copyMode === "page" && i > 0 ? "print:break-before-page" : ""}`}
+            } ${printMode === "a4-pages" && i > 0 ? "print:break-before-page" : ""}`}
           >
             {renderSlip(s.label)}
           </div>
