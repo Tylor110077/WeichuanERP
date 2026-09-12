@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { initials } from "@/lib/pinyin";
 import { EmptyState } from "@/components/empty-state";
-import { badgeMuted, badgeOk, btnPrimary, btnSecondary, btnSmallPrimary, btnSmallSolid } from "@/lib/ui";
+import { badgeInfo, badgeMuted, badgeOk, btnPrimary, btnSecondary, btnSmallPrimary, btnSmallSolid } from "@/lib/ui";
 import { useActionState, useState, useTransition } from "react";
 import { SearchSelect } from "@/components/search-select";
 import {
@@ -133,13 +133,13 @@ export function CustomerManager({
       <table className="min-w-full divide-y divide-gray-200 text-sm">
         <thead className="bg-gray-50 text-left text-xs text-gray-500">
           <tr>
-            <th className="px-4 py-3 font-medium">名称</th>
-            <th className="px-4 py-3 font-medium">联系人</th>
-            <th className="px-4 py-3 font-medium">电话</th>
-            <th className="px-4 py-3 font-medium">组织</th>
-            <th className="px-4 py-3 font-medium">标签</th>
-            <th className="px-4 py-3 font-medium">状态</th>
-            {isAdmin && <th className="px-4 py-3 font-medium">操作</th>}
+            <th className="whitespace-nowrap px-4 py-3 font-medium">名称</th>
+            <th className="whitespace-nowrap px-4 py-3 font-medium">联系人</th>
+            <th className="whitespace-nowrap px-4 py-3 font-medium">电话</th>
+            <th className="whitespace-nowrap px-4 py-3 font-medium">组织</th>
+            <th className="whitespace-nowrap px-4 py-3 font-medium">标签</th>
+            <th className="whitespace-nowrap px-4 py-3 font-medium">状态</th>
+            {isAdmin && <th className="whitespace-nowrap px-4 py-3 font-medium">操作</th>}
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100 [&>tr]:transition-colors [&>tr:hover]:bg-gray-100/70">
@@ -161,7 +161,7 @@ export function CustomerManager({
               <td className="px-4 py-2.5 text-gray-600">{c.phone || "—"}</td>
               <td className="px-4 py-2.5">
                 {c.groupName ? (
-                  <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-700">{c.groupName}</span>
+                  <span className={badgeInfo}>{c.groupName}</span>
                 ) : (
                   <span className="text-gray-400">—</span>
                 )}
@@ -185,11 +185,11 @@ export function CustomerManager({
                 <td className="px-4 py-2.5">
                   <div className="flex items-center justify-end gap-2">
                     {hideForm && editBase ? (
-                      <Link href={`${editBase}/${c.id}`} className="text-xs text-blue-600 hover:underline">
+                      <Link href={`${editBase}/${c.id}`} className="whitespace-nowrap text-xs text-blue-600 hover:underline">
                         编辑
                       </Link>
                     ) : (
-                      <button type="button" onClick={() => startCreate(c)} className="text-xs text-blue-600 hover:underline">
+                      <button type="button" onClick={() => startCreate(c)} className="whitespace-nowrap text-xs text-blue-600 hover:underline">
                         编辑
                       </button>
                     )}
@@ -205,7 +205,7 @@ export function CustomerManager({
                       hidden={{ id: c.id }}
                       label="删除"
                       confirmLabel="确认删除"
-                      className="text-xs text-gray-500 hover:underline"
+                      className="whitespace-nowrap text-xs text-gray-500 hover:underline"
                       disabled={deletePending}
                     />
                   </div>

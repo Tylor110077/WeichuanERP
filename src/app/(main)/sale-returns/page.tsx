@@ -3,7 +3,7 @@ import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
-import { segActive, segIdle } from "@/lib/ui";
+import { badgeMuted, badgeOk, segActive, segIdle } from "@/lib/ui";
 import { ReturnListActions } from "./return-list-actions";
 
 export const metadata = { title: "销售退货单 - 玮川进销存" };
@@ -41,14 +41,14 @@ export default async function SaleReturnsPage() {
         <table className="min-w-full divide-y divide-gray-200 text-sm">
           <thead className="bg-gray-50 text-left text-xs text-gray-500">
             <tr>
-              <th className="px-4 py-3 font-medium">退货单号</th>
-              <th className="px-4 py-3 font-medium">原售卖单</th>
-              <th className="px-4 py-3 font-medium">客户</th>
-              <th className="px-4 py-3 font-medium">状态</th>
-              <th className="px-4 py-3 text-right font-medium tabular-nums">冲减应收</th>
-              <th className="px-4 py-3 font-medium">操作人</th>
-              <th className="px-4 py-3 font-medium">时间</th>
-              {user.role !== "sales" && <th className="px-4 py-3 font-medium">操作</th>}
+              <th className="whitespace-nowrap px-4 py-3 font-medium">退货单号</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium">原售卖单</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium">客户</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium">状态</th>
+              <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">冲减应收</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium">操作人</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium">时间</th>
+              {user.role !== "sales" && <th className="whitespace-nowrap px-4 py-3 font-medium">操作</th>}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 [&>tr]:transition-colors [&>tr:hover]:bg-gray-100/70">
@@ -61,15 +61,15 @@ export default async function SaleReturnsPage() {
             )}
             {returns.map((r) => (
               <tr key={r.id}>
-                <td className="px-4 py-2.5 font-medium text-gray-900">{r.orderNo}</td>
+                <td className="whitespace-nowrap px-4 py-2.5 font-medium text-gray-900">{r.orderNo}</td>
                 <td className="px-4 py-2.5 text-gray-600">{r.saleOrder.orderNo}</td>
                 <td className="px-4 py-2.5 text-gray-900">{r.customer.name}</td>
                 <td className="px-4 py-2.5">
                   <span
                     className={
                       r.status === "confirmed"
-                        ? "rounded-full bg-green-50 px-2 py-0.5 text-xs text-green-700"
-                        : "rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600"
+                        ? badgeOk
+                        : badgeMuted
                     }
                   >
                     {STATUS_LABELS[r.status]}

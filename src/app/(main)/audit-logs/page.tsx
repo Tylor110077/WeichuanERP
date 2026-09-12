@@ -83,7 +83,7 @@ export default async function AuditLogsPage({
           查询
         </button>
         {(params.from || params.to) && (
-          <a href="/audit-logs" className="text-xs text-blue-600 hover:underline">清除日期</a>
+          <a href="/audit-logs" className="whitespace-nowrap text-xs text-blue-600 hover:underline">清除日期</a>
         )}
       </FilterForm>
 
@@ -91,12 +91,12 @@ export default async function AuditLogsPage({
         <table className="min-w-full divide-y divide-gray-200 text-sm">
           <thead className="bg-gray-50 text-left text-xs text-gray-500">
             <tr>
-              <th className="px-4 py-3 font-medium">时间</th>
-              <th className="px-4 py-3 font-medium">操作人</th>
-              <th className="px-4 py-3 font-medium">动作</th>
-              <th className="px-4 py-3 font-medium">对象</th>
-              <th className="px-4 py-3 font-medium">IP</th>
-              <th className="px-4 py-3 font-medium">变更前后</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium">时间</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium">操作人</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium">动作</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium">对象</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium">IP</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium">变更前后</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 [&>tr]:transition-colors [&>tr:hover]:bg-gray-100/70">

@@ -4,7 +4,7 @@ import { NoPermission } from "@/components/empty-state";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { ROLE_LABELS } from "@/lib/auth/roles";
-import { btnPrimary, btnSecondary, inputBase } from "@/lib/ui";
+import { badgeOk, btnPrimary, btnSecondary, inputBase } from "@/lib/ui";
 import { FilterForm } from "@/components/filter-form";
 import { SearchInput } from "@/components/search-input";
 import { UserRowActions } from "./user-row-actions";
@@ -94,7 +94,7 @@ export default async function UsersPage({
           {filtered ? `匹配 ${users.length} / 共 ${total} 人` : `共 ${total} 人`}
         </span>
         {filtered && (
-          <Link href="/users" className="text-xs text-blue-600 hover:underline">
+          <Link href="/users" className="whitespace-nowrap text-xs text-blue-600 hover:underline">
             清除条件
           </Link>
         )}
@@ -104,13 +104,13 @@ export default async function UsersPage({
         <table className="min-w-full divide-y divide-gray-200 text-sm">
           <thead className="sticky top-0 z-10 bg-gray-50 text-left text-xs text-gray-500">
             <tr>
-              <th className="px-4 py-3 font-medium">账号</th>
-              <th className="px-4 py-3 font-medium">姓名</th>
-              <th className="px-4 py-3 font-medium">角色</th>
-              <th className="px-4 py-3 font-medium">状态</th>
-              <th className="px-4 py-3 font-medium">最近登录</th>
-              <th className="px-4 py-3 font-medium">创建时间</th>
-              <th className="px-4 py-3 font-medium">操作</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium">账号</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium">姓名</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium">角色</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium">状态</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium">最近登录</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium">创建时间</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium">操作</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 [&>tr]:transition-colors [&>tr:hover]:bg-gray-100/70">
@@ -145,7 +145,7 @@ export default async function UsersPage({
                 </td>
                 <td className="px-4 py-2.5">
                   {user.status === 1 ? (
-                    <span className="rounded-full bg-green-50 px-2 py-0.5 text-xs text-green-700">
+                    <span className={badgeOk}>
                       启用
                     </span>
                   ) : (

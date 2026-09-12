@@ -286,7 +286,7 @@ export default async function ReceivablesPage({
         <input type="hidden" name="view" value={view} />
         <button type="submit" className={btnSecondary}>查询</button>
         {(params.from || params.to || params.counterId) && (
-          <Link href={`/receivables-payables?view=${view}`} className="text-xs text-blue-600 hover:underline">清除条件</Link>
+          <Link href={`/receivables-payables?view=${view}`} className="whitespace-nowrap text-xs text-blue-600 hover:underline">清除条件</Link>
         )}
       </FilterForm>
 
@@ -303,16 +303,16 @@ export default async function ReceivablesPage({
           <table className="min-w-full divide-y divide-gray-200 text-sm [&_td]:align-top">
             <thead className="bg-gray-50 text-left text-xs text-gray-500">
               <tr>
-                <th className="px-4 py-3 font-medium">日期</th>
-                <th className="px-4 py-3 font-medium">来源单据</th>
-                <th className="px-4 py-3 font-medium">{isReceivable ? "客户" : "厂家"}</th>
-                <th className="px-4 py-3 font-medium">编码</th>
-                <th className="px-4 py-3 font-medium">品名</th>
-                <th className="px-4 py-3 font-medium">单位</th>
-                <th className="px-4 py-3 text-right font-medium tabular-nums">数量</th>
-                <th className="px-4 py-3 text-right font-medium tabular-nums">单价</th>
-                <th className="px-4 py-3 text-right font-medium tabular-nums">金额</th>
-                <th className="px-4 py-3 font-medium">备注</th>
+                <th className="whitespace-nowrap px-4 py-3 font-medium">日期</th>
+                <th className="whitespace-nowrap px-4 py-3 font-medium">来源单据</th>
+                <th className="whitespace-nowrap px-4 py-3 font-medium">{isReceivable ? "客户" : "厂家"}</th>
+                <th className="whitespace-nowrap px-4 py-3 font-medium">编码</th>
+                <th className="whitespace-nowrap px-4 py-3 font-medium">品名</th>
+                <th className="whitespace-nowrap px-4 py-3 font-medium">单位</th>
+                <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">数量</th>
+                <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">单价</th>
+                <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">金额</th>
+                <th className="whitespace-nowrap px-4 py-3 font-medium">备注</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 [&>tr]:transition-colors [&>tr:hover]:bg-gray-100/70">

@@ -21,7 +21,7 @@ export function ReturnListActions({ id, status }: { id: number; status: string }
         <button
           type="button"
           onClick={() => setShowInput(true)}
-          className="text-xs text-red-600 hover:underline"
+          className="whitespace-nowrap text-xs text-red-600 hover:underline"
         >
           作废
         </button>

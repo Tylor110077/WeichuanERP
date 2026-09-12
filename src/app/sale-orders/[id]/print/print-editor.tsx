@@ -315,7 +315,7 @@ export function PrintEditor({ data }: { data: PrintOrderData }) {
                   <button
                     type="button"
                     onClick={() => removeRow(i)}
-                    className="text-xs text-red-600 hover:underline"
+                    className="whitespace-nowrap text-xs text-red-600 hover:underline"
                   >
                     删
                   </button>

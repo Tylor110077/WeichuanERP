@@ -69,21 +69,21 @@ export function UnpaidOrderTable({
                   setExpanded(allOpen ? new Set() : new Set(rows.map((r) => r.id)))
                 }
                 title={allOpen ? "全部收起" : "全部展开"}
-                className="text-xs text-blue-600 hover:underline"
+                className="whitespace-nowrap text-xs text-blue-600 hover:underline"
               >
                 {allOpen ? "收起" : "展开"}
               </button>
             </th>
-            <th className="px-4 py-3 font-medium">日期</th>
-            <th className="px-4 py-3 font-medium">单号</th>
-            <th className="px-4 py-3 font-medium">商品</th>
-            <th className="px-4 py-3 text-right font-medium tabular-nums">{labels.total}</th>
-            <th className="px-4 py-3 text-right font-medium tabular-nums">{labels.paid}</th>
-            <th className="px-4 py-3 text-right font-medium tabular-nums">退货冲减</th>
-            <th className="px-4 py-3 text-right font-medium tabular-nums">
+            <th className="whitespace-nowrap px-4 py-3 font-medium">日期</th>
+            <th className="whitespace-nowrap px-4 py-3 font-medium">单号</th>
+            <th className="whitespace-nowrap px-4 py-3 font-medium">商品</th>
+            <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">{labels.total}</th>
+            <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">{labels.paid}</th>
+            <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">退货冲减</th>
+            <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">
               {labels.total === "应收" ? "未收" : "未付"}
             </th>
-            <th className="px-4 py-3 font-medium"></th>
+            <th className="whitespace-nowrap px-4 py-3 font-medium"></th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100 [&>tr]:transition-colors [&>tr:hover]:bg-gray-100/70">
@@ -136,7 +136,7 @@ export function UnpaidOrderTable({
                     ¥{o.unpaid.toFixed(2)}
                   </td>
                   <td className="px-4 py-2.5">
-                    <Link href={o.detailHref} className="text-xs text-blue-600 hover:underline">
+                    <Link href={o.detailHref} className="whitespace-nowrap text-xs text-blue-600 hover:underline">
                       详情 / 登记
                     </Link>
                   </td>

@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { badgeMuted, btnPrimary, btnSecondary, inputBase } from "@/lib/ui";
+import { badgeInfo, badgeMuted, btnPrimary, btnSecondary, inputBase } from "@/lib/ui";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
@@ -249,7 +249,7 @@ export default async function CustomersPage({
                       ...(groupIdRaw ? { groupId: groupIdRaw } : {}),
                       ...(tagId != null ? { tagId: String(tagId) } : {}),
                     }).toString()}`}
-                    className="text-xs text-blue-600 hover:underline"
+                    className="whitespace-nowrap text-xs text-blue-600 hover:underline"
                   >
                     清除关键词
                   </Link>
@@ -381,15 +381,15 @@ export default async function CustomersPage({
                   <table className="min-w-full divide-y divide-gray-200 text-sm">
                     <thead className="bg-gray-50 text-left text-xs text-gray-500">
                       <tr>
-                        <th className="px-4 py-3 font-medium">客户</th>
-                        <th className="px-4 py-3 font-medium">组织</th>
-                        <th className="px-4 py-3 font-medium">标签</th>
-                        <th className="px-4 py-3 text-right font-medium tabular-nums">成交单数</th>
-                        <th className="px-4 py-3 text-right font-medium tabular-nums">销售额</th>
-                        <th className="px-4 py-3 text-right font-medium tabular-nums">成本</th>
-                        <th className="px-4 py-3 text-right font-medium tabular-nums">毛利</th>
-                        <th className="px-4 py-3 text-right font-medium tabular-nums">平均利润率</th>
-                        <th className="px-4 py-3 font-medium"></th>
+                        <th className="whitespace-nowrap px-4 py-3 font-medium">客户</th>
+                        <th className="whitespace-nowrap px-4 py-3 font-medium">组织</th>
+                        <th className="whitespace-nowrap px-4 py-3 font-medium">标签</th>
+                        <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">成交单数</th>
+                        <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">销售额</th>
+                        <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">成本</th>
+                        <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">毛利</th>
+                        <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">平均利润率</th>
+                        <th className="whitespace-nowrap px-4 py-3 font-medium"></th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100 [&>tr]:transition-colors [&>tr:hover]:bg-gray-100/70">
@@ -409,7 +409,7 @@ export default async function CustomersPage({
                           <td className="px-4 py-2.5 text-gray-900">{r.name}</td>
                           <td className="px-4 py-2.5">
                             {r.groupName ? (
-                              <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-700">{r.groupName}</span>
+                              <span className={badgeInfo}>{r.groupName}</span>
                             ) : (
                               <span className="text-gray-400">—</span>
                             )}

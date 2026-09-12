@@ -309,7 +309,7 @@ export default async function ProductsPage({
                 {selected && <input type="hidden" name="manufacturer" value={selected} />}
                 <button type="submit" className={btnSecondary}>查询</button>
                 {q && (
-                  <Link href={listHref({ page: 1 })} className="text-xs text-blue-600 hover:underline">
+                  <Link href={listHref({ page: 1 })} className="whitespace-nowrap text-xs text-blue-600 hover:underline">
                     清除关键词
                   </Link>
                 )}
@@ -342,7 +342,7 @@ export default async function ProductsPage({
                   共 {productTotal} 个{totalPages > 1 ? `　第 ${page} / ${totalPages} 页` : ""}
                 </span>
                 {(selected || categoryRaw) && (
-                  <Link href={listHref({ clear: "all" })} className="text-xs text-blue-600 hover:underline">
+                  <Link href={listHref({ clear: "all" })} className="whitespace-nowrap text-xs text-blue-600 hover:underline">
                     清除筛选
                   </Link>
                 )}

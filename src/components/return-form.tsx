@@ -139,8 +139,8 @@ export function ReturnForm({
         <table className="min-w-full divide-y divide-gray-200 text-sm">
           <thead className="bg-gray-50 text-left text-xs text-gray-500">
             <tr>
-              <th className="px-4 py-3 font-medium">原单商品</th>
-              <th className="px-4 py-3 font-medium">可退数量</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium">原单商品</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium">可退数量</th>
               <th className="w-36 px-4 py-3 font-medium">
                 退货数量
                 <span className="ml-1 font-normal text-gray-400">不填＝不退</span>
@@ -213,7 +213,7 @@ export function ReturnForm({
                     <button
                       type="button"
                       onClick={() => setLines((prev) => prev.filter((_, j) => j !== i))}
-                      className="text-xs text-red-500 hover:underline"
+                      className="whitespace-nowrap text-xs text-red-500 hover:underline"
                     >
                       删除
                     </button>

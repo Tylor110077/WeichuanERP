@@ -155,7 +155,7 @@ export default async function InventoryPage({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-lg font-semibold text-gray-900">库存查询</h1>
         {warningCount > 0 && (
-          <span className="rounded-full bg-amber-50 px-3 py-1 text-xs text-amber-700">
+          <span className="whitespace-nowrap rounded-full bg-amber-50 px-3 py-1 text-xs text-amber-700">
             预警商品 {warningCount} 个
           </span>
         )}
@@ -219,7 +219,7 @@ export default async function InventoryPage({
           筛选
         </button>
         {(q || categoryRaw || mfrRaw || params.from || params.to || warnOnly) && (
-          <Link href="/inventory" className="text-xs text-blue-600 hover:underline">
+          <Link href="/inventory" className="whitespace-nowrap text-xs text-blue-600 hover:underline">
             清除条件
           </Link>
         )}
@@ -236,18 +236,18 @@ export default async function InventoryPage({
         <table className="min-w-full divide-y divide-gray-200 text-sm">
           <thead className="bg-gray-50 text-left text-xs text-gray-500">
             <tr>
-              <th className="px-4 py-3 font-medium">编码</th>
-              <th className="px-4 py-3 font-medium">名称</th>
-              <th className="px-4 py-3 font-medium">分类</th>
-              <th className="px-4 py-3 font-medium">单位</th>
-              <th className="px-4 py-3 text-right font-medium tabular-nums">库存数量</th>
-              <th className="px-4 py-3 text-right font-medium tabular-nums">成本金额</th>
-              <th className="px-4 py-3 text-right font-medium tabular-nums">均价</th>
-              <th className="px-4 py-3 text-right font-medium tabular-nums">最近进价</th>
-              <th className="px-4 py-3 font-medium">最近进货</th>
-              <th className="px-4 py-3 text-right font-medium tabular-nums">预警线</th>
-              <th className="px-4 py-3 font-medium">批次</th>
-              <th className="px-4 py-3 font-medium">状态</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium">编码</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium">名称</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium">分类</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium">单位</th>
+              <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">库存数量</th>
+              <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">成本金额</th>
+              <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">均价</th>
+              <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">最近进价</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium">最近进货</th>
+              <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">预警线</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium">批次</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium">状态</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 [&>tr]:transition-colors [&>tr:hover]:bg-gray-100/70">
@@ -260,7 +260,7 @@ export default async function InventoryPage({
             )}
             {rows.map(({ p, qty, minStock, warning, negative }) => (
               <tr key={p.id} className={warning ? "bg-amber-50/60" : ""}>
-                <td className="px-4 py-2.5 text-gray-600">{p.code}</td>
+                <td className="whitespace-nowrap px-4 py-2.5 text-gray-600">{p.code}</td>
                 <td className="px-4 py-2.5 text-gray-900">{p.name}</td>
                 <td className="px-4 py-2.5 text-gray-600">{p.category?.name ?? "—"}</td>
                 <td className="px-4 py-2.5 text-gray-600">{p.unit.name}</td>
@@ -288,21 +288,21 @@ export default async function InventoryPage({
                         ...(params.to ? { to: params.to } : {}),
                         batch: String(p.id),
                       }).toString()}`}
-                      className="text-xs text-blue-600 hover:underline"
+                      className="whitespace-nowrap text-xs text-blue-600 hover:underline"
                       title="看这个商品的每一笔进货批次与进价"
                     >
                       批次
                     </Link>
                     <Link
                       href={`/stock-movements?productId=${p.id}`}
-                      className="text-xs text-blue-600 hover:underline"
+                      className="whitespace-nowrap text-xs text-blue-600 hover:underline"
                       title="看这个商品的库存变动记录"
                     >
                       流水
                     </Link>
                     <Link
                       href={`/price-analysis?productId=${p.id}`}
-                      className="text-xs text-blue-600 hover:underline"
+                      className="whitespace-nowrap text-xs text-blue-600 hover:underline"
                       title="看这个商品的售价与成本随时间的走势"
                     >
                       价格
@@ -310,12 +310,12 @@ export default async function InventoryPage({
                   </div>
                 </td>
                 <td className="px-4 py-2.5">
-                  {warning && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800">预警</span>}
+                  {warning && <span className="whitespace-nowrap rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800">预警</span>}
                   {negative && (
-                    <span className="ml-1 rounded-full bg-red-100 px-2 py-0.5 text-xs text-red-700">负库存</span>
+                    <span className="ml-1 whitespace-nowrap rounded-full bg-red-100 px-2 py-0.5 text-xs text-red-700">负库存</span>
                   )}
                   {!warning && !negative && (
-                    <span className={`rounded-full px-2 py-0.5 text-xs ${p.status === 1 ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-600"}`}>
+                    <span className={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs ${p.status === 1 ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-600"}`}>
                       {p.status === 1 ? "正常" : "停用"}
                     </span>
                   )}
@@ -339,13 +339,13 @@ export default async function InventoryPage({
             <div className="flex items-center gap-3">
               <Link
                 href={`/stock-movements?productId=${batchProduct.id}`}
-                className="text-xs text-blue-600 hover:underline"
+                className="whitespace-nowrap text-xs text-blue-600 hover:underline"
               >
                 看库存流水
               </Link>
               <Link
                 href={`/price-analysis?productId=${batchProduct.id}`}
-                className="text-xs text-blue-600 hover:underline"
+                className="whitespace-nowrap text-xs text-blue-600 hover:underline"
               >
                 看价格走势
               </Link>
@@ -354,7 +354,7 @@ export default async function InventoryPage({
                   ...(q ? { q } : {}),
                   ...(warnOnly ? { warnOnly: "1" } : {}),
                 }).toString()}`}
-                className="text-xs text-blue-600 hover:underline"
+                className="whitespace-nowrap text-xs text-blue-600 hover:underline"
               >
                 收起
               </Link>
@@ -364,13 +364,13 @@ export default async function InventoryPage({
             <table className="min-w-full divide-y divide-gray-200 text-sm [&_td]:align-top [&_th]:whitespace-nowrap">
               <thead className="bg-gray-50 text-left text-xs text-gray-500">
                 <tr>
-                  <th className="px-4 py-3 font-medium">进货日期</th>
-                  <th className="px-4 py-3 font-medium">进货单号</th>
-                  <th className="px-4 py-3 font-medium">厂家</th>
-                  <th className="px-4 py-3 font-medium">来源</th>
-                  <th className="px-4 py-3 text-right font-medium tabular-nums">数量</th>
-                  <th className="px-4 py-3 text-right font-medium tabular-nums">进价</th>
-                  <th className="px-4 py-3 text-right font-medium tabular-nums">金额</th>
+                  <th className="whitespace-nowrap px-4 py-3 font-medium">进货日期</th>
+                  <th className="whitespace-nowrap px-4 py-3 font-medium">进货单号</th>
+                  <th className="whitespace-nowrap px-4 py-3 font-medium">厂家</th>
+                  <th className="whitespace-nowrap px-4 py-3 font-medium">来源</th>
+                  <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">数量</th>
+                  <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">进价</th>
+                  <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">金额</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 [&>tr]:transition-colors [&>tr:hover]:bg-gray-100/70">

@@ -42,7 +42,7 @@ export function UserRowActions({ userId, status, isSelf }: Props) {
         <button
           type="button"
           onClick={() => setShowReset((v) => !v)}
-          className="text-xs text-blue-600 hover:underline"
+          className="whitespace-nowrap text-xs text-blue-600 hover:underline"
         >
           重置密码
         </button>

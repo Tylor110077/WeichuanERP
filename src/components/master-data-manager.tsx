@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { btnPrimary, btnSecondary, inputBase } from "@/lib/ui";
+import { badgeOk, btnPrimary, btnSecondary, inputBase } from "@/lib/ui";
 import { useActionState, useState, type ReactNode } from "react";
 import { FormStateAlert } from "@/components/form-alert";
 import { RowAction } from "@/components/row-action";
@@ -99,8 +99,8 @@ export function MasterDataManager({
                 {c.label}
               </th>
             ))}
-            <th className="px-4 py-3 font-medium">状态</th>
-            {isAdmin && <th className="px-4 py-3 font-medium">操作</th>}
+            <th className="whitespace-nowrap px-4 py-3 font-medium">状态</th>
+            {isAdmin && <th className="whitespace-nowrap px-4 py-3 font-medium">操作</th>}
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100 [&>tr]:transition-colors [&>tr:hover]:bg-gray-100/70">
@@ -120,7 +120,7 @@ export function MasterDataManager({
               ))}
               <td className="px-4 py-2.5">
                 {row.status === 1 ? (
-                  <span className="rounded-full bg-green-50 px-2 py-0.5 text-xs text-green-700">启用</span>
+                  <span className={badgeOk}>启用</span>
                 ) : (
                   <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">停用</span>
                 )}
@@ -129,14 +129,14 @@ export function MasterDataManager({
                 <td className="px-4 py-2.5">
                   <div className="flex flex-wrap items-center justify-end gap-2">
                     {hideForm && editBase ? (
-                      <Link href={`${editBase}/${row.id}`} className="text-xs text-blue-600 hover:underline">
+                      <Link href={`${editBase}/${row.id}`} className="whitespace-nowrap text-xs text-blue-600 hover:underline">
                         编辑
                       </Link>
                     ) : (
                       <button
                         type="button"
                         onClick={() => setEditing(row)}
-                        className="text-xs text-blue-600 hover:underline"
+                        className="whitespace-nowrap text-xs text-blue-600 hover:underline"
                       >
                         编辑
                       </button>
@@ -154,7 +154,7 @@ export function MasterDataManager({
                         hidden={{ id: row.id }}
                         label="删除"
                         confirmLabel="确认删除"
-                        className="text-xs text-gray-500 hover:underline"
+                        className="whitespace-nowrap text-xs text-gray-500 hover:underline"
                         disabled={deletePending}
                       />
                     )}

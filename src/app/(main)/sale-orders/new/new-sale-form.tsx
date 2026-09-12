@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useState, useTransition } from "react";
-import { btnPrimary, btnSmallPrimary, btnSmallSolid, inputBase, tagInfo, tagPending } from "@/lib/ui";
+import { badgeInfo, btnPrimary, btnSmallPrimary, btnSmallSolid, inputBase, tagInfo, tagPending } from "@/lib/ui";
 import { initials, matchesSearch } from "@/lib/pinyin";
 import { SearchSelect } from "@/components/search-select";
 import { createSaleOrderAction, type FormState } from "../actions";
@@ -681,7 +681,7 @@ export function NewSaleForm({
           {customerId && selectedCustomer && (
                 <div className="pointer-events-none absolute inset-y-0 right-2 top-1 flex items-center gap-1">
                   {selectedCustomer.groupName && (
-                    <span className="rounded-full bg-blue-50 px-1.5 py-0.5 text-[10px] leading-none text-blue-700">
+                    <span className="whitespace-nowrap rounded-full bg-blue-50 px-1.5 py-0.5 text-[10px] leading-none text-blue-700">
                       {selectedCustomer.groupName}
                     </span>
                   )}
@@ -726,7 +726,7 @@ export function NewSaleForm({
                     >
                       <span className="font-medium">{c.name}</span>
                       {c.groupName && (
-                        <span className="ml-2 rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-700">{c.groupName}</span>
+                        <span className={`ml-2 ${badgeInfo}`}>{c.groupName}</span>
                       )}
                       {c.tagNames.map((t) => (
                         <span key={t} className="ml-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">{t}</span>

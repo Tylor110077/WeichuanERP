@@ -96,10 +96,10 @@ export default async function StockMovementsPage({
         <div className="flex items-center gap-3">
           {productId ? (
             <>
-              <Link href={`/inventory?batch=${productId}`} className="text-xs text-blue-600 hover:underline">
+              <Link href={`/inventory?batch=${productId}`} className="whitespace-nowrap text-xs text-blue-600 hover:underline">
                 ← 回库存看批次
               </Link>
-              <Link href={`/price-analysis?productId=${productId}`} className="text-xs text-blue-600 hover:underline">
+              <Link href={`/price-analysis?productId=${productId}`} className="whitespace-nowrap text-xs text-blue-600 hover:underline">
                 看价格走势
               </Link>
             </>
@@ -145,15 +145,15 @@ export default async function StockMovementsPage({
         <table className="min-w-full divide-y divide-gray-200 text-sm">
           <thead className="bg-gray-50 text-left text-xs text-gray-500">
             <tr>
-              <th className="px-4 py-3 font-medium">时间</th>
-              <th className="px-4 py-3 font-medium">商品</th>
-              <th className="px-4 py-3 font-medium">类型</th>
-              <th className="px-4 py-3 text-right font-medium tabular-nums">变动数量</th>
-              <th className="px-4 py-3 text-right font-medium tabular-nums">变动前</th>
-              <th className="px-4 py-3 text-right font-medium tabular-nums">变动后</th>
-              <th className="px-4 py-3 text-right font-medium tabular-nums">成本单价</th>
-              <th className="px-4 py-3 font-medium">来源单据</th>
-              <th className="px-4 py-3 font-medium">操作人</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium">时间</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium">商品</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium">类型</th>
+              <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">变动数量</th>
+              <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">变动前</th>
+              <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">变动后</th>
+              <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">成本单价</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium">来源单据</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium">操作人</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 [&>tr]:transition-colors [&>tr:hover]:bg-gray-100/70">

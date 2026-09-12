@@ -168,14 +168,14 @@ export default async function PurchaseOrderDetailPage({
         <table className="min-w-full divide-y divide-gray-200 text-sm [&_td]:align-top [&_th]:whitespace-nowrap">
           <thead className="bg-gray-50 text-left text-xs text-gray-500">
             <tr>
-              <th className="px-4 py-3 font-medium">编码</th>
-              <th className="px-4 py-3 font-medium">商品名称</th>
-              <th className="px-4 py-3 font-medium">规格</th>
-              <th className="px-4 py-3 font-medium">数量</th>
-              <th className="px-4 py-3 font-medium">单位</th>
-              <th className="px-4 py-3 text-right font-medium tabular-nums">进价</th>
-              <th className="px-4 py-3 text-right font-medium tabular-nums">金额</th>
-              <th className="px-4 py-3 font-medium">备注</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium">编码</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium">商品名称</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium">规格</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium">数量</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium">单位</th>
+              <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">进价</th>
+              <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">金额</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium">备注</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 [&>tr]:transition-colors [&>tr:hover]:bg-gray-100/70">
@@ -236,7 +236,7 @@ export default async function PurchaseOrderDetailPage({
                 >
                   {r.status === "confirmed" ? "已退" : "已作废"}
                 </span>
-                <Link href="/purchase-returns" className="text-xs text-blue-600 hover:underline">
+                <Link href="/purchase-returns" className="whitespace-nowrap text-xs text-blue-600 hover:underline">
                   查看退货单
                 </Link>
               </div>

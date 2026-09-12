@@ -121,14 +121,14 @@ export default async function SalesAnalysisPage({
         <table className="min-w-full divide-y divide-gray-200 text-sm">
           <thead className="bg-gray-50 text-left text-xs text-gray-500">
             <tr>
-              <th className="px-4 py-3 font-medium">编码</th>
-              <th className="px-4 py-3 font-medium">商品</th>
-              <th className="px-4 py-3 font-medium">单位</th>
-              <th className="px-4 py-3 text-right font-medium tabular-nums">销量</th>
-              <th className="px-4 py-3 text-right font-medium tabular-nums">销售额</th>
-              <th className="px-4 py-3 text-right font-medium tabular-nums">成本</th>
-              <th className="px-4 py-3 text-right font-medium tabular-nums">利润</th>
-              <th className="px-4 py-3 text-right font-medium tabular-nums">利润率</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium">编码</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium">商品</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium">单位</th>
+              <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">销量</th>
+              <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">销售额</th>
+              <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">成本</th>
+              <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">利润</th>
+              <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">利润率</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 [&>tr]:transition-colors [&>tr:hover]:bg-gray-100/70">
@@ -145,7 +145,7 @@ export default async function SalesAnalysisPage({
             )}
             {productRows.map((r) => (
               <tr key={r.code}>
-                <td className="px-4 py-2.5 text-gray-600">{r.code}</td>
+                <td className="whitespace-nowrap px-4 py-2.5 text-gray-600">{r.code}</td>
                 <td className="px-4 py-2.5 text-gray-900">{r.name}</td>
                 <td className="px-4 py-2.5 text-gray-600">{r.unit}</td>
                 <td className="px-4 py-2.5 text-right text-gray-900 tabular-nums">{r.qty.toFixed(3)}</td>
@@ -178,11 +178,11 @@ export default async function SalesAnalysisPage({
           <table className="min-w-full divide-y divide-gray-200 text-sm">
             <thead className="bg-gray-50 text-left text-xs text-gray-500">
               <tr>
-                <th className="px-4 py-3 font-medium">日期</th>
-                <th className="px-4 py-3 text-right font-medium tabular-nums">单数</th>
-                <th className="px-4 py-3 text-right font-medium tabular-nums">销售额</th>
-                <th className="px-4 py-3 text-right font-medium tabular-nums">成本</th>
-                <th className="px-4 py-3 text-right font-medium tabular-nums">利润</th>
+                <th className="whitespace-nowrap px-4 py-3 font-medium">日期</th>
+                <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">单数</th>
+                <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">销售额</th>
+                <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">成本</th>
+                <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">利润</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 [&>tr]:transition-colors [&>tr:hover]:bg-gray-100/70">

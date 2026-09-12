@@ -67,7 +67,7 @@ export default async function LoginLogsPage({
           查询
         </button>
         {(params.from || params.to) && (
-          <a href="/login-logs" className="text-xs text-blue-600 hover:underline">清除日期</a>
+          <a href="/login-logs" className="whitespace-nowrap text-xs text-blue-600 hover:underline">清除日期</a>
         )}
       </FilterForm>
 
@@ -75,11 +75,11 @@ export default async function LoginLogsPage({
         <table className="min-w-full divide-y divide-gray-200 text-sm">
           <thead className="bg-gray-50 text-left text-xs text-gray-500">
             <tr>
-              <th className="px-4 py-3 font-medium">时间</th>
-              <th className="px-4 py-3 font-medium">账号</th>
-              <th className="px-4 py-3 font-medium">用户</th>
-              <th className="px-4 py-3 font-medium">结果</th>
-              <th className="px-4 py-3 font-medium">IP</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium">时间</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium">账号</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium">用户</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium">结果</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium">IP</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 [&>tr]:transition-colors [&>tr:hover]:bg-gray-100/70">

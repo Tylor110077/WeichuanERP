@@ -64,10 +64,10 @@ export default async function PriceAnalysisPage({
         <div className="flex items-center gap-3">
           {productId ? (
             <>
-              <Link href={`/inventory?batch=${productId}`} className="text-xs text-blue-600 hover:underline">
+              <Link href={`/inventory?batch=${productId}`} className="whitespace-nowrap text-xs text-blue-600 hover:underline">
                 ← 回库存看批次
               </Link>
-              <Link href={`/stock-movements?productId=${productId}`} className="text-xs text-blue-600 hover:underline">
+              <Link href={`/stock-movements?productId=${productId}`} className="whitespace-nowrap text-xs text-blue-600 hover:underline">
                 看库存流水
               </Link>
             </>
@@ -161,15 +161,15 @@ export default async function PriceAnalysisPage({
                 <table className="min-w-full divide-y divide-gray-200 text-sm">
                   <thead className="bg-gray-50 text-left text-xs text-gray-500">
                     <tr>
-                      <th className="px-4 py-3 font-medium">日期</th>
-                      <th className="px-4 py-3 text-right font-medium tabular-nums">单数</th>
-                      <th className="px-4 py-3 text-right font-medium tabular-nums">当日成本区间</th>
-                      <th className="px-4 py-3 font-medium">售价最高单</th>
-                      <th className="px-4 py-3 text-right font-medium tabular-nums">最高售价</th>
-                      <th className="px-4 py-3 text-right font-medium tabular-nums">最高单毛利率</th>
-                      <th className="px-4 py-3 font-medium">售价最低单</th>
-                      <th className="px-4 py-3 text-right font-medium tabular-nums">最低售价</th>
-                      <th className="px-4 py-3 text-right font-medium tabular-nums">最低单毛利率</th>
+                      <th className="whitespace-nowrap px-4 py-3 font-medium">日期</th>
+                      <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">单数</th>
+                      <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">当日成本区间</th>
+                      <th className="whitespace-nowrap px-4 py-3 font-medium">售价最高单</th>
+                      <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">最高售价</th>
+                      <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">最高单毛利率</th>
+                      <th className="whitespace-nowrap px-4 py-3 font-medium">售价最低单</th>
+                      <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">最低售价</th>
+                      <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">最低单毛利率</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 [&>tr]:transition-colors [&>tr:hover]:bg-gray-100/70">
@@ -216,16 +216,16 @@ export default async function PriceAnalysisPage({
               <table className="min-w-full divide-y divide-gray-200 text-sm">
                 <thead className="bg-gray-50 text-left text-xs text-gray-500">
                   <tr>
-                    <th className="px-4 py-3 font-medium">客户</th>
-                    <th className="px-4 py-3 text-right font-medium tabular-nums">单数</th>
-                    <th className="px-4 py-3 text-right font-medium tabular-nums">销量</th>
-                    <th className="px-4 py-3 text-right font-medium tabular-nums">平均售价</th>
-                    <th className="px-4 py-3 text-right font-medium tabular-nums">最低售价</th>
-                    <th className="px-4 py-3 text-right font-medium tabular-nums">最高售价</th>
-                    <th className="px-4 py-3 text-right font-medium tabular-nums">平均成本</th>
-                    <th className="px-4 py-3 text-right font-medium tabular-nums">毛利</th>
-                    <th className="px-4 py-3 text-right font-medium tabular-nums">毛利率</th>
-                    <th className="px-4 py-3 text-right font-medium tabular-nums">最近购买</th>
+                    <th className="whitespace-nowrap px-4 py-3 font-medium">客户</th>
+                    <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">单数</th>
+                    <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">销量</th>
+                    <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">平均售价</th>
+                    <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">最低售价</th>
+                    <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">最高售价</th>
+                    <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">平均成本</th>
+                    <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">毛利</th>
+                    <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">毛利率</th>
+                    <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">最近购买</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 [&>tr]:transition-colors [&>tr:hover]:bg-gray-100/70">
@@ -275,15 +275,15 @@ export default async function PriceAnalysisPage({
               <table className="min-w-full divide-y divide-gray-200 text-sm">
                 <thead className="bg-gray-50 text-left text-xs text-gray-500">
                   <tr>
-                    <th className="px-4 py-3 font-medium">日期</th>
-                    <th className="px-4 py-3 font-medium">单号</th>
-                    <th className="px-4 py-3 font-medium">客户</th>
-                    <th className="px-4 py-3 text-right font-medium tabular-nums">数量</th>
-                    <th className="px-4 py-3 text-right font-medium tabular-nums">售价</th>
-                    <th className="px-4 py-3 text-right font-medium tabular-nums">成本单价</th>
-                    <th className="px-4 py-3 text-right font-medium tabular-nums">毛利额</th>
-                    <th className="px-4 py-3 text-right font-medium tabular-nums">毛利率</th>
-                    <th className="px-4 py-3 text-right font-medium tabular-nums">销售额</th>
+                    <th className="whitespace-nowrap px-4 py-3 font-medium">日期</th>
+                    <th className="whitespace-nowrap px-4 py-3 font-medium">单号</th>
+                    <th className="whitespace-nowrap px-4 py-3 font-medium">客户</th>
+                    <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">数量</th>
+                    <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">售价</th>
+                    <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">成本单价</th>
+                    <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">毛利额</th>
+                    <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">毛利率</th>
+                    <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">销售额</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 [&>tr]:transition-colors [&>tr:hover]:bg-gray-100/70">
@@ -303,7 +303,7 @@ export default async function PriceAnalysisPage({
                     return (
                       <tr key={i}>
                         <td className="px-4 py-2.5 text-gray-900">{p.date}</td>
-                        <td className="px-4 py-2.5 text-gray-500">{p.orderNo}</td>
+                        <td className="whitespace-nowrap px-4 py-2.5 text-gray-500">{p.orderNo}</td>
                         <td className="px-4 py-2.5 text-gray-900">{p.customer}</td>
                         <td className="px-4 py-2.5 text-right text-gray-900 tabular-nums">{p.qty.toFixed(3)}</td>
                         <td className="px-4 py-2.5 text-right font-medium text-gray-900 tabular-nums">¥{p.unitPrice.toFixed(2)}</td>

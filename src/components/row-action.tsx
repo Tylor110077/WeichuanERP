@@ -15,7 +15,7 @@ export function RowAction({
   hidden,
   label,
   confirmLabel,
-  className = "text-xs text-red-600 hover:underline",
+  className = "whitespace-nowrap text-xs text-red-600 hover:underline",
   disabled,
 }: {
   action: (formData: FormData) => void | Promise<void>;
@@ -54,7 +54,7 @@ export function RowAction({
       <button
         type="button"
         onClick={() => setArmed(false)}
-        className="text-xs text-gray-500 hover:underline"
+        className="whitespace-nowrap text-xs text-gray-500 hover:underline"
       >
         取消
       </button>

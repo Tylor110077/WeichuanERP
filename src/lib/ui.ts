@@ -58,13 +58,17 @@ export const btnSmallDanger =
  * 状态标签（小胶囊）：语义固定，避免同一含义在不同页面换色
  * - 绿=已完成/已结清/启用；橙=待处理/预警；灰=作废/停用/中性；红=异常
  * 用法：<span className={badgeOk}>已结清</span>
+ *
+ * 一律带 whitespace-nowrap：表格列被挤窄时，「已入库」这类三字徽标会被拆成竖排三行
+ * （曾出现 20×58 的徽标、行高 141px）。约定是——不要挤压单个小徽标，
+ * 让同一行里能换行的文字去换行、行变高即可。
  */
-export const badgeOk = "rounded-full bg-green-50 px-2 py-0.5 text-xs text-green-700";
-export const badgePending = "rounded-full bg-amber-50 px-2 py-0.5 text-xs text-amber-700";
-export const badgeMuted = "rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600";
-export const badgeDanger = "rounded-full bg-red-50 px-2 py-0.5 text-xs text-red-700";
+export const badgeOk = "whitespace-nowrap rounded-full bg-green-50 px-2 py-0.5 text-xs text-green-700";
+export const badgePending = "whitespace-nowrap rounded-full bg-amber-50 px-2 py-0.5 text-xs text-amber-700";
+export const badgeMuted = "whitespace-nowrap rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600";
+export const badgeDanger = "whitespace-nowrap rounded-full bg-red-50 px-2 py-0.5 text-xs text-red-700";
 /** 信息类标签（厂家、分类等中性标注） */
-export const badgeInfo = "rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-700";
+export const badgeInfo = "whitespace-nowrap rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-700";
 
 /** 数值语义色：正向（利润、已收）=绿，负向（未收、欠款）=红，待处理=橙 */
 export const textPositive = "text-green-700";
@@ -72,8 +76,8 @@ export const textNegative = "text-red-600";
 export const textPending = "text-amber-700";
 
 /** 行内小标注（厂家等）：紧凑方形，区别于状态胶囊 */
-export const tagInfo = "rounded bg-blue-50 px-1.5 py-0.5 text-xs text-blue-700";
-export const tagPending = "rounded bg-amber-50 px-1.5 py-0.5 text-xs text-amber-600";
+export const tagInfo = "whitespace-nowrap rounded bg-blue-50 px-1.5 py-0.5 text-xs text-blue-700";
+export const tagPending = "whitespace-nowrap rounded bg-amber-50 px-1.5 py-0.5 text-xs text-amber-600";
 
 /** 分段控件（视图切换、报表页签）选中态 / 未选中态 */
 export const segActive = "rounded-md bg-blue-600 text-white";

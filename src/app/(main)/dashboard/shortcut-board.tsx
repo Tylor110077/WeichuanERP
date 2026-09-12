@@ -103,13 +103,13 @@ export function ShortcutBoard({
             {msg?.kind === "ok" && (
               <span className="text-xs text-green-700">{msg.text}</span>
             )}
-            <button type="button" onClick={openEdit} className="text-xs text-blue-600 hover:underline">
+            <button type="button" onClick={openEdit} className="whitespace-nowrap text-xs text-blue-600 hover:underline">
               编辑
             </button>
           </div>
         ) : (
           <div className="flex items-center gap-3">
-            <button type="button" onClick={resetDefault} disabled={pending} className="text-xs text-gray-500 hover:underline">
+            <button type="button" onClick={resetDefault} disabled={pending} className="whitespace-nowrap text-xs text-gray-500 hover:underline">
               恢复默认
             </button>
             <button
@@ -119,7 +119,7 @@ export function ShortcutBoard({
                 setMsg(null);
               }}
               disabled={pending}
-              className="text-xs text-gray-500 hover:underline"
+              className="whitespace-nowrap text-xs text-gray-500 hover:underline"
             >
               取消
             </button>

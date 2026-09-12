@@ -156,18 +156,20 @@ export default async function SaleOrdersPage({
       </FilterForm>
 
       <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
-        <table className="min-w-full divide-y divide-gray-200 text-sm">
+                {/* 列多（10 列）：给表格一个最小宽度，宁可窄屏左右滑动，也不要把每格压成六七行
+            或把「泰山」拆成竖排两字。实测 72rem 时行高 141px→41px，且短内容都能单行放下。 */}
+        <table className="min-w-[72rem] divide-y divide-gray-200 text-sm">
           <thead className="bg-gray-50 text-left text-xs text-gray-500">
             <tr>
-              <th className="px-4 py-3 font-medium">单据号</th>
-              <th className="px-4 py-3 font-medium">客户</th>
-              <th className="px-4 py-3 font-medium">状态</th>
-              <th className="px-4 py-3 text-right font-medium tabular-nums">金额</th>
-              <th className="px-4 py-3 text-right font-medium tabular-nums">已收</th>
-              <th className="px-4 py-3 font-medium">款项</th>
-              <th className="px-4 py-3 font-medium">操作人</th>
-              <th className="px-4 py-3 font-medium">开单时间</th>
-              <th className="px-4 py-3 font-medium"></th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium">单据号</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium">客户</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium">状态</th>
+              <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">金额</th>
+              <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">已收</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium">款项</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium">操作人</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium">开单时间</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 [&>tr]:transition-colors [&>tr:hover]:bg-gray-100/70">
@@ -183,7 +185,7 @@ export default async function SaleOrdersPage({
               const outstanding = Number(o.totalAmount) - Number(o.receivedAmount) - returned;
               return (
               <tr key={o.id}>
-                <td className="px-4 py-2.5 font-medium text-gray-900">{o.orderNo}</td>
+                <td className="whitespace-nowrap px-4 py-2.5 font-medium text-gray-900">{o.orderNo}</td>
                 <td className="px-4 py-2.5 text-gray-900">{o.customer.name}</td>
                 <td className="px-4 py-2.5">
                   <span
@@ -223,7 +225,7 @@ export default async function SaleOrdersPage({
                     {o.status !== "voided" && outstanding > 0 && (
                       <Link
                         href={`/sale-orders/${o.id}#receipt`}
-                        className="text-xs text-blue-600 hover:underline"
+                        className="whitespace-nowrap text-xs text-blue-600 hover:underline"
                         title="直接跳到该单的收款登记处"
                       >
                         登记
