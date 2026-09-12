@@ -158,16 +158,19 @@ export function UnpaidOrderTable({
                       {o.items.length === 0 ? (
                         <p className="text-xs text-gray-400">该单没有商品明细</p>
                       ) : (
-                        <table className="min-w-full text-xs">
+                        <table className="w-full table-fixed text-xs">
+                          {/* table-fixed + 逐列定宽：各单据的明细列位置才会完全一致
+                              （自适应列宽随内容变化，会让不同单据的列错开）；
+                              品名用百分比、备注吃掉剩余宽度，避免大片空白间隙 */}
                           <thead className="text-left text-gray-500">
                             <tr>
-                              <th className="w-32 py-1 pr-4 font-medium">编码</th>
-                              <th className="py-1 pr-4 font-medium">品名</th>
-                              <th className="w-32 py-1 pr-4 font-medium">生产厂家</th>
-                              <th className="w-16 py-1 pr-4 font-medium">单位</th>
-                              <th className="w-28 py-1 pr-4 text-right font-medium">数量</th>
-                              <th className="w-28 py-1 pr-4 text-right font-medium">单价</th>
-                              <th className="w-32 py-1 pr-4 text-right font-medium">金额</th>
+                              <th className="w-[7.5rem] py-1 pr-4 font-medium">编码</th>
+                              <th className="w-[22%] py-1 pr-4 font-medium">品名</th>
+                              <th className="w-[7.5rem] py-1 pr-4 font-medium">生产厂家</th>
+                              <th className="w-[4rem] py-1 pr-4 font-medium">单位</th>
+                              <th className="w-[7.5rem] py-1 pr-4 text-right font-medium">数量</th>
+                              <th className="w-[7.5rem] py-1 pr-4 text-right font-medium">单价</th>
+                              <th className="w-[8.5rem] py-1 pr-4 text-right font-medium">金额</th>
                               <th className="py-1 font-medium">备注</th>
                             </tr>
                           </thead>
