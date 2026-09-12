@@ -216,6 +216,8 @@ export default async function CustomersPage({
             }}
             searchPlaceholder="搜索组织…"
             emptyText="无匹配组织"
+            // 组织可能有几十上百个：这一栏独占左侧一列，给足高度，靠滚动条收住
+            scrollClassName="max-h-[min(30rem,calc(100vh-20rem))]"
           />
 
           <div className="min-w-0 space-y-3">
@@ -315,6 +317,7 @@ export default async function CustomersPage({
                 <SectionHeading title="客户组织" hint="客户归属组织可移动，未被引用可删除" />
                 <MasterDataManager
                   entityLabel="组织"
+                  scrollClassName="max-h-[32rem]"
                   columns={[
                     { key: "name", label: "组织名称" },
                     { key: "customerCount", label: "客户数" },
@@ -341,6 +344,7 @@ export default async function CustomersPage({
           <SectionHeading title="客户标签" hint="一个客户可挂多个标签，未被引用可删除" />
                 <MasterDataManager
                   entityLabel="标签"
+                  scrollClassName="max-h-[32rem]"
                   columns={[
                     { key: "name", label: "标签名称" },
                     { key: "customerCount", label: "客户数" },

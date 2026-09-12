@@ -65,6 +65,7 @@ export function MasterRail({
   allActive = false,
   unassigned,
   className,
+  scrollClassName = "max-h-64",
 }: {
   /** 左栏标题，如「厂家」 */
   title: string;
@@ -81,6 +82,13 @@ export function MasterRail({
   /** 可选的"未分配/未填写"项，固定显示在列表最下方（如「未填厂家」「未分组」） */
   unassigned?: { label: string; count: number; href: string; active: boolean };
   className?: string;
+  /**
+   * 列表区的高度上限类，默认 max-h-64（16rem）。
+   * 一列里堆了两个 rail 的页面（如商品页的厂家 + 分类）保持默认，免得左栏比右栏长一截；
+   * 独占一列的页面（如客户页的组织）可以给大一点，例如
+   * max-h-[min(30rem,calc(100vh-20rem))]。
+   */
+  scrollClassName?: string;
 }): JSX.Element {
   const [keyword, setKeyword] = useState("");
 
@@ -135,7 +143,8 @@ export function MasterRail({
         </div>
       ) : null}
 
-      <div className="scroll-thin max-h-64 overflow-y-auto overscroll-contain">
+      {/* 列表区：高度上限 + 常显细滚动条（macOS 的隐藏式滚动条会让人看不出还能往下翻）。 */}
+      <div className={["scroll-thin overflow-y-auto overscroll-contain", scrollClassName].join(" ")}>
         {visibleItems.length === 0 ? (
           <p className="px-3 py-6 text-center text-xs text-gray-400">
             {emptyText}

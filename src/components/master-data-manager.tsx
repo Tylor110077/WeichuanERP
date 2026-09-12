@@ -46,6 +46,12 @@ interface Props {
   /** 独立页模式：不渲染平铺表单；行内"编辑"变为链接（editBase + /{id}） */
   hideForm?: boolean;
   editBase?: string;
+  /**
+   * 表格高度上限类，如 max-h-[32rem]。不传则表格自然增高（默认，适合已分页的列表）。
+   * 传入后表格内部滚动、表头吸顶，适合可能累积到上百条又不分页的主数据
+   * （客户组织、客户标签、商品分类、计量单位、厂家）。
+   */
+  scrollClassName?: string;
 }
 
 const fieldCls = `mt-1 w-full ${inputBase}`;
@@ -61,16 +67,30 @@ export function MasterDataManager({
   deleteAction,
   hideForm,
   editBase,
+  scrollClassName,
 }: Props) {
   const [editing, setEditing] = useState<RowData | null>(null);
   const [saveState, formAction, savePending] = useActionState<FormState, FormData>(saveAction, null);
   const [toggleState, toggleActionState, togglePending] = useActionState<FormState, FormData>(toggleAction, null);
   const [deleteState, deleteActionState, deletePending] = useActionState<FormState, FormData>(deleteAction ?? (async () => null), null);
 
+  // 组织/标签/分类这类主数据可能上百条：给它一个高度上限并让表头吸顶，
+  // 免得条目一多就把页面拉成几千像素；滚动条常显，才看得出下面还有。
+  // 已分页的列表（如商品列表）不要传，那种列表本身就有边界，套一层内滚动反而别扭。
   const table = (
-    <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+    <div
+      className={[
+        "rounded-xl border border-gray-200 bg-white",
+        scrollClassName ? `scroll-thin ${scrollClassName} overflow-auto` : "overflow-x-auto",
+      ].join(" ")}
+    >
       <table className="min-w-full divide-y divide-gray-200 text-sm">
-        <thead className="bg-gray-50 text-left text-xs text-gray-500">
+        <thead
+          className={[
+            "bg-gray-50 text-left text-xs text-gray-500",
+            scrollClassName ? "sticky top-0 z-10" : "",
+          ].join(" ")}
+        >
           <tr>
             {columns.map((c) => (
               <th key={c.key} className="px-4 py-3 font-medium">

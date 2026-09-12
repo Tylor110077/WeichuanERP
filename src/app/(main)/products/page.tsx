@@ -452,6 +452,7 @@ export default async function ProductsPage({
           />
           <MasterDataManager
                       entityLabel="厂家"
+                      scrollClassName="max-h-[32rem]"
                       columns={[
                         { key: "name", label: "厂家名称" },
                         { key: "productCount", label: "商品数" },
@@ -499,6 +500,7 @@ export default async function ProductsPage({
           <SectionHeading title="商品分类" hint="有商品的分类不可删除，请停用" />
             <MasterDataManager
                         entityLabel="分类"
+                        scrollClassName="max-h-[32rem]"
                         columns={[
                           { key: "name", label: "分类名称" },
                           { key: "count", label: "商品数" },
@@ -525,6 +527,7 @@ export default async function ProductsPage({
           <SectionHeading title="计量单位" hint="被商品引用的单位不可删除，请停用" />
             <MasterDataManager
                         entityLabel="单位"
+                        scrollClassName="max-h-[32rem]"
                         columns={[
                           { key: "name", label: "单位名称" },
                           { key: "count", label: "商品数" },
