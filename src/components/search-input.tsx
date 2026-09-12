@@ -1,9 +1,10 @@
 "use client";
 
 import type { InputHTMLAttributes } from "react";
+import { clearOnClick } from "./select-all-on-focus";
 
 /**
- * 搜索输入框（聚焦即全选）。
+ * 搜索输入框（聚焦即全选、点击即清空）。
  *
  * 为什么需要这个组件：筛选页大多是**服务端组件**，不能给元素直接传 onFocus，
  * 而"点开搜索框想改关键词"时必须先全选——否则输入会追加在旧值后面
@@ -15,6 +16,7 @@ export function SearchInput({
   type = "search",
   autoComplete = "off",
   onFocus,
+  onClick,
   ...rest
 }: InputHTMLAttributes<HTMLInputElement>) {
   return (
@@ -26,8 +28,12 @@ export function SearchInput({
         e.currentTarget.select();
         onFocus?.(e);
       }}
-      // 已聚焦的框再点一次不会再触发 focus，这里补上，避免打字变成追加
-      onClick={(e) => e.currentTarget.select()}
+      // 点一下就把上次的关键词清掉：用户是来搜新东西的，不该先手动删
+      // （键盘聚焦仍走上面的全选，Tab 进来不会丢值）
+      onClick={(e) => {
+        clearOnClick(e);
+        onClick?.(e);
+      }}
     />
   );
 }

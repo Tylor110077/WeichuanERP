@@ -23,3 +23,17 @@ export function selectAllOnFocus(e: FocusEvent<HTMLInputElement>) {
 export function selectAllOnClick(e: MouseEvent<HTMLInputElement>) {
   e.currentTarget.select();
 }
+
+/**
+ * 点击即清空（用于**筛选用的搜索框**）。
+ *
+ * 与全选的区别：全选只是把旧关键词选中，用户仍能看到它、打字才被替换；
+ * 而用户明确希望"点一下搜索框，原来的字立刻消失"，所以这里直接把值清掉。
+ *
+ * 只用于纯搜索框（列表筛选、左栏搜索）。**不要用在选择器上**：
+ * 选择器里那段文字代表"当前选中的是谁"，清掉会让人以为没选（值其实还在）。
+ */
+export function clearOnClick(e: MouseEvent<HTMLInputElement>) {
+  const el = e.currentTarget;
+  if (el.value) el.value = "";
+}

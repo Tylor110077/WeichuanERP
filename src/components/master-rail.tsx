@@ -19,7 +19,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { JSX } from "react";
-import { selectAllOnClick, selectAllOnFocus } from "./select-all-on-focus";
+import { clearOnClick, selectAllOnFocus } from "./select-all-on-focus";
 import { matchesSearch } from "@/lib/pinyin";
 import { inputBase } from "@/lib/ui";
 
@@ -121,7 +121,7 @@ export function MasterRail({
         <input
           type="search"
           onFocus={selectAllOnFocus}
-          onClick={selectAllOnClick}
+          onClick={clearOnClick}
           value={keyword}
           onChange={(event) => setKeyword(event.target.value)}
           placeholder={searchPlaceholder}
