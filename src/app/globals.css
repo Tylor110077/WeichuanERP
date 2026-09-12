@@ -56,3 +56,43 @@ input[type="number"] {
 .scroll-thin:hover::-webkit-scrollbar-thumb {
   background-color: #9ca3af;
 }
+
+/*
+ * 销售单打印（三联单版式）。
+ * 目标：A4 纸、纯黑白、表格边框清晰、一联尽量不跨页断开。
+ */
+@media print {
+  @page {
+    size: A4;
+    margin: 8mm;
+  }
+  /* 打印时只保留单据本身：去掉外壳内边距与阴影 */
+  body {
+    background: #fff;
+  }
+  .print-slip {
+    width: 100%;
+    color: #000;
+  }
+  /* 一联不要被分页切开（行数特别多时浏览器仍会分页，这是可接受的） */
+  .print-slip-wrap {
+    break-inside: avoid;
+  }
+  /* 输入框在纸上不要出现蓝色高亮与占位文字 */
+  .print-slip input {
+    background: transparent !important;
+    color: #000 !important;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .print-slip input::placeholder {
+    color: transparent !important;
+  }
+  /* 边框在打印时用纯黑，避免灰度过浅看不清 */
+  .print-slip table,
+  .print-slip th,
+  .print-slip td,
+  .print-slip .border-gray-800 {
+    border-color: #000 !important;
+  }
+}

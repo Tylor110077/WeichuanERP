@@ -1,39 +1,86 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { btnPrimary, btnSecondary } from "@/lib/ui";
 import { rmbUpper } from "@/lib/rmb";
+
+/**
+ * 销售单打印（可编辑预览）。
+ *
+ * 版式对齐公司原纸质三联单：
+ *   抬头（公司名 + 销售单）
+ *   录单日期 / 单据编号
+ *   购买单位 / 经手人 / 制单人 / 送货地址（送货地址是比原纸质单多出来的一栏）
+ *   明细表：商品编号 商品全名 单位 数量 单价 金额（另可开启 序号 / 备注 列）
+ *   总计 + 大写
+ *   收款账户 / 收款金额 / 优惠金额
+ *   联次标识（第一联存根 / 第二联结账 / 第三联客户）
+ *   页脚：地址 / 电话 / 客户签收
+ *
+ * 打印联次支持三种：三联同页（配复写纸或打印后裁切）、每联一页、只打一联。
+ * 打印稿上的修改只作用于本次打印，不回写订单（页面上有明确提示）。
+ */
+
+/** 抬头公司名与页脚联系方式：要长期改就改这里（打印预览里也可临时改） */
+const DEFAULT_COMPANY = "重庆鑫玮川物资有限公司";
+const DEFAULT_FOOTER_ADDRESS = "";
+const DEFAULT_FOOTER_PHONE = "";
 
 export interface PrintOrderData {
   orderNo: string;
   createdAt: string;
   customer: { name: string; contact: string; phone: string; address: string };
   operatorName: string;
+  /** 制单人：当前登录用户 */
+  editorName: string;
+  /** 已收金额（预填"收款金额"） */
+  receivedAmount: number;
   remark: string;
-  rows: { code: string; name: string; qty: number; unit: string; price: number }[];
+  rows: { code: string; name: string; qty: number; unit: string; price: number; remark: string }[];
 }
 
 const ALL_COLS = [
-  { key: "idx", label: "#" },
-  { key: "code", label: "编码" },
-  { key: "name", label: "商品名称" },
-  { key: "qty", label: "数量", right: true },
+  { key: "idx", label: "序号" },
+  { key: "code", label: "商品编号" },
+  { key: "name", label: "商品全名" },
   { key: "unit", label: "单位" },
+  { key: "qty", label: "数量", right: true },
   { key: "price", label: "单价", right: true },
   { key: "amount", label: "金额", right: true },
+  { key: "remark", label: "备注" },
 ];
 
-const inputCls =
-  "w-full bg-transparent outline-none focus:bg-blue-50 rounded px-1 text-inherit";
+/** 打印联次（与纸质三联单一致） */
+const COPIES = [
+  { key: "stub", label: "第一联：存根联" },
+  { key: "settle", label: "第二联：结账联" },
+  { key: "customer", label: "第三联：客户联" },
+] as const;
 
-/** 打印前可编辑预览：标题/抬头/列显隐/行内容/行数均可编辑，所见即所得打印。 */
+/**
+ * 打印稿里的输入框样式。
+ * 注意：不能把 w-full 混进通用样式里——Tailwind 里 w-full 的优先级高于 w-28 这类固定宽度，
+ * 会让所有「固定宽度」的输入框被撑满整行（之前抬头几行就是这样错位的）。
+ * 所以拆成两个：表格单元格用 inputFill（填满单元格），其它位置用 inputBase + 显式宽度。
+ */
+const inputBase = "bg-transparent outline-none focus:bg-blue-50 rounded px-1 text-inherit";
+const inputFill = `${inputBase} w-full`;
+
 export function PrintEditor({ data }: { data: PrintOrderData }) {
-  const [title, setTitle] = useState("销售单（发货单）");
+  const [company, setCompany] = useState(DEFAULT_COMPANY);
+  const [title, setTitle] = useState("销售单");
   const [orderNo, setOrderNo] = useState(data.orderNo);
   const [orderDate, setOrderDate] = useState(data.createdAt);
-  const [customer, setCustomer] = useState(data.customer);
-  const [remark, setRemark] = useState(data.remark);
-  const [operatorName, setOperatorName] = useState(data.operatorName);
+  const [buyer, setBuyer] = useState(data.customer.name);
+  const [handler, setHandler] = useState(data.operatorName);
+  const [maker, setMaker] = useState(data.editorName);
+  // 送货地址：默认取客户档案地址（最常见就是送到客户那儿），可当场改写
+  const [deliveryAddress, setDeliveryAddress] = useState(data.customer.address);
+  const [account, setAccount] = useState("");
+  const [received, setReceived] = useState(data.receivedAmount ? data.receivedAmount.toFixed(2) : "");
+  const [discount, setDiscount] = useState("0");
+  const [footerAddress, setFooterAddress] = useState(DEFAULT_FOOTER_ADDRESS);
+  const [footerPhone, setFooterPhone] = useState(DEFAULT_FOOTER_PHONE);
   const [rows, setRows] = useState(
     data.rows.map((r) => ({
       code: r.code,
@@ -41,20 +88,15 @@ export function PrintEditor({ data }: { data: PrintOrderData }) {
       qty: r.qty.toFixed(3),
       unit: r.unit,
       price: r.price.toFixed(2),
+      remark: r.remark,
     }))
   );
-  const [hiddenCols, setHiddenCols] = useState<string[]>([]);
+  // 默认按纸质单的列显示（序号与备注默认收起，需要时在工具栏打开）
+  const [hiddenCols, setHiddenCols] = useState<string[]>(["idx", "remark"]);
   const [showRmb, setShowRmb] = useState(true);
   const [showSign, setShowSign] = useState(true);
-  // 打印时间只能客户端生成（SSR 时钟与浏览器不一致会 hydration 失败），挂载后再填充
-  const [printTime, setPrintTime] = useState("");
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setPrintTime(new Date().toLocaleString("zh-CN"));
-    }, 0);
-    return () => clearTimeout(timer);
-  }, []);
+  /** three=三联同页｜page=每联一页｜single=只打一联 */
+  const [copyMode, setCopyMode] = useState<"three" | "page" | "single">("three");
 
   const visibleCols = ALL_COLS.filter((c) => !hiddenCols.includes(c.key));
 
@@ -63,60 +105,264 @@ export function PrintEditor({ data }: { data: PrintOrderData }) {
     const p = Number(row.price);
     return Number.isFinite(q) && Number.isFinite(p) ? q * p : 0;
   }
-  const total = rows.reduce((s, r) => s + rowAmount(r), 0);
+  const totalAmount = rows.reduce((s, r) => s + rowAmount(r), 0);
+  const totalQty = rows.reduce((s, r) => {
+    const q = Number(r.qty);
+    return s + (Number.isFinite(q) ? q : 0);
+  }, 0);
+  const netAmount = totalAmount - (Number(discount) || 0);
 
   function updateRow(index: number, patch: Partial<(typeof rows)[number]>) {
     setRows((prev) => prev.map((r, i) => (i === index ? { ...r, ...patch } : r)));
   }
   function addRow() {
-    setRows((prev) => [...prev, { code: "", name: "", qty: "", unit: "", price: "" }]);
+    setRows((prev) => [...prev, { code: "", name: "", qty: "", unit: "", price: "", remark: "" }]);
   }
   function removeRow(index: number) {
     setRows((prev) => (prev.length > 1 ? prev.filter((_, i) => i !== index) : prev));
   }
   function toggleCol(key: string) {
-    setHiddenCols((prev) =>
-      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
+    setHiddenCols((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
+  }
+
+  /** 一联的内容（三联除联名外完全相同） */
+  function renderSlip(copyLabel: string) {
+    return (
+      <div className="print-slip mx-auto w-full bg-white font-sans text-gray-900">
+        {/* 抬头 */}
+        <div className="text-center text-xl font-bold tracking-widest leading-8">
+          <input
+            value={company}
+            onChange={(e) => setCompany(e.target.value)}
+            className={`${inputBase} inline-block text-center text-xl font-bold tracking-widest`}
+            style={{ width: `${Math.max(company.length, 6) + 2}em` }}
+          />
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className={`${inputBase} inline-block text-center text-xl font-bold tracking-widest`}
+            style={{ width: `${Math.max(title.length, 3) + 2}em` }}
+          />
+        </div>
+
+        {/* 抬头信息：每行用 flex 排，标签与值始终在同一行（固定宽度输入框会换行） */}
+        <div className="mt-1.5 space-y-0.5 text-[13px] leading-6">
+          <div className="flex items-center gap-1">
+            <span className="shrink-0">录单日期：</span>
+            <input
+              value={orderDate}
+              onChange={(e) => setOrderDate(e.target.value)}
+              className={`${inputBase} w-28 shrink-0`}
+            />
+            <span className="ml-auto shrink-0">单据编号：</span>
+            <input
+              value={orderNo}
+              onChange={(e) => setOrderNo(e.target.value)}
+              className={`${inputBase} w-44 shrink-0`}
+            />
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="shrink-0">购买单位：</span>
+            <input
+              value={buyer}
+              onChange={(e) => setBuyer(e.target.value)}
+              className={`${inputBase} min-w-0 flex-1`}
+            />
+            <span className="ml-4 shrink-0">经手人：</span>
+            <input
+              value={handler}
+              onChange={(e) => setHandler(e.target.value)}
+              className={`${inputBase} w-24 shrink-0`}
+            />
+            <span className="ml-4 shrink-0">制单人：</span>
+            <input
+              value={maker}
+              onChange={(e) => setMaker(e.target.value)}
+              className={`${inputBase} w-24 shrink-0`}
+            />
+          </div>
+          {/* 送货地址：比原纸质单多的一栏 */}
+          <div className="flex items-center gap-1">
+            <span className="shrink-0">送货地址：</span>
+            <input
+              value={deliveryAddress}
+              onChange={(e) => setDeliveryAddress(e.target.value)}
+              className={`${inputBase} min-w-0 flex-1`}
+              placeholder="（选填）送货地址"
+            />
+          </div>
+        </div>
+
+        {/* 明细表 */}
+        <table className="mt-1 w-full border-collapse text-[13px]">
+          <thead>
+            <tr>
+              {visibleCols.map((c) => (
+                <th
+                  key={c.key}
+                  className={`border border-gray-800 px-1 py-0.5 font-semibold ${
+                    c.right ? "text-right" : "text-left"
+                  }`}
+                >
+                  {c.label}
+                </th>
+              ))}
+              <th className="print:hidden border border-gray-300 px-1 text-center font-normal text-gray-400">
+                操作
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row, i) => (
+              <tr key={i}>
+                {visibleCols.map((c) => (
+                  <td key={c.key} className="border border-gray-800 px-1 py-0.5">
+                    {c.key === "idx" ? (
+                      <span className="block text-center">{i + 1}</span>
+                    ) : c.key === "amount" ? (
+                      <span className="block text-right tabular-nums">{rowAmount(row).toFixed(2)}</span>
+                    ) : (
+                      <input
+                        value={row[c.key as keyof typeof row]}
+                        onChange={(e) => updateRow(i, { [c.key]: e.target.value })}
+                        className={`${inputFill} ${c.right ? "text-right" : ""}`}
+                      />
+                    )}
+                  </td>
+                ))}
+                <td className="print:hidden border border-gray-300 px-1 text-center">
+                  <button
+                    type="button"
+                    onClick={() => removeRow(i)}
+                    className="text-xs text-red-600 hover:underline"
+                  >
+                    删
+                  </button>
+                </td>
+              </tr>
+            ))}
+            {/* 总计：数量与金额合计 */}
+            <tr className="font-semibold">
+              <td colSpan={Math.max(visibleCols.findIndex((c) => c.key === "qty"), 1)} className="border border-gray-800 px-1 py-0.5">
+                总计
+              </td>
+              <td className="border border-gray-800 px-1 py-0.5 text-right tabular-nums">
+                {totalQty.toFixed(3)}
+              </td>
+              <td className="border border-gray-800 px-1 py-0.5" />
+              <td className="border border-gray-800 px-1 py-0.5 text-right tabular-nums">
+                {totalAmount.toFixed(2)}
+              </td>
+              {visibleCols.filter((c) => ["remark", "idx"].includes(c.key)).map((c) => (
+                <td key={c.key} className="border border-gray-800" />
+              ))}
+              <td className="print:hidden border border-gray-300" />
+            </tr>
+          </tbody>
+        </table>
+
+        <div className="text-[13px] leading-6">
+          {showRmb && (
+            <div>
+              大写：<span className="font-semibold">{rmbUpper(netAmount)}</span>
+            </div>
+          )}
+          <div className="flex flex-wrap items-center gap-x-6">
+            <span>
+              收款账户：
+              <input
+                value={account}
+                onChange={(e) => setAccount(e.target.value)}
+                className={`${inputBase} w-56`}
+                placeholder="银行 / 账号"
+              />
+            </span>
+            <span>
+              收款金额：
+              <input
+                value={received}
+                onChange={(e) => setReceived(e.target.value)}
+                className={`${inputBase} w-24 text-right`}
+              />
+            </span>
+            <span>
+              优惠金额：
+              <input
+                value={discount}
+                onChange={(e) => setDiscount(e.target.value)}
+                className={`${inputBase} w-20 text-right`}
+              />
+            </span>
+          </div>
+          {data.remark && <div>整单备注：{data.remark}</div>}
+        </div>
+
+        {/* 联次标识 */}
+        <div className="mt-0.5 border-t border-gray-800 pt-0.5 text-center text-[12px] font-medium">
+          {copyLabel}
+        </div>
+
+        {/* 页脚 */}
+        <div className="mt-0.5 flex items-center gap-1 border-t border-gray-800 pt-0.5 text-[12px]">
+          <span className="shrink-0">地址：</span>
+          <input
+            value={footerAddress}
+            onChange={(e) => setFooterAddress(e.target.value)}
+            className={`${inputBase} min-w-0 flex-1`}
+            placeholder="公司地址"
+          />
+          <span className="ml-3 shrink-0">电话：</span>
+          <input
+            value={footerPhone}
+            onChange={(e) => setFooterPhone(e.target.value)}
+            className={`${inputBase} w-36 shrink-0`}
+            placeholder="联系电话"
+          />
+          {showSign && <span className="ml-3 shrink-0">客户签收：＿＿＿＿＿＿</span>}
+        </div>
+      </div>
     );
   }
+
+  const slips =
+    copyMode === "single"
+      ? [{ key: "single", label: "第一联：存根联" }]
+      : COPIES.map((c) => ({ key: c.key, label: c.label }));
 
   return (
     <div className="mx-auto max-w-4xl p-6">
       {/* 工具栏（打印时隐藏） */}
       <div className="print:hidden mb-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-        {/* 主操作行 */}
         <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => window.print()}
-            className={`${btnPrimary} shadow-sm`}
-          >
+          <button type="button" onClick={() => window.print()} className={`${btnPrimary} shadow-sm`}>
             打印
           </button>
           <button
             type="button"
             onClick={() => {
-              if (window.history.length > 1) {
-                window.history.back();
-              } else {
-                window.close();
-              }
+              if (window.history.length > 1) window.history.back();
+              else window.close();
             }}
             className={btnSecondary}
           >
             返回
           </button>
-          <div className="ml-auto flex items-center gap-2">
-            <label className="text-xs text-gray-500">单据标题</label>
-            <input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-48 rounded-md border border-gray-300 px-2 py-1.5 text-sm text-gray-900 focus:border-blue-400 focus:outline-none"
-            />
+          <div className="ml-auto flex flex-wrap items-center gap-1.5">
+            <span className="text-xs font-medium text-gray-500">联次</span>
+            {(
+              [
+                { key: "three", label: "三联同页" },
+                { key: "page", label: "每联一页" },
+                { key: "single", label: "只打一联" },
+              ] as const
+            ).map((m) => (
+              <Chip key={m.key} on={copyMode === m.key} onClick={() => setCopyMode(m.key)}>
+                {m.label}
+              </Chip>
+            ))}
           </div>
         </div>
 
-        {/* 选项行：打印列 / 显示选项 / 添加行 */}
         <div className="mt-3 space-y-2 border-t border-gray-100 pt-3">
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="mr-1.5 text-xs font-medium text-gray-500">打印列</span>
@@ -144,230 +390,43 @@ export function PrintEditor({ data }: { data: PrintOrderData }) {
           </div>
         </div>
 
-        {/* 提示行：必须说清"这里的修改不会保存到订单"，否则用户会以为改的是订单 */}
         <p className="mt-3 border-t border-gray-100 pt-2.5 text-xs text-gray-500">
-          提示：直接点击单据中的文字即可编辑；行可添加 / 删除；调整满意后点「打印」。
+          提示：表单里的文字都可直接点击修改（含送货地址、收款账户、页脚地址电话）；行可添加 / 删除；
+          「联次」决定打几张：三联同页 = 一页里三份（复写纸或打后裁切），每联一页 = 三张单据。
           <span className="ml-1 font-medium text-amber-600">
             这里的修改只作用于本次打印稿，不会保存到订单；如需修改订单请用「作废后重开」或退货。
           </span>
         </p>
       </div>
 
-      {/* 单据预览（打印内容） */}
-      <div className="mx-auto max-w-3xl bg-white p-8 font-sans text-sm text-gray-900 print:max-w-none print:p-0">
-        <div className="mb-6 border-b-2 border-gray-900 pb-3">
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="mb-2 w-full bg-transparent text-center text-2xl font-bold tracking-widest outline-none"
-          />
-          <div className="flex justify-between text-xs text-gray-600">
-            <span>
-              单号：
-              <input
-                value={orderNo}
-                onChange={(e) => setOrderNo(e.target.value)}
-                className="w-40 bg-transparent outline-none"
-              />
-            </span>
-            <span>
-              日期：
-              <input
-                value={orderDate}
-                onChange={(e) => setOrderDate(e.target.value)}
-                className="w-28 bg-transparent outline-none"
-              />
-            </span>
+      {/* 打印内容 */}
+      <div className="mx-auto max-w-3xl print:max-w-none">
+        {slips.map((s, i) => (
+          <div
+            key={s.key}
+            className={`print-slip-wrap ${
+              i > 0
+                ? "mt-6 border-t border-dashed border-gray-300 pt-6 print:mt-0 print:border-t-0 print:pt-0"
+                : ""
+            } ${copyMode === "page" && i > 0 ? "print:break-before-page" : ""}`}
+          >
+            {renderSlip(s.label)}
           </div>
-        </div>
-
-        <div className="mb-4 grid grid-cols-3 gap-2 rounded border border-gray-300 p-3 text-sm">
-          <div>
-            <span className="text-gray-500">客户：</span>
-            <input
-              value={customer.name}
-              onChange={(e) => setCustomer((c) => ({ ...c, name: e.target.value }))}
-              className="w-32 bg-transparent font-medium outline-none"
-            />
-          </div>
-          <div>
-            <span className="text-gray-500">联系人：</span>
-            <input
-              value={customer.contact}
-              onChange={(e) => setCustomer((c) => ({ ...c, contact: e.target.value }))}
-              className="w-24 bg-transparent outline-none"
-            />
-          </div>
-          <div>
-            <span className="text-gray-500">电话：</span>
-            <input
-              value={customer.phone}
-              onChange={(e) => setCustomer((c) => ({ ...c, phone: e.target.value }))}
-              className="w-28 bg-transparent outline-none"
-            />
-          </div>
-          <div className="col-span-3">
-            <span className="text-gray-500">地址：</span>
-            <input
-              value={customer.address}
-              onChange={(e) => setCustomer((c) => ({ ...c, address: e.target.value }))}
-              className="w-full bg-transparent outline-none"
-            />
-          </div>
-        </div>
-
-        <table className="w-full border-collapse text-sm">
-          <thead>
-            <tr className="border-y-2 border-gray-900 bg-gray-50 text-left">
-              {visibleCols.map((c) => (
-                <th
-                  key={c.key}
-                  className={`px-2 py-2 ${c.right ? "text-right tabular-nums" : ""}`}
-                >
-                  {c.label}
-                </th>
-              ))}
-              <th className="print:hidden px-1" />
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row, idx) => {
-              const amount = rowAmount(row);
-              const cellCls = "px-2 py-1.5";
-              return (
-                <tr key={idx} className="border-b border-gray-200">
-                  {visibleCols.map((c) => {
-                    if (c.key === "idx")
-                      return (
-                        <td key={c.key} className={`${cellCls} text-gray-500`}>
-                          {idx + 1}
-                        </td>
-                      );
-                    if (c.key === "code")
-                      return (
-                        <td key={c.key} className={cellCls}>
-                          <input
-                            value={row.code}
-                            onChange={(e) => updateRow(idx, { code: e.target.value })}
-                            className={inputCls}
-                          />
-                        </td>
-                      );
-                    if (c.key === "name")
-                      return (
-                        <td key={c.key} className={cellCls}>
-                          <input
-                            value={row.name}
-                            onChange={(e) => updateRow(idx, { name: e.target.value })}
-                            className={inputCls}
-                          />
-                        </td>
-                      );
-                    if (c.key === "qty")
-                      return (
-                        <td key={c.key} className={cellCls}>
-                          <input
-                            value={row.qty}
-                            onChange={(e) => updateRow(idx, { qty: e.target.value })}
-                            className={`${inputCls} text-right tabular-nums`}
-                          />
-                        </td>
-                      );
-                    if (c.key === "unit")
-                      return (
-                        <td key={c.key} className={cellCls}>
-                          <input
-                            value={row.unit}
-                            onChange={(e) => updateRow(idx, { unit: e.target.value })}
-                            className={inputCls}
-                          />
-                        </td>
-                      );
-                    if (c.key === "price")
-                      return (
-                        <td key={c.key} className={cellCls}>
-                          <input
-                            value={row.price}
-                            onChange={(e) => updateRow(idx, { price: e.target.value })}
-                            className={`${inputCls} text-right tabular-nums`}
-                          />
-                        </td>
-                      );
-                    return (
-                      <td key={c.key} className={`${cellCls} text-right tabular-nums font-medium`}>
-                        ¥{amount.toFixed(2)}
-                      </td>
-                    );
-                  })}
-                  <td className="print:hidden px-1 text-center">
-                    <button
-                      type="button"
-                      onClick={() => removeRow(idx)}
-                      className="text-xs text-red-500 hover:underline"
-                    >
-                      删
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-          <tfoot>
-            <tr className="border-t-2 border-gray-900">
-              <td colSpan={Math.max(visibleCols.length - 1, 1)} className="px-2 py-2 text-right font-bold">
-                {showRmb ? `合计（大写：${rmbUpper(total)}）` : "合计"}
-              </td>
-              <td className="px-2 py-2 text-right text-base font-bold">¥{total.toFixed(2)}</td>
-              <td className="print:hidden" />
-            </tr>
-          </tfoot>
-        </table>
-
-        <div className="mt-3 text-sm text-gray-600">
-          备注：
-          <input
-            value={remark}
-            onChange={(e) => setRemark(e.target.value)}
-            className="w-1/2 bg-transparent outline-none"
-          />
-          　开单操作人：
-          <input
-            value={operatorName}
-            onChange={(e) => setOperatorName(e.target.value)}
-            className="w-24 bg-transparent outline-none"
-          />
-        </div>
-
-        {showSign && (
-          <div className="mt-10 flex justify-between text-sm">
-            <div className="w-64 border-t border-gray-900 pt-1 text-center text-gray-600">
-              客户签收 / 日期
-            </div>
-            <div className="w-64 border-t border-gray-900 pt-1 text-center text-gray-600">
-              发货人 / 日期
-            </div>
-          </div>
-        )}
-
-        <p className="mt-6 text-center text-xs text-gray-400">
-          玮川进销存 ・ {orderNo}
-          {printTime ? ` ・ 打印时间 ${printTime}` : ""}
-        </p>
+        ))}
       </div>
     </div>
   );
 }
 
-/** 可点选的开关 chip：选中为蓝底，未选中为灰边淡字。 */
 function Chip({ on, onClick, children }: { on: boolean; onClick: () => void; children: ReactNode }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
+      className={`rounded-full border px-2.5 py-1 text-xs font-medium transition ${
         on
-          ? "border-blue-200 bg-blue-50 text-blue-700"
-          : "border-gray-200 bg-white text-gray-400 hover:border-gray-300 hover:text-gray-600"
+          ? "border-blue-300 bg-blue-50 text-blue-700"
+          : "border-gray-200 bg-white text-gray-500 hover:border-gray-300"
       }`}
     >
       {children}

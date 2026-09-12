@@ -39,6 +39,10 @@ export default async function SaleOrderPrintPage({
       address: order.customer.address ?? "",
     },
     operatorName: order.operator.displayName,
+    /** 制单人：当前登录用户（打印稿上的"制单人"） */
+    editorName: user.displayName,
+    /** 已收金额：预填到打印稿的"收款金额" */
+    receivedAmount: Number(order.receivedAmount),
     remark: order.remark ?? "",
     rows: order.items.map((item) => ({
       code: item.product.code,
@@ -46,6 +50,7 @@ export default async function SaleOrderPrintPage({
       qty: Number(item.quantity),
       unit: item.unit.name,
       price: Number(item.unitPrice),
+      remark: item.remark ?? "",
     })),
   };
 
