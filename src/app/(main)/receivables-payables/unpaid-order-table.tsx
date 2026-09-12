@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import Link from "next/link";
 
 /**
@@ -58,10 +58,12 @@ export function UnpaidOrderTable({
 
   return (
     <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
-      <table className="min-w-full divide-y divide-gray-200 text-sm [&_td]:align-top">
+      {/* 列多（开关 + 8 列）：给最小宽度，宁可窄屏左右滑动，也不要把「展开」压成竖排、
+            把商品概览挤成四行。实测 60rem 时行高回到 41px、商品列 67px→132px。 */}
+      <table className="min-w-[60rem] divide-y divide-gray-200 text-sm [&_td]:align-top">
         <thead className="bg-gray-50 text-left text-xs text-gray-500">
           <tr>
-            <th className="w-10 px-4 py-3">
+            <th className="w-20 px-4 py-3">
               <button
                 type="button"
                 onClick={() =>
@@ -89,15 +91,17 @@ export function UnpaidOrderTable({
           {rows.map((o) => {
             const open = expanded.has(o.id);
             return (
-              <>
-                <tr key={o.id}>
+              // React 要求 key 落在 map 返回的最外层元素上：裸 <> 分片承载不了 key，
+              // 会报 "Each child in a list should have a unique key"（开发浮层里那条 1 Issue）
+              <Fragment key={o.id}>
+                <tr>
                   <td className="px-4 py-2.5">
                     <button
                       type="button"
                       onClick={() => toggle(o.id)}
                       aria-expanded={open}
                       title={open ? "收起商品" : "展开该单商品"}
-                      className="flex items-center gap-1 text-xs text-gray-500 hover:text-blue-600"
+                      className="flex items-center gap-1 whitespace-nowrap text-xs text-gray-500 hover:text-blue-600"
                     >
                       <span className={`inline-block transition-transform ${open ? "rotate-90" : ""}`}>▶</span>
                       {open ? "收起" : "展开"}
@@ -176,7 +180,7 @@ export function UnpaidOrderTable({
                     </td>
                   </tr>
                 )}
-              </>
+              </Fragment>
             );
           })}
         </tbody>
