@@ -66,7 +66,6 @@ export default async function NewSaleOrderPage() {
     label: `${p.code} ${p.name}`,
     code: p.code,
     name: p.name,
-    spec: p.spec,
     manufacturer: p.manufacturer,
     unitName: p.unitName,
     stockQty: p.stockQty,

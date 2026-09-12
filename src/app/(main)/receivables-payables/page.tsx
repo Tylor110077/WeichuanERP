@@ -57,7 +57,7 @@ export default async function ReceivablesPage({
           items: {
             orderBy: { id: "asc" },
             include: {
-              product: { select: { code: true, name: true, spec: true } },
+              product: { select: { code: true, name: true } },
               unit: { select: { name: true } },
             },
           },
@@ -73,7 +73,7 @@ export default async function ReceivablesPage({
           items: {
             orderBy: { id: "asc" },
             include: {
-              product: { select: { code: true, name: true, spec: true } },
+              product: { select: { code: true, name: true } },
               unit: { select: { name: true } },
             },
           },
@@ -139,7 +139,6 @@ export default async function ReceivablesPage({
       id: it.id,
       code: it.product.code,
       name: it.product.name,
-      spec: it.product.spec ?? "",
       unit: it.unit.name,
       qty: Number(it.quantity),
       price: Number(it.unitPrice),

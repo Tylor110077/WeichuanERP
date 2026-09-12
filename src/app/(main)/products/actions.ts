@@ -9,8 +9,7 @@ import { requireAdmin, requireMasterDataWrite } from "@/lib/auth/guards";
 import { writeAudit } from "@/lib/audit";
 
 const productSchema = z.object({
-  name: z.string().trim().min(1, "请填写商品名称（完整名称，含规格）").max(100),
-  spec: z.string().trim().max(100).optional().default(""), // 表单已与名称合一（历史兼容）
+  name: z.string().trim().min(1, "请填写商品名称（写全名称，如 BV 2.5平方 单芯铜线）").max(100),
   manufacturer: z.string().trim().min(1, "请选择或新建厂家").max(100), // 必填（厂家档案）
   categoryId: z.coerce.number().int().positive().nullable(),
   unitId: z.coerce.number().int().positive("请选择单位"),
@@ -29,7 +28,6 @@ function parseProduct(formData: FormData) {
   const catRaw = formData.get("categoryId");
   return productSchema.safeParse({
     name: formData.get("name") ?? "",
-    spec: formData.get("spec") ?? "",
     manufacturer: formData.get("manufacturer") ?? "",
     categoryId: catRaw ? Number(catRaw) : null,
     unitId: Number(formData.get("unitId")),
@@ -71,7 +69,6 @@ export async function saveProductAction(_prev: FormState, formData: FormData): P
 
   const writeData = {
     name: data.name,
-    spec: data.spec || null,
     manufacturer: data.manufacturer,
     categoryId,
     unitId: data.unitId,
@@ -92,7 +89,6 @@ export async function saveProductAction(_prev: FormState, formData: FormData): P
       before: {
         code: before.code,
         name: before.name,
-        spec: before.spec,
         manufacturer: before.manufacturer,
         refPurchasePrice: Number(before.refPurchasePrice),
         refSalePrice: Number(before.refSalePrice),
@@ -101,7 +97,6 @@ export async function saveProductAction(_prev: FormState, formData: FormData): P
       after: {
         code: before.code,
         name: writeData.name,
-        spec: writeData.spec,
         manufacturer: writeData.manufacturer,
         refPurchasePrice: writeData.refPurchasePrice,
         refSalePrice: writeData.refSalePrice,
@@ -173,7 +168,6 @@ export type QuickProductResult =
 /** 销售开单页内直接新建商品（仅管理员；SKU 自动生成，同商品管理页）。 */
 export async function createQuickProductAction(data: {
   name: string;
-  spec?: string;
   manufacturer: string; // 必填：厂家
   categoryId?: number | null;
   unitId: number;
@@ -186,7 +180,6 @@ export async function createQuickProductAction(data: {
 
   const parsed = productSchema.safeParse({
     name: data.name ?? "",
-    spec: data.spec ?? "",
     manufacturer: data.manufacturer ?? "",
     categoryId: data.categoryId || null,
     unitId: Number(data.unitId),
@@ -206,7 +199,6 @@ export async function createQuickProductAction(data: {
         data: {
           code,
           name: parsed.data.name,
-          spec: parsed.data.spec || null,
           manufacturer: parsed.data.manufacturer,
           categoryId: parsed.data.categoryId,
           unitId: parsed.data.unitId,

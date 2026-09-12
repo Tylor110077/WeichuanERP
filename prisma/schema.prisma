@@ -196,7 +196,6 @@ model Product {
   name             String           @db.VarChar(100)
   /** 拼音首字母串（由 lib/pinyin.ts 的 searchPinyin() 自动维护），供搜索用 */
   searchPinyin     String?          @map("search_pinyin") @db.VarChar(255)
-  spec             String?          @db.VarChar(100)
   manufacturer     String           @default("") @db.VarChar(100) // 厂商（生产厂家，必填——应用层强制）
   categoryId       Int?             @map("category_id")
   category         ProductCategory? @relation(fields: [categoryId], references: [id])

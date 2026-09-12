@@ -28,7 +28,6 @@ export interface OrderProductOption {
   id: number;
   code: string;
   name: string;
-  spec: string;
   manufacturer: string;
   unitName: string;
   stockQty: number;
@@ -66,7 +65,6 @@ async function toProductOptions(ids: number[], canSeeCost: boolean): Promise<Ord
         id: true,
         code: true,
         name: true,
-        spec: true,
         manufacturer: true,
         stockQty: true,
         avgCost: true,
@@ -105,7 +103,6 @@ async function toProductOptions(ids: number[], canSeeCost: boolean): Promise<Ord
         id: p.id,
         code: p.code,
         name: p.name,
-        spec: p.spec ?? "",
         manufacturer: p.manufacturer,
         unitName: p.unit.name,
         stockQty: Number(p.stockQty),

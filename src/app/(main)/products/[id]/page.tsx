@@ -49,7 +49,7 @@ export default async function EditProductPage({
       </div>
       <EntityForm
         fields={[
-          { name: "name", label: "商品名称 *", placeholder: "完整名称，含规格，如：BV 2.5平方 单芯铜线", required: true, maxLength: 100 },
+          { name: "name", label: "商品名称 *", placeholder: "写全名称，如：BV 2.5平方 单芯铜线", required: true, maxLength: 100 },
           {
             name: "manufacturer",
             label: "厂家 *",

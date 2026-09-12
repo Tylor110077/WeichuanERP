@@ -16,7 +16,6 @@ export interface OrderItemRow {
   id: number;
   code: string;
   name: string;
-  spec: string;
   unit: string;
   qty: number;
   price: number;
@@ -152,7 +151,6 @@ export function UnpaidOrderTable({
                             <tr>
                               <th className="py-1 pr-4 font-medium">编码</th>
                               <th className="py-1 pr-4 font-medium">品名</th>
-                              <th className="py-1 pr-4 font-medium">规格</th>
                               <th className="py-1 pr-4 font-medium">单位</th>
                               <th className="py-1 pr-4 text-right font-medium">数量</th>
                               <th className="py-1 pr-4 text-right font-medium">单价</th>
@@ -165,7 +163,6 @@ export function UnpaidOrderTable({
                               <tr key={it.id}>
                                 <td className="py-1 pr-4 text-gray-600">{it.code}</td>
                                 <td className="py-1 pr-4">{it.name}</td>
-                                <td className="py-1 pr-4 text-gray-500">{it.spec || "—"}</td>
                                 <td className="py-1 pr-4 text-gray-600">{it.unit}</td>
                                 <td className="py-1 pr-4 text-right tabular-nums">{it.qty.toFixed(3)}</td>
                                 <td className="py-1 pr-4 text-right tabular-nums">¥{it.price.toFixed(2)}</td>

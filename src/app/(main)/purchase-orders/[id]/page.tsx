@@ -170,7 +170,6 @@ export default async function PurchaseOrderDetailPage({
             <tr>
               <th className="whitespace-nowrap px-4 py-3 font-medium">编码</th>
               <th className="whitespace-nowrap px-4 py-3 font-medium">商品名称</th>
-              <th className="whitespace-nowrap px-4 py-3 font-medium">规格</th>
               <th className="whitespace-nowrap px-4 py-3 font-medium">数量</th>
               <th className="whitespace-nowrap px-4 py-3 font-medium">单位</th>
               <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">进价</th>
@@ -186,7 +185,6 @@ export default async function PurchaseOrderDetailPage({
                 <tr key={item.id}>
                   <td className="px-4 py-2.5 text-gray-600">{item.product.code}</td>
                   <td className="px-4 py-2.5 text-gray-900">{item.product.name}</td>
-                  <td className="px-4 py-2.5 text-gray-600">{item.product.spec ?? "—"}</td>
                   <td className="px-4 py-2.5 text-gray-900">
                     <div>{qty.toFixed(3)}</div>
                     {restock > 0 && (

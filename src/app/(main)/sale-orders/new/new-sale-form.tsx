@@ -53,7 +53,6 @@ interface ProductOption {
   label: string;
   code: string;
   name: string;
-  spec: string;
   manufacturer: string;
   unitName: string;
   stockQty: number;
@@ -221,7 +220,6 @@ export function NewSaleForm({
   const [showCreateProduct, setShowCreateProduct] = useState(false);
   const [newProduct, setNewProduct] = useState({
     name: "",
-    spec: "",
     manufacturer: "",
     categoryId: "",
     unitId: "",
@@ -416,7 +414,7 @@ export function NewSaleForm({
     if (kws.length === 0) return [];
     const local = productOptions.filter((p) => {
       // 拼音首字母串一并纳入匹配：打 dxtx 命中「单芯铜线」、yddl 命中「远东电缆」
-      const hay = [p.code, p.name, p.manufacturer, p.spec, p.py ?? ""].join(" ").toLowerCase();
+      const hay = [p.code, p.name, p.manufacturer, p.py ?? ""].join(" ").toLowerCase();
       return kws.every((kw) => hay.includes(kw));
     });
     const seen = new Set(local.map((p) => p.id));
@@ -591,8 +589,7 @@ export function NewSaleForm({
         label: `${result.code} ${result.name}（${result.manufacturer}）`,
         code: result.code,
         name: result.name,
-        spec: "",
-        manufacturer: result.manufacturer,
+            manufacturer: result.manufacturer,
         unitName: result.unitName,
         stockQty: 0,
 
@@ -635,7 +632,7 @@ export function NewSaleForm({
         return [...prev, newRow];
       });
       setShowCreateProduct(false);
-      setNewProduct({ name: "", spec: "", manufacturer: "", categoryId: "", unitId: "", refSalePrice: "", refPurchasePrice: "", minStock: "1" });
+      setNewProduct({ name: "", manufacturer: "", categoryId: "", unitId: "", refSalePrice: "", refPurchasePrice: "", minStock: "1" });
       setMfrQuery("");
       setProductMsg({ ok: `商品「${result.name}」已创建（${result.code}），已加入商品行` });
       setTimeout(() => setProductMsg(null), 5000);
@@ -924,7 +921,7 @@ export function NewSaleForm({
                 <input
                   type="text"
                   maxLength={100}
-                  placeholder="完整名称，含规格，如：BV 2.5平方 单芯铜线"
+                  placeholder="写全名称，如：BV 2.5平方 单芯铜线"
                   value={newProduct.name}
                   onChange={(e) => setNewProduct((p) => ({ ...p, name: e.target.value }))}
                   className={`${inputBase} mt-1 w-full text-gray-900`}
@@ -1421,7 +1418,7 @@ export function NewSaleForm({
                     {p.manufacturer || "未填厂家"}
                   </span>
                   <span className="text-xs text-gray-500">
-                    {p.spec ? `${p.spec} ｜ ` : ""}库存 {p.stockQty.toFixed(3)}
+                    库存 {p.stockQty.toFixed(3)}
                   </span>
                 </span>
               </button>
