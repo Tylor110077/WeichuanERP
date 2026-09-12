@@ -1165,9 +1165,11 @@ export function NewSaleForm({
 
               {row.productId ? (
                 <>
-                  {/* 交易信息 */}
-                  <div className="mt-2.5 grid grid-cols-2 gap-x-5 gap-y-2 lg:grid-cols-5">
-                    <InlineField label="数量" required>
+                  {/* 交易信息 + 补货信息排成**一行**：窗口窄就横向滑动看后面的字段，
+                      不再折成两行（用户反馈横向滑动比折行更好用）。
+                      每个字段固定宽度、shrink-0，所以不会被压扁。 */}
+                  <div className="scroll-thin mt-2.5 flex items-start gap-x-4 overflow-x-auto pb-1.5">
+                    <InlineField label="数量" required className="w-[7rem] shrink-0">
                       <input
                         name={`item_${i}_quantity`}
                         type="number"
@@ -1182,10 +1184,10 @@ export function NewSaleForm({
                         className={inputCls}
                       />
                     </InlineField>
-                    <InlineField label="单位">
+                    <InlineField label="单位" className="w-[5rem] shrink-0">
                       <span className="block py-1.5 text-sm text-gray-700">{row.unitName || "—"}</span>
                     </InlineField>
-                    <InlineField label="库存">
+                    <InlineField label="库存" className="w-[8rem] shrink-0">
                       <span className="block py-1.5 text-sm tabular-nums text-gray-700">
                         {row.stockQty.toFixed(3)}
                         {canSeeCost && row.avgCost > 0 && (
@@ -1193,7 +1195,7 @@ export function NewSaleForm({
                         )}
                       </span>
                     </InlineField>
-                    <InlineField label="售价" required>
+                    <InlineField label="售价" required className="w-[8.5rem] shrink-0">
                       <input
                         name={`item_${i}_unitPrice`}
                         type="number"
@@ -1235,18 +1237,15 @@ export function NewSaleForm({
                         </button>
                       )}
                     </InlineField>
-                    <InlineField label="金额">
+                    <InlineField label="金额" className="w-[6.5rem] shrink-0">
                       <span className="block py-1.5 text-base font-semibold tabular-nums text-gray-900">
                         ¥{lineAmount(row).toFixed(2)}
                       </span>
                     </InlineField>
-                  </div>
+                    {/* 交易信息与补货之间用一根竖线分开（原来是行分隔线） */}
+                    <div className="w-px shrink-0 self-stretch bg-gray-100" />
 
-                  {/* 补货：用库存 / 需现场进货 / 现场进价 / 多补
-                      这里与上面的「交易信息」保持同一种排版（内联字段、无底色框），
-                      只用一条细分隔线区分两行，避免整块灰底与其它区域风格不一致 */}
-                  <div className="mt-2.5 grid grid-cols-2 gap-x-5 gap-y-2 border-t border-gray-100 pt-2.5 lg:grid-cols-4">
-                    <InlineField label="用库存">
+                    <InlineField label="用库存" className="w-[8rem] shrink-0">
                       <input
                         name={`item_${i}_stockUsed`}
                         type="number"
@@ -1267,7 +1266,7 @@ export function NewSaleForm({
                         {used > 0 ? `用 ${used.toFixed(3)}` : "不用库存（全部现场进货）"}
                       </div>
                     </InlineField>
-                    <InlineField label="需进货">
+                    <InlineField label="需进货" className="w-[6rem] shrink-0">
                       <span className={`block py-1.5 text-sm tabular-nums ${need > 0 ? "font-medium text-amber-600" : "text-gray-400"}`}>
                         {need.toFixed(3)}
                       </span>
@@ -1275,7 +1274,7 @@ export function NewSaleForm({
                         <div className="mt-1 text-xs text-red-500">商品未填厂家</div>
                       )}
                     </InlineField>
-                    <InlineField label="进价">
+                    <InlineField label="进价" className="w-[7rem] shrink-0">
                       <input
                         name={`item_${i}_supplyPrice`}
                         type="number"
@@ -1292,7 +1291,7 @@ export function NewSaleForm({
                         className={`${inputCls} disabled:bg-gray-100 disabled:text-gray-400`}
                       />
                     </InlineField>
-                    <InlineField label="多补">
+                    <InlineField label="多补" className="w-[6.5rem] shrink-0">
                       <input
                         name={`item_${i}_extraQty`}
                         type="number"
@@ -1451,13 +1450,16 @@ function InlineField({
   label,
   required,
   children,
+  className = "",
 }: {
   label: string;
   required?: boolean;
   children: React.ReactNode;
+  /** 外层类名：排成一行时用 w-* + shrink-0 固定每格宽度 */
+  className?: string;
 }) {
   return (
-    <div className="flex items-start gap-2">
+    <div className={`flex items-start gap-2 ${className}`}>
       <span className="w-14 shrink-0 py-1.5 text-xs text-gray-500">
         {label}
         {required && <span className="text-red-500"> *</span>}
