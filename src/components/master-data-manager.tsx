@@ -113,7 +113,7 @@ export function MasterDataManager({
               </th>
             ))}
             <th className="whitespace-nowrap px-4 py-3 font-medium">状态</th>
-            {isAdmin && <th className="whitespace-nowrap px-4 py-3 font-medium">操作</th>}
+            {isAdmin && <th className="text-right whitespace-nowrap px-4 py-3 font-medium">操作</th>}
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100 [&>tr]:transition-colors [&>tr:hover]:bg-gray-100/70">
