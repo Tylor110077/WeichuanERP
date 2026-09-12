@@ -218,20 +218,19 @@ export default async function SaleOrdersPage({
                 </td>
                 <td className="px-4 py-2.5 text-gray-600">{o.createdAt.toLocaleString("zh-CN")}</td>
                 <td className="px-4 py-2.5">
-                  <div className="flex items-center gap-3">
-                    <Link href={`/sale-orders/${o.id}`} className="text-blue-600 hover:underline">
-                      详情
-                    </Link>
-                    {o.status !== "voided" && outstanding > 0 && (
-                      <Link
-                        href={`/sale-orders/${o.id}#receipt`}
-                        className="whitespace-nowrap text-xs text-blue-600 hover:underline"
-                        title="直接跳到该单的收款登记处"
-                      >
-                        登记
-                      </Link>
-                    )}
-                  </div>
+                  {/* 详情与登记其实是同一个页面（登记只是页内的收款区块），
+                      只保留一个入口：该单还有未收时直接落到收款登记处，否则进详情顶部 */}
+                  <Link
+                    href={`/sale-orders/${o.id}${o.status !== "voided" && outstanding > 0 ? "#receipt" : ""}`}
+                    className="whitespace-nowrap text-blue-600 hover:underline"
+                    title={
+                      o.status !== "voided" && outstanding > 0
+                        ? "打开单据详情，并直接跳到收款登记处"
+                        : "打开单据详情"
+                    }
+                  >
+                    详情 / 登记
+                  </Link>
                 </td>
               </tr>
               );

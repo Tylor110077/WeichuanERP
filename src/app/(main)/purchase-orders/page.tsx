@@ -239,20 +239,18 @@ export default async function PurchaseOrdersPage({
                   {o.createdAt.toLocaleString("zh-CN")}
                 </td>
                 <td className="px-4 py-2.5">
-                  <div className="flex items-center gap-3">
-                    <Link href={`/purchase-orders/${o.id}`} className="text-blue-600 hover:underline">
-                      详情
-                    </Link>
-                    {o.status !== "voided" && outstanding > 0 && (
-                      <Link
-                        href={`/purchase-orders/${o.id}#payment`}
-                        className="whitespace-nowrap text-xs text-blue-600 hover:underline"
-                        title="直接跳到该单的付款登记处"
-                      >
-                        登记
-                      </Link>
-                    )}
-                  </div>
+                  {/* 同上：详情与付款登记是同一个页面，只留一个入口 */}
+                  <Link
+                    href={`/purchase-orders/${o.id}${o.status !== "voided" && outstanding > 0 ? "#payment" : ""}`}
+                    className="whitespace-nowrap text-blue-600 hover:underline"
+                    title={
+                      o.status !== "voided" && outstanding > 0
+                        ? "打开单据详情，并直接跳到付款登记处"
+                        : "打开单据详情"
+                    }
+                  >
+                    详情 / 登记
+                  </Link>
                 </td>
               </tr>
               );
