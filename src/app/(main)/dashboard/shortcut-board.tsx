@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition, type PointerEvent as ReactPointerEvent } from "react";
 import { btnPrimary } from "@/lib/ui";
 import { MAX_SHORTCUTS, SHORTCUT_GROUPS, type ShortcutDef } from "@/lib/shortcuts";
 import { saveShortcutsAction, resetShortcutsAction } from "./shortcut-actions";
@@ -11,9 +11,13 @@ import { saveShortcutsAction, resetShortcutsAction } from "./shortcut-actions";
  * 工作台「快捷入口」面板。
  *
  * 查看态：每块是一个链接，点一下直达（如「开售卖单」）。
- * 编辑态：**直接拖动**每块来调整顺序（原生 HTML5 拖放，不引第三方库），每块右上角 ✕ 移除；
+ * 编辑态：**直接拖动**每块来调整顺序（指针事件自己实现，不引第三方库），每块右上角 ✕ 移除；
  * 下方列出还能加的入口，点一下就加进来；保存后写回当前用户。
- * 说明：原生拖放只支持鼠标；触屏设备建议后续再补长按拖动（工作台主要在电脑上用）。
+ *
+ * 为什么不用原生 HTML5 拖放：它只认鼠标，触屏上按住不动——而界面上写着"拖动可以调整
+ * 顺序"，等于说了做不到的话。改用 pointer 事件后鼠标、触屏、手写笔通用。
+ * 触屏的取舍：手机上四处拖会跟页面上下滚动打架，所以触屏只认从 ⠿ 把手起拖
+ * （把手加了 touch-none 阻止浏览器接管手势）；鼠标仍是整块可拖，手感不变。
  *
  * 上限 MAX_SHORTCUTS：工作台放太多等于没有重点，加满后给明确提示而不是静默失败。
  */
@@ -36,6 +40,35 @@ export function ShortcutBoard({
   /** 拖动排序：dragIndex = 正在拖的那块，overIndex = 当前悬停到哪块（用于画插入位置） */
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [overIndex, setOverIndex] = useState<number | null>(null);
+  /** 记下起拖的指针（id + 起始下标），避免多指操作串台、也不怕 state 迟到 */
+  const dragPointer = useRef<{ id: number; from: number } | null>(null);
+  /** 拖动中的最新落点：贴边自动滚动按它判断方向（手机单列时列表比一屏高，不滚就够不到远处） */
+  const lastY = useRef(0);
+  const scrollRaf = useRef<number | null>(null);
+
+  /** 贴边自动滚动：落点贴近屏幕上下缘就持续滚动，手指停住也继续（拖动期间才跑） */
+  function runAutoScroll() {
+    const MARGIN = 72;
+    const SPEED = 14;
+    const step = () => {
+      const y = lastY.current;
+      const vh = window.innerHeight;
+      const delta = y < MARGIN ? -SPEED : y > vh - MARGIN ? SPEED : 0;
+      if (delta !== 0) window.scrollBy(0, delta);
+      scrollRaf.current = requestAnimationFrame(step);
+    };
+    if (scrollRaf.current == null) scrollRaf.current = requestAnimationFrame(step);
+  }
+
+  function stopAutoScroll() {
+    if (scrollRaf.current != null) {
+      cancelAnimationFrame(scrollRaf.current);
+      scrollRaf.current = null;
+    }
+  }
+
+  // 拖到一半组件被换掉（保存/取消/路由跳走）就停掉自动滚动，别留一个空转的 rAF
+  useEffect(() => stopAutoScroll, []);
 
   const list = editing ? draft : shortcuts;
   const chosen = new Set(draft.map((s) => s.id));
@@ -47,15 +80,55 @@ export function ShortcutBoard({
     setEditing(true);
   }
 
-  /** 把第 from 块拖到第 to 个位置（插到目标之前/之后由落点决定，这里按"占位"处理） */
-  function dropAt(to: number) {
-    if (dragIndex == null || dragIndex === to) return;
+  /** 把第 from 块放到第 to 个位置（其余块顺延） */
+  function dropAt(from: number, to: number) {
+    if (from === to) return;
     setDraft((list) => {
       const next = [...list];
-      const [moved] = next.splice(dragIndex, 1);
+      const [moved] = next.splice(from, 1);
       next.splice(to, 0, moved);
       return next;
     });
+  }
+
+  /** 起拖：鼠标整块可拖；触屏/手写笔只认 ⠿ 把手（否则跟页面上下滚动打架） */
+  function startDrag(e: ReactPointerEvent<HTMLDivElement>, from: number) {
+    if ((e.target as HTMLElement).closest("button")) return; // 顶到 ✕ 就让它照常点击
+    const onHandle = !!(e.target as HTMLElement).closest("[data-drag-handle]");
+    if (e.pointerType !== "mouse" && !onHandle) return;
+    dragPointer.current = { id: e.pointerId, from };
+    lastY.current = e.clientY;
+    setDragIndex(from);
+    setOverIndex(from);
+    runAutoScroll();
+    // 抓住指针：拖到块外也能继续收到 pointermove
+    e.currentTarget.setPointerCapture(e.pointerId);
+  }
+
+  function moveDrag(e: ReactPointerEvent<HTMLDivElement>) {
+    const d = dragPointer.current;
+    if (!d || d.id !== e.pointerId) return;
+    lastY.current = e.clientY;
+    // 指针被 setPointerCapture 抓在源块上，但 elementFromPoint 拿到的仍是真实落点下的块
+    const under = document.elementFromPoint(e.clientX, e.clientY);
+    const tile = under?.closest<HTMLElement>("[data-tile-index]");
+    if (!tile) return;
+    setOverIndex(Number(tile.dataset.tileIndex));
+  }
+
+  /** 松手：落到哪块就插到哪块；pointercancel（被系统手势打断）则原样放弃 */
+  function endDrag(e: ReactPointerEvent<HTMLDivElement>, commit: boolean) {
+    const d = dragPointer.current;
+    if (!d || d.id !== e.pointerId) return;
+    const to = overIndex;
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+    stopAutoScroll();
+    dragPointer.current = null;
+    setDragIndex(null);
+    setOverIndex(null);
+    if (commit && to != null) dropAt(d.from, to);
   }
 
   function remove(id: string) {
@@ -191,39 +264,22 @@ export function ShortcutBoard({
             return (
               <div
                 key={s.id}
-                draggable
-                onDragStart={(e) => {
-                  setDragIndex(i);
-                  e.dataTransfer.effectAllowed = "move";
-                  // 部分浏览器不设 data 就不触发 drop，塞个占位即可
-                  e.dataTransfer.setData("text/plain", s.id);
-                }}
-                onDragOver={(e) => {
-                  e.preventDefault(); // 允许放置
-                  e.dataTransfer.dropEffect = "move";
-                  setOverIndex(i);
-                }}
-                onDragLeave={() => setOverIndex((v) => (v === i ? null : v))}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  dropAt(i);
-                  setDragIndex(null);
-                  setOverIndex(null);
-                }}
-                onDragEnd={() => {
-                  setDragIndex(null);
-                  setOverIndex(null);
-                }}
+                data-tile-index={i}
+                onPointerDown={(e) => startDrag(e, i)}
+                onPointerMove={moveDrag}
+                onPointerUp={(e) => endDrag(e, true)}
+                onPointerCancel={(e) => endDrag(e, false)}
                 className={[
                   tileBase,
-                  "cursor-grab border-dashed active:cursor-grabbing",
+                  "cursor-grab touch-manipulation select-none border-dashed active:cursor-grabbing",
                   dragging ? "border-blue-300 opacity-40" : "border-gray-300",
                   isTarget ? "ring-2 ring-blue-400" : "",
                 ].join(" ")}
                 title="按住拖动可以调整位置"
               >
-                {/* 拖拽把手：给一个能看出"可以拖"的视觉锚点 */}
-                <span aria-hidden className="shrink-0 text-gray-300">
+                {/* 拖拽把手：鼠标整块可拖，触屏从这里按住再拖（touch-none 阻止浏览器接管手势）
+                    -m-1 + p-1：把手指的落点从十来个像素扩到约 26px，不影响视觉间距 */}
+                <span data-drag-handle aria-hidden className="-m-1 shrink-0 touch-none p-1 text-gray-300">
                   ⠿
                 </span>
                 {badge}
@@ -245,7 +301,7 @@ export function ShortcutBoard({
       {editing && (
         <div className="space-y-3 rounded-xl border border-gray-200 bg-gray-50 p-4">
           <p className="text-xs text-gray-500">
-            拖动上面的入口调整顺序；点下面的入口加到上面；加满 {MAX_SHORTCUTS} 个后先移除再添加。「恢复默认」会按你的角色重置。
+            拖动上面的入口调整顺序（鼠标直接拖，手机上按住块左侧的 ⠿ 再拖）；点下面的入口加到上面；加满 {MAX_SHORTCUTS} 个后先移除再添加。「恢复默认」会按你的角色重置。
           </p>
           {addable.length === 0 ? (
             <p className="text-xs text-gray-400">该角色可用的入口都已放上去了。</p>
