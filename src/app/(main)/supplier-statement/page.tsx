@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { FilterForm } from "@/components/filter-form";
 import { NoPermission } from "@/components/empty-state";
-import { btnSecondary } from "@/lib/ui";
+import { btnSecondary, inputBase, selectCls } from "@/lib/ui";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
@@ -139,15 +139,15 @@ export default async function SupplierStatementPage({
         </div>
         <div>
           <label htmlFor="from" className="block text-xs font-medium text-gray-600">开始（默认本月 1 日）</label>
-          <input id="from" type="date" name="from" defaultValue={params.from} className="mt-1 rounded-md border border-gray-300 px-2 py-1.5 text-sm" />
+          <input id="from" type="date" name="from" defaultValue={params.from} className={`${inputBase} mt-1`} />
         </div>
         <div>
           <label htmlFor="to" className="block text-xs font-medium text-gray-600">结束（默认今天）</label>
-          <input id="to" type="date" name="to" defaultValue={params.to} className="mt-1 rounded-md border border-gray-300 px-2 py-1.5 text-sm" />
+          <input id="to" type="date" name="to" defaultValue={params.to} className={`${inputBase} mt-1`} />
         </div>
         <div>
           <label htmlFor="status" className="block text-xs font-medium text-gray-600">付款状态</label>
-          <select id="status" name="status" defaultValue={status ?? ""} className="mt-1 rounded-md border border-gray-300 px-2 py-1.5 text-sm">
+          <select id="status" name="status" defaultValue={status ?? ""} className={`${selectCls} mt-1`}>
             <option value="">全部</option>
             <option value="unpaid">未付清</option>
             <option value="paid">已付清</option>

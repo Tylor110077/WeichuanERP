@@ -78,3 +78,19 @@ export const tagPending = "rounded bg-amber-50 px-1.5 py-0.5 text-xs text-amber-
 /** 分段控件（视图切换、报表页签）选中态 / 未选中态 */
 export const segActive = "rounded-md bg-blue-600 text-white";
 export const segIdle = "rounded-md text-gray-600 hover:bg-gray-100 hover:text-gray-900";
+
+/**
+ * 表单控件统一样式（输入框 / 下拉）。
+ *
+ * 为什么必须统一：筛选栏里各种控件并排，只要**高度**不一致（例如 px-3 py-2 vs px-2 py-1.5
+ * 差 4px），按底部对齐后顶部就错开，看起来就是"没对齐"。
+ * 这里用固定的 h-9（36px）锁住高度，与 btnSecondary 等按钮同高，一行里所有控件上下都齐平。
+ *
+ * 用法：<input className={inputBase} />、<select className={selectCls} />
+ * 需要宽度时在后面追加（如 `${inputBase} w-40`）。
+ */
+export const inputBase =
+  "h-9 rounded-md border border-gray-300 bg-white px-2 text-sm text-gray-900 transition focus:border-blue-400 focus:outline-none disabled:bg-gray-100 disabled:text-gray-400";
+
+/** 下拉框：右侧留出箭头空间 */
+export const selectCls = `${inputBase} pr-7`;

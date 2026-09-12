@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { EmptyState, NoPermission } from "@/components/empty-state";
-import { btnSecondary } from "@/lib/ui";
+import { btnSecondary, inputBase } from "@/lib/ui";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { DateShortcuts } from "@/components/date-shortcuts";
@@ -87,11 +87,11 @@ export default async function PriceAnalysisPage({
             {productId ? <input type="hidden" name="productId" value={productId} /> : null}
             <div>
               <label htmlFor="from" className="block text-xs font-medium text-gray-600">开始</label>
-              <input id="from" type="date" name="from" defaultValue={params.from} className="mt-1 rounded-md border border-gray-300 px-2 py-1.5 text-sm" />
+              <input id="from" type="date" name="from" defaultValue={params.from} className={`${inputBase} mt-1`} />
             </div>
             <div>
               <label htmlFor="to" className="block text-xs font-medium text-gray-600">结束</label>
-              <input id="to" type="date" name="to" defaultValue={params.to} className="mt-1 rounded-md border border-gray-300 px-2 py-1.5 text-sm" />
+              <input id="to" type="date" name="to" defaultValue={params.to} className={`${inputBase} mt-1`} />
             </div>
             <button type="submit" className={btnSecondary}>
               按日期查询

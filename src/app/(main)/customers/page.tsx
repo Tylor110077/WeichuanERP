@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { badgeMuted, btnPrimary, btnSecondary } from "@/lib/ui";
+import { badgeMuted, btnPrimary, btnSecondary, inputBase } from "@/lib/ui";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
@@ -230,7 +230,7 @@ export default async function CustomersPage({
                     name="q"
                     defaultValue={q ?? ""}
                     placeholder="名称 / 联系人 / 电话"
-                    className="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+                    className={`${inputBase} mt-1 w-full`}
                   />
                 </div>
                 {groupIdRaw && <input type="hidden" name="groupId" value={groupIdRaw} />}

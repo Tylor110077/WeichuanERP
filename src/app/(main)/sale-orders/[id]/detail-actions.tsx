@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { btnDanger, btnDangerSolid, btnSecondary } from "@/lib/ui";
+import { btnDanger, btnDangerSolid, btnSecondary, inputBase } from "@/lib/ui";
 import { voidSaleOrderAction, type FormState } from "../actions";
 import { FormStateAlert } from "@/components/form-alert";
 
@@ -36,7 +36,7 @@ export function DetailActions({ orderId, status }: { orderId: number; status: st
             required
             maxLength={200}
             placeholder="作废原因（必填），随单自动补货单将一并作废"
-            className="w-96 rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+            className={`${inputBase} w-96`}
           />
           <button
             type="submit"

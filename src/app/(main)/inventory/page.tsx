@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { FilterForm } from "@/components/filter-form";
 import { SearchInput } from "@/components/search-input";
 import { EmptyState } from "@/components/empty-state";
-import { btnSecondary } from "@/lib/ui";
+import { btnSecondary, inputBase } from "@/lib/ui";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
@@ -109,9 +109,10 @@ export default async function InventoryPage({
           type="text"
           placeholder="编码 / 名称搜索"
           defaultValue={q}
-          className="w-52 rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+          className={`${inputBase} w-52`}
         />
-        <label className="flex items-center gap-1 text-sm text-gray-600">
+        {/* 复选框与同行的输入框/按钮齐平：给它一个与控件同高的行高（h-9）并垂直居中 */}
+        <label className="flex h-9 items-center gap-1.5 text-sm text-gray-600">
           <input type="checkbox" name="warnOnly" value="1" defaultChecked={warnOnly} className="h-4 w-4" />
           只看库存预警
         </label>

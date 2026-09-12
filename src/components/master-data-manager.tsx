@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { btnPrimary, btnSecondary } from "@/lib/ui";
+import { btnPrimary, btnSecondary, inputBase } from "@/lib/ui";
 import { useActionState, useState, type ReactNode } from "react";
 import { FormStateAlert } from "@/components/form-alert";
 import { RowAction } from "@/components/row-action";
@@ -48,8 +48,7 @@ interface Props {
   editBase?: string;
 }
 
-const fieldCls =
-  "mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm";
+const fieldCls = `mt-1 w-full ${inputBase}`;
 
 export function MasterDataManager({
   entityLabel,

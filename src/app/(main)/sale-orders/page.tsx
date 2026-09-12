@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { FilterForm } from "@/components/filter-form";
 import { SearchInput } from "@/components/search-input";
 import { EmptyState } from "@/components/empty-state";
-import { badgeDanger, badgeMuted, badgeOk, btnPrimary, btnSecondary } from "@/lib/ui";
+import { badgeDanger, badgeMuted, badgeOk, btnPrimary, btnSecondary, inputBase } from "@/lib/ui";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
@@ -116,7 +116,7 @@ export default async function SaleOrdersPage({
           type="text"
           placeholder="单据号搜索"
           defaultValue={q}
-          className="w-40 rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+          className={`${inputBase} w-40`}
         />
         <SearchSelect
           name="customerId"
@@ -126,14 +126,14 @@ export default async function SaleOrdersPage({
           placeholder="客户（可搜索）"
           className="w-52"
         />
-        <input type="date" name="from" defaultValue={params.from} className="rounded-md border border-gray-300 px-2 py-1.5 text-sm" />
-        <input type="date" name="to" defaultValue={params.to} className="rounded-md border border-gray-300 px-2 py-1.5 text-sm" />
-        <select name="status" defaultValue={status ?? ""} className="rounded-md border border-gray-300 px-2 py-1.5 text-sm">
+        <input type="date" name="from" defaultValue={params.from} className={`${inputBase}`} />
+        <input type="date" name="to" defaultValue={params.to} className={`${inputBase}`} />
+        <select name="status" defaultValue={status ?? ""} className={`${inputBase}`}>
           <option value="">全部状态</option>
           <option value="confirmed">已开单</option>
           <option value="voided">已作废</option>
         </select>
-        <select name="settle" defaultValue={settle ?? ""} className="rounded-md border border-gray-300 px-2 py-1.5 text-sm">
+        <select name="settle" defaultValue={settle ?? ""} className={`${inputBase}`}>
           <option value="">全部款项</option>
           <option value="unsettled">未结清</option>
           <option value="settled">已结清</option>

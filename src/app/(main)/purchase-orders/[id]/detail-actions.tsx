@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { btnDanger, btnDangerSolid, btnSecondary, btnSuccess } from "@/lib/ui";
+import { btnDanger, btnDangerSolid, btnSecondary, btnSuccess, inputBase } from "@/lib/ui";
 import {
   receivePurchaseOrderAction,
   voidPurchaseOrderAction,
@@ -71,7 +71,7 @@ export function DetailActions({
             required
             maxLength={200}
             placeholder="作废原因（必填）"
-            className="w-64 rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+            className={`${inputBase} w-64`}
           />
           <button
             type="submit"

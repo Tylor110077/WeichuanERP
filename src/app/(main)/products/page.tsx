@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { btnPrimary, btnSecondary, tagInfo, tagPending } from "@/lib/ui";
+import { btnPrimary, btnSecondary, inputBase, tagInfo, tagPending } from "@/lib/ui";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
@@ -297,7 +297,7 @@ export default async function ProductsPage({
                     name="q"
                     defaultValue={q ?? ""}
                     placeholder="名称 / 编码 / 厂家"
-                    className="mt-1 w-56 rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+                    className={`${inputBase} mt-1 w-56`}
                   />
                 </div>
                 {selected && <input type="hidden" name="manufacturer" value={selected} />}

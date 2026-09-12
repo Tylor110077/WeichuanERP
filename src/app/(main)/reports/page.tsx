@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { FilterForm } from "@/components/filter-form";
 import { EmptyState, NoPermission } from "@/components/empty-state";
-import { btnSecondary, btnSuccess, segActive } from "@/lib/ui";
+import { btnSecondary, btnSuccess, inputBase, segActive } from "@/lib/ui";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { buildReport, MAX_REPORT_ROWS, REPORT_TABS, type ReportTabKey } from "@/lib/reports";
@@ -73,13 +73,13 @@ export default async function ReportsPage({
           <label htmlFor="from" className="block text-xs font-medium text-gray-600">
             开始日期（默认本月 1 日）
           </label>
-          <input id="from" type="date" name="from" defaultValue={from} className="mt-1 rounded-md border border-gray-300 px-2 py-1.5 text-sm" />
+          <input id="from" type="date" name="from" defaultValue={from} className={`${inputBase} mt-1`} />
         </div>
         <div>
           <label htmlFor="to" className="block text-xs font-medium text-gray-600">
             结束日期（默认今天）
           </label>
-          <input id="to" type="date" name="to" defaultValue={to} className="mt-1 rounded-md border border-gray-300 px-2 py-1.5 text-sm" />
+          <input id="to" type="date" name="to" defaultValue={to} className={`${inputBase} mt-1`} />
         </div>
         <input type="hidden" name="tab" value={tab} />
         <button type="submit" className={btnSecondary}>

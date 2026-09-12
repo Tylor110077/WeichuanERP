@@ -20,6 +20,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { JSX } from "react";
 import { selectAllOnClick, selectAllOnFocus } from "./select-all-on-focus";
+import { inputBase } from "@/lib/ui";
 
 export interface RailItem {
   /** 唯一键，React key 用 */
@@ -114,7 +115,7 @@ export function MasterRail({
           onChange={(event) => setKeyword(event.target.value)}
           placeholder={searchPlaceholder}
           aria-label={title}
-          className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+          className={`${inputBase} w-full`}
         />
       </div>
 

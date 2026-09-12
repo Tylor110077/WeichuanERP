@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { selectAllOnClick, selectAllOnFocus } from "./select-all-on-focus";
+import { inputBase } from "@/lib/ui";
 
 export interface SearchSelectOption {
   value: string;
@@ -85,13 +86,18 @@ export function SearchSelect({
         }}
         onClick={selectAllOnClick}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
-        className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-400 focus:outline-none"
+        className={`${inputBase} w-full`}
       />
-      {pending && (
-        <p className="mt-1 text-xs text-amber-600">请从候选中点选（输入名称可过滤）</p>
-      )}
       {open && (
         <div className="absolute z-30 mt-1 max-h-56 w-full overflow-auto rounded-md border border-gray-200 bg-white shadow-lg">
+          {/* 「已输入但未选中」的提示放在面板里，而不是输入框下面：
+              放下面会让这个控件比同一行的其它控件高一行，筛选栏按底对齐后整行错位
+              （同类的坑已出现多次：提示一旦参与行内布局，就会破坏对齐） */}
+          {pending && (
+            <div className="border-b border-amber-100 bg-amber-50 px-3 py-1.5 text-xs text-amber-700">
+              请从候选中点选（输入名称可过滤）
+            </div>
+          )}
           {filtered.length === 0 && (
             <div className="px-3 py-2 text-xs text-gray-400">{emptyHint}</div>
           )}

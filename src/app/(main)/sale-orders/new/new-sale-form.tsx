@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useState, useTransition } from "react";
-import { btnPrimary, btnSmallPrimary, btnSmallSolid, tagInfo, tagPending } from "@/lib/ui";
+import { btnPrimary, btnSmallPrimary, btnSmallSolid, inputBase, tagInfo, tagPending } from "@/lib/ui";
 import { SearchSelect } from "@/components/search-select";
 import { createSaleOrderAction, type FormState } from "../actions";
 import {
@@ -85,7 +85,7 @@ interface Row {
   hasLastSupplier: boolean;
 }
 
-const inputCls = "w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm";
+const inputCls = `w-full ${inputBase}`;
 
 export function NewSaleForm({
   customers,
@@ -891,7 +891,7 @@ export function NewSaleForm({
                   placeholder="商品名称（必填）"
                   value={newProduct.name}
                   onChange={(e) => setNewProduct((p) => ({ ...p, name: e.target.value }))}
-                  className="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm text-gray-900"
+                  className={`${inputBase} mt-1 w-full text-gray-900`}
                 />
               </div>
               <div>
@@ -905,7 +905,7 @@ export function NewSaleForm({
                     onChange={(e) => { setMfrQuery(e.target.value); setMfrOpen(true); }}
                     onFocus={() => setMfrOpen(true)}
                     onBlur={() => setTimeout(() => setMfrOpen(false), 150)}
-                    className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm text-gray-900"
+                    className={`${inputBase} w-full  text-gray-900`}
                   />
                   {mfrOpen && mfrQuery.trim() && (
                     <div className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-md border border-gray-200 bg-white shadow-lg">
@@ -1027,7 +1027,7 @@ export function NewSaleForm({
                   placeholder="参考进价"
                   value={newProduct.refPurchasePrice}
                   onChange={(e) => setNewProduct((p) => ({ ...p, refPurchasePrice: e.target.value }))}
-                  className="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm text-gray-900"
+                  className={`${inputBase} mt-1 w-full text-gray-900`}
                 />
               </div>
               <div>
@@ -1039,7 +1039,7 @@ export function NewSaleForm({
                   placeholder="库存预警线"
                   value={newProduct.minStock}
                   onChange={(e) => setNewProduct((p) => ({ ...p, minStock: e.target.value }))}
-                  className="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm text-gray-900"
+                  className={`${inputBase} mt-1 w-full text-gray-900`}
                 />
               </div>
               <div className="flex items-end gap-2">
@@ -1068,7 +1068,7 @@ export function NewSaleForm({
           type="text"
           maxLength={200}
           placeholder="选填，如交货方式、包装要求（作用于整张单据）"
-          className="max-w-xl min-w-56 flex-1 rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+          className={`${inputBase} max-w-xl min-w-56 flex-1`}
         />
       </div>
 

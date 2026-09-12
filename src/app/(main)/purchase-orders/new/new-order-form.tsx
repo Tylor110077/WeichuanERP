@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { btnPrimary, btnSmallPrimary } from "@/lib/ui";
+import { btnPrimary, btnSmallPrimary, inputBase } from "@/lib/ui";
 import { SearchSelect } from "@/components/search-select";
 import { createPurchaseOrderAction, type FormState } from "../actions";
 import { FormStateAlert } from "@/components/form-alert";
@@ -28,8 +28,7 @@ interface Row {
   remark: string;
 }
 
-const inputCls =
-  "w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm";
+const inputCls = `w-full ${inputBase}`;
 
 export function NewOrderForm({
   suppliers,
@@ -124,7 +123,7 @@ export function NewOrderForm({
           type="text"
           maxLength={200}
           placeholder="选填，如交货方式、包装要求（作用于整张单据）"
-          className="min-w-64 flex-1 rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+          className={`${inputBase} min-w-64 flex-1`}
         />
       </div>
 

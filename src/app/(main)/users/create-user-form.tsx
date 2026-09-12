@@ -1,5 +1,5 @@
 "use client";
-import { btnPrimary } from "@/lib/ui";
+import { btnPrimary, inputBase, selectCls } from "@/lib/ui";
 
 import { useActionState, useEffect } from "react";
 import { createUserAction, type FormState } from "./actions";
@@ -33,7 +33,7 @@ export function CreateUserForm() {
             type="text"
             required
             maxLength={50}
-            className="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+            className={`${inputBase} mt-1 w-full`}
           />
         </div>
         <div>
@@ -46,7 +46,7 @@ export function CreateUserForm() {
             type="text"
             required
             maxLength={50}
-            className="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+            className={`${inputBase} mt-1 w-full`}
           />
         </div>
         <div>
@@ -57,7 +57,7 @@ export function CreateUserForm() {
             id="role"
             name="role"
             required
-            className="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+            className={`${selectCls} mt-1 w-full`}
           >
             <option value="sales">业务员</option>
             <option value="boss">老板/财务</option>
@@ -75,7 +75,7 @@ export function CreateUserForm() {
             required
             minLength={8}
             maxLength={100}
-            className="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+            className={`${inputBase} mt-1 w-full`}
           />
         </div>
       </div>

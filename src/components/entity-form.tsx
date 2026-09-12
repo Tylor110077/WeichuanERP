@@ -3,10 +3,10 @@
 import { useState, useTransition, useActionState } from "react";
 import type { FieldDef, FormState } from "./master-data-manager";
 import { SearchSelect } from "./search-select";
-import { btnPrimary } from "@/lib/ui";
+import { btnPrimary, inputBase } from "@/lib/ui";
 import { FormStateAlert } from "@/components/form-alert";
 
-const inputCls = "mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm text-gray-900";
+const inputCls = `mt-1 w-full ${inputBase}`;
 
 /**
  * 独立新建/编辑页表单（"跳转页面填写 → 提交后返回列表"模式）。
@@ -226,7 +226,7 @@ function ManufacturerField({
           }}
           onFocus={() => setOpen(true)}
           onBlur={() => setTimeout(() => setOpen(false), 150)}
-          className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm text-gray-900"
+          className={`${inputBase} w-full  text-gray-900`}
         />
         {open && kw && (
           <div className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-md border border-gray-200 bg-white shadow-lg">

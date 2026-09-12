@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { inputBase } from "@/lib/ui";
 
 export interface FilterField {
   name: string;
@@ -41,7 +42,7 @@ export function AutoFilterForm({
           name={f.name}
           value={values[f.name]}
           onChange={(e) => onChange(f.name, e.target.value)}
-          className="rounded-md border border-gray-300 px-2 py-1.5 text-sm text-gray-900"
+          className={`${inputBase} text-gray-900`}
         >
           {f.options.map((o) => (
             <option key={o.value} value={o.value}>

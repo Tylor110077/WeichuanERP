@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { FilterForm } from "@/components/filter-form";
 import { EmptyState, NoPermission } from "@/components/empty-state";
-import { btnSecondary } from "@/lib/ui";
+import { btnSecondary, inputBase } from "@/lib/ui";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
@@ -120,9 +120,9 @@ export default async function StockMovementsPage({
           placeholder="商品（可搜索）"
           className="w-60"
         />
-        <input type="date" name="from" defaultValue={params.from} className="rounded-md border border-gray-300 px-2 py-1.5 text-sm" />
-        <input type="date" name="to" defaultValue={params.to} className="rounded-md border border-gray-300 px-2 py-1.5 text-sm" />
-        <select name="bizType" defaultValue={bizType ?? ""} className="rounded-md border border-gray-300 px-2 py-1.5 text-sm">
+        <input type="date" name="from" defaultValue={params.from} className={`${inputBase}`} />
+        <input type="date" name="to" defaultValue={params.to} className={`${inputBase}`} />
+        <select name="bizType" defaultValue={bizType ?? ""} className={`${inputBase}`}>
           <option value="">全部类型</option>
           {Object.entries(BIZ_TYPE_LABELS).map(([k, v]) => (
             <option key={k} value={k}>
