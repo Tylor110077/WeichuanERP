@@ -658,12 +658,6 @@ export function NewSaleForm({
                 onBlur={() => setShowCandidates(false)}
                 className={`w-full ${inputCls} pr-32`}
               />
-    
-          {customerQuery.trim() && !customerId && (
-            <p className="mt-1 text-xs text-amber-600">
-              已输入但未选中客户：请从弹出的候选中点选
-            </p>
-          )}
           {customerId && selectedCustomer && (
                 <div className="pointer-events-none absolute inset-y-0 right-2 top-1 flex items-center gap-1">
                   {selectedCustomer.groupName && (
@@ -724,6 +718,15 @@ export function NewSaleForm({
               </button>
             )}
           </div>
+
+          {/* 辅助/告警行：常驻占位，避免提示出现时把下方内容顶下去、也避免把按钮挤歪 */}
+          <p className="mt-1 min-h-4 text-xs">
+            {customerQuery.trim() && !customerId ? (
+              <span className="text-amber-600">已输入但未选中客户：请从弹出的候选中点选</span>
+            ) : (
+              <span className="text-gray-400">输入客户名后，从弹出的候选中点选</span>
+            )}
+          </p>
 
           {showCreateCustomer && (
             <div className="mt-2 rounded-lg border border-blue-200 bg-blue-50/50 p-3 space-y-2">
