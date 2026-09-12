@@ -152,19 +152,22 @@ export function UnpaidOrderTable({
                 {open && (
                   <tr key={`${o.id}-items`} className="bg-gray-50/60">
                     <td colSpan={10} className="px-4 py-3">
+                      {/* 明细是独立的第二张表（8 列 vs 外层 10 列），不可能与外层共用网格；
+                          这里让它读起来是一块规整的嵌套内容：短列给固定宽度、数字右对齐、
+                          富余宽度全给「备注」，避免各列被平均分摊到整行、看着像没对齐 */}
                       {o.items.length === 0 ? (
                         <p className="text-xs text-gray-400">该单没有商品明细</p>
                       ) : (
                         <table className="min-w-full text-xs">
                           <thead className="text-left text-gray-500">
                             <tr>
-                              <th className="py-1 pr-4 font-medium">编码</th>
+                              <th className="w-32 py-1 pr-4 font-medium">编码</th>
                               <th className="py-1 pr-4 font-medium">品名</th>
-                              <th className="py-1 pr-4 font-medium">生产厂家</th>
-                              <th className="py-1 pr-4 font-medium">单位</th>
-                              <th className="py-1 pr-4 text-right font-medium">数量</th>
-                              <th className="py-1 pr-4 text-right font-medium">单价</th>
-                              <th className="py-1 pr-4 text-right font-medium">金额</th>
+                              <th className="w-32 py-1 pr-4 font-medium">生产厂家</th>
+                              <th className="w-16 py-1 pr-4 font-medium">单位</th>
+                              <th className="w-28 py-1 pr-4 text-right font-medium">数量</th>
+                              <th className="w-28 py-1 pr-4 text-right font-medium">单价</th>
+                              <th className="w-32 py-1 pr-4 text-right font-medium">金额</th>
                               <th className="py-1 font-medium">备注</th>
                             </tr>
                           </thead>
