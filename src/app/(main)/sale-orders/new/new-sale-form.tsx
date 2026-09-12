@@ -77,7 +77,7 @@ interface Row {
   avgCost: number;
   quantity: string;
   unitPrice: string;
-  lastGlobalSalePrice: number; // 全局最近成交价/参考价（参考展示用）
+  lastGlobalSalePrice: number; // 全局最近成交价（界面上显示为「上次参考价」）
   /** "上次卖给该客户的价格"，选中商品后按需查询（不再预先把全表拉进内存） */
   lastCustomerPrice: number | null;
   supplierId: string;
@@ -1231,7 +1231,7 @@ export function NewSaleForm({
                           title="点一下填入这个售价"
                           className="mt-1 block cursor-pointer text-xs text-gray-500 underline decoration-dotted underline-offset-2 hover:text-blue-600 hover:decoration-solid"
                         >
-                          参考价 ¥{globalRefPrice.toFixed(2)}
+                          上次参考价 ¥{globalRefPrice.toFixed(2)}
                         </button>
                       )}
                     </InlineField>
