@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { MasterDataManager } from "@/components/master-data-manager";
 import { AutoFilterForm } from "@/components/auto-filter-form";
+import { PageTabs, resolveTab } from "@/components/page-tabs";
 import { FilterForm } from "@/components/filter-form";
 import { EmptyState } from "@/components/empty-state";
 import { buildCustomerProfile } from "@/lib/customer-profile";
@@ -20,10 +21,23 @@ import {
 
 export const metadata = { title: "客户管理 - 玮川进销存" };
 
+/** 页签白名单：非法的 ?tab= 回落到「客户」 */
+const TAB_KEYS = ["customers", "groups", "profile"] as const;
+
+/** 卡片小标题 + 说明 */
+function SectionHeading({ title, hint }: { title: string; hint?: string }) {
+  return (
+    <div className="mb-3">
+      <h2 className="text-sm font-semibold text-gray-900">{title}</h2>
+      {hint && <p className="mt-0.5 text-xs text-gray-400">{hint}</p>}
+    </div>
+  );
+}
+
 export default async function CustomersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ groupId?: string; tagId?: string; q?: string }>;
+  searchParams: Promise<{ groupId?: string; tagId?: string; q?: string; tab?: string }>;
 }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
@@ -32,6 +46,7 @@ export default async function CustomersPage({
   const groupId = params.groupId ? Number(params.groupId) : undefined;
   const tagId = params.tagId ? Number(params.tagId) : undefined;
   const q = params.q?.trim();
+  const tab = resolveTab(TAB_KEYS, params.tab, "customers");
 
   const [customers, groups, tags] = await Promise.all([
     prisma.customer.findMany({
@@ -81,6 +96,17 @@ export default async function CustomersPage({
     tagNames: c.tagLinks.map((l) => l.tag.name),
   }));
 
+  /** 页签链接：保留当前筛选（组织/标签/关键词） */
+  const tabHref = (key: string) => {
+    const sp = new URLSearchParams();
+    if (key !== "customers") sp.set("tab", key);
+    if (groupId != null) sp.set("groupId", String(groupId));
+    if (tagId != null) sp.set("tagId", String(tagId));
+    if (q) sp.set("q", q);
+    const qs = sp.toString();
+    return `/customers${qs ? `?${qs}` : ""}`;
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -95,8 +121,37 @@ export default async function CustomersPage({
         )}
       </div>
 
-      {/* 文本搜索：客户一多，靠组织/标签下拉是找不到人的（回车即搜，条件叠加） */}
-      <FilterForm className="flex flex-wrap items-end gap-3 rounded-xl border border-gray-200 bg-white p-4">
+      <PageTabs
+        current={tab}
+        tabs={[
+          {
+            key: "customers",
+            label: "客户",
+            count: customersData.length,
+            href: tabHref("customers"),
+            hint: "客户档案：按组织/标签筛选、搜名称或电话、编辑或停用",
+          },
+          {
+            key: "groups",
+            label: "组织与标签",
+            count: `${groups.length} · ${tags.length}`,
+            href: tabHref("groups"),
+            hint: "客户组织（可移动归属）与标签（一个客户可挂多个）",
+          },
+          {
+            key: "profile",
+            label: "客户画像",
+            count: profileRows.length,
+            href: tabHref("profile"),
+            hint: "按客户统计单数、销售额、毛利与平均利润率",
+          },
+        ]}
+      />
+
+      {/* 客户页签：搜索 + 组织/标签筛选（同一张卡片，避免多条横向长条） */}
+      {tab === "customers" && (
+      <div className="flex flex-wrap items-end gap-3 rounded-xl border border-gray-200 bg-white p-4">
+      <FilterForm className="flex flex-wrap items-end gap-3">
         <div className="min-w-56 flex-1">
           <label htmlFor="q" className="block text-xs font-medium text-gray-600">搜索客户</label>
           <input
@@ -123,7 +178,6 @@ export default async function CustomersPage({
           </Link>
         )}
       </FilterForm>
-
       <AutoFilterForm
         basePath="/customers"
         fields={[
@@ -147,13 +201,13 @@ export default async function CustomersPage({
           },
         ]}
       />
+      </div>
+      )}
 
-      <details className="rounded-xl border border-gray-200 bg-white">
-        <summary className="cursor-pointer rounded-t-xl px-5 py-3 text-sm font-medium text-gray-900 transition-colors hover:bg-gray-50">
-          客户组织管理（{groups.length} 个）
-          <span className="ml-2 text-xs font-normal text-gray-400">点击展开/收起 · 客户归属组织可移动，未被引用可删除</span>
-        </summary>
-        <div className="border-t border-gray-100 p-5">
+      {tab === "groups" && (
+        <div className="grid gap-6 lg:grid-cols-2">
+        <section className="rounded-xl border border-gray-200 bg-white p-5">
+          <SectionHeading title="客户组织" hint="客户归属组织可移动，未被引用可删除" />
           <MasterDataManager
             entityLabel="组织"
             columns={[
@@ -174,15 +228,9 @@ export default async function CustomersPage({
             toggleAction={toggleCustomerGroupStatusAction}
             deleteAction={deleteCustomerGroupAction}
           />
-        </div>
-      </details>
-
-      <details className="rounded-xl border border-gray-200 bg-white">
-        <summary className="cursor-pointer rounded-t-xl px-5 py-3 text-sm font-medium text-gray-900 transition-colors hover:bg-gray-50">
-          客户标签管理（{tags.length} 个）
-          <span className="ml-2 text-xs font-normal text-gray-400">点击展开/收起 · 一个客户可挂多个标签，未被引用可删除</span>
-        </summary>
-        <div className="border-t border-gray-100 p-5">
+        </section>
+        <section className="rounded-xl border border-gray-200 bg-white p-5">
+          <SectionHeading title="客户标签" hint="一个客户可挂多个标签，未被引用可删除" />
           <MasterDataManager
             entityLabel="标签"
             columns={[
@@ -203,15 +251,16 @@ export default async function CustomersPage({
             toggleAction={toggleCustomerTagStatusAction}
             deleteAction={deleteCustomerTagAction}
           />
+        </section>
         </div>
-      </details>
+      )}
 
-      <details className="rounded-xl border border-gray-200 bg-white">
-        <summary className="cursor-pointer rounded-t-xl px-5 py-3 text-sm font-medium text-gray-900 transition-colors hover:bg-gray-50">
-          客户画像（{profileRows.length} 个客户有成交）
-          <span className="ml-2 text-xs font-normal text-gray-400">点击展开/收起 · 单数/销售额/毛利/平均利润率，点击客户「看明细」进入详情</span>
-        </summary>
-        <div className="border-t border-gray-100 p-5">
+      {tab === "profile" && (
+        <section className="rounded-xl border border-gray-200 bg-white p-5">
+          <SectionHeading
+            title="客户画像"
+            hint="按客户统计单数、销售额、成本、毛利与平均利润率；点行内「看明细」进入该客户详情"
+          />
           <div className="overflow-x-auto rounded-xl border border-gray-200">
             <table className="min-w-full divide-y divide-gray-200 text-sm">
               <thead className="bg-gray-50 text-left text-xs text-gray-500">
@@ -276,9 +325,10 @@ export default async function CustomersPage({
               </tbody>
             </table>
           </div>
-        </div>
-      </details>
+        </section>
+      )}
 
+      {tab === "customers" && (
       <CustomerManager
         emptyTitle={q ? `没有匹配「${q}」的客户` : undefined}
         emptyHint={q ? "换个关键词，或点「清除关键词」看全部" : undefined}
@@ -289,6 +339,7 @@ export default async function CustomersPage({
         hideForm
         editBase="/customers"
       />
+      )}
     </div>
   );
 }

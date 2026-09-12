@@ -1,9 +1,11 @@
 import { redirect } from "next/navigation";
-import { btnPrimary, tagInfo, tagPending } from "@/lib/ui";
+import { btnPrimary, btnSecondary, tagInfo, tagPending } from "@/lib/ui";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { MasterDataManager } from "@/components/master-data-manager";
+import { PageTabs, resolveTab } from "@/components/page-tabs";
+import { FilterForm } from "@/components/filter-form";
 import { deleteProductAction, saveProductAction, toggleProductStatusAction } from "./actions";
 import {
   deleteCategoryAction,
@@ -20,6 +22,19 @@ import {
 export const metadata = { title: "商品与厂家 - 玮川进销存" };
 
 const NO_MFR = "（未填写厂家）";
+
+/** 页签白名单：非法的 ?tab= 值回落到「商品」，避免出现空白页 */
+const TAB_KEYS = ["products", "manufacturers", "options"] as const;
+
+/** 卡片小标题 + 说明（原先写在折叠区 summary 里，展开为页签后改为卡片头） */
+function SectionHeading({ title, hint }: { title: string; hint?: string }) {
+  return (
+    <div className="mb-3">
+      <h2 className="text-sm font-semibold text-gray-900">{title}</h2>
+      {hint && <p className="mt-0.5 text-xs text-gray-400">{hint}</p>}
+    </div>
+  );
+}
 
 /** 厂家标签（商品名称旁的标注） */
 function MfrTag({ name }: { name: string }) {
@@ -63,16 +78,27 @@ function MfrChip({
 export default async function ProductsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ manufacturer?: string }>;
+  searchParams: Promise<{ manufacturer?: string; tab?: string; q?: string }>;
 }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
   const params = await searchParams;
   const selected = params.manufacturer ?? "";
+  const tab = resolveTab(TAB_KEYS, params.tab, "products");
+  const q = params.q?.trim();
 
   const [allProducts, units, categories, suppliers] = await Promise.all([
     prisma.product.findMany({
+      where: q
+        ? {
+            OR: [
+              { name: { contains: q } },
+              { code: { contains: q } },
+              { manufacturer: { contains: q } },
+            ],
+          }
+        : {},
       orderBy: { code: "asc" },
       include: {
         category: { select: { name: true } },
@@ -113,6 +139,16 @@ export default async function ProductsPage({
 
   const products = selected ? allProducts.filter((p) => mfrOf(p) === selected) : allProducts;
 
+  /** 页签链接：保留当前筛选，切换页签不丢条件 */
+  const tabHref = (key: string) => {
+    const sp = new URLSearchParams();
+    if (key !== "products") sp.set("tab", key);
+    if (selected) sp.set("manufacturer", selected);
+    if (q) sp.set("q", q);
+    const qs = sp.toString();
+    return `/products${qs ? `?${qs}` : ""}`;
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -127,17 +163,68 @@ export default async function ProductsPage({
         )}
       </div>
 
-      {/* 厂家标签筛选：点哪个厂家就看哪个厂家供应的商品 */}
-      <div className="space-y-2 rounded-xl border border-gray-200 bg-white p-4">
-        <div className="flex flex-wrap items-center gap-2">
+      <PageTabs
+        current={tab}
+        tabs={[
+          {
+            key: "products",
+            label: "商品",
+            count: allProducts.length,
+            href: tabHref("products"),
+            hint: "商品档案：按厂家筛选、看库存与参考价、编辑或停用",
+          },
+          {
+            key: "manufacturers",
+            label: "厂家",
+            count: suppliers.length,
+            href: tabHref("manufacturers"),
+            hint: "厂家档案：缺货开单会按商品上的厂家自动向该厂家补货",
+          },
+          {
+            key: "options",
+            label: "分类与单位",
+            count: `${categories.length} · ${units.length}`,
+            href: tabHref("options"),
+            hint: "商品分类与计量单位字典",
+          },
+        ]}
+      />
+
+      {/* 商品页签：工具栏（搜索 + 厂家筛选）与商品列表 */}
+      {tab === "products" && (
+      <div className="space-y-3 rounded-xl border border-gray-200 bg-white p-4">
+        <FilterForm className="flex flex-wrap items-end gap-2">
+          <div>
+            <label htmlFor="q" className="block text-xs font-medium text-gray-600">搜索商品</label>
+            <input
+              id="q"
+              type="search"
+              name="q"
+              defaultValue={q ?? ""}
+              placeholder="名称 / 编码 / 厂家"
+              className="mt-1 w-56 rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+            />
+          </div>
+          {selected && <input type="hidden" name="manufacturer" value={selected} />}
+          <button type="submit" className={btnSecondary}>查询</button>
+          {q && (
+            <Link
+              href={`/products${selected ? `?manufacturer=${encodeURIComponent(selected)}` : ""}`}
+              className="text-xs text-blue-600 hover:underline"
+            >
+              清除关键词
+            </Link>
+          )}
+        </FilterForm>
+        <div className="flex flex-wrap items-center gap-2 border-t border-gray-100 pt-3">
           <span className="text-sm font-medium text-gray-700">厂家</span>
-          <MfrChip label="全部" count={allProducts.length} href="/products" active={selected === ""} />
+          <MfrChip label="全部" count={allProducts.length} href={tabHref("products")} active={selected === ""} />
           {chips.map((name) => (
             <MfrChip
               key={name}
               label={archivedNames.has(name) ? name : `${name}（未建档）`}
               count={mfrCounts.get(name) ?? 0}
-              href={`/products?manufacturer=${encodeURIComponent(name)}`}
+              href={`/products?manufacturer=${encodeURIComponent(name)}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
               active={selected === name}
             />
           ))}
@@ -145,24 +232,23 @@ export default async function ProductsPage({
             <MfrChip
               label="未填厂家"
               count={mfrCounts.get(NO_MFR) ?? 0}
-              href={`/products?manufacturer=${encodeURIComponent(NO_MFR)}`}
+              href={`/products?manufacturer=${encodeURIComponent(NO_MFR)}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
               active={selected === NO_MFR}
             />
           )}
         </div>
         <p className="text-xs text-gray-400">
-          厂家名与「厂家管理」中的档案同名时，缺货开单会自动向该厂家补货；未建档的厂家需补充档案（联系人/电话等）
+          厂家名与「厂家」页签里的档案同名时，缺货开单会自动向该厂家补货；带「（未建档）」的厂家建议补齐档案。
         </p>
       </div>
+      )}
 
-      <details className="rounded-xl border border-gray-200 bg-white">
-        <summary className="cursor-pointer rounded-t-xl px-5 py-3 text-sm font-medium text-gray-900 transition-colors hover:bg-gray-50">
-          厂家管理（{suppliers.length} 个）
-          <span className="ml-2 text-xs font-normal text-gray-400">
-            点击展开/收起 · 厂家档案，开单缺货时按商品厂家自动补货
-          </span>
-        </summary>
-        <div className="border-t border-gray-100 p-5">
+      {tab === "manufacturers" && (
+        <section className="rounded-xl border border-gray-200 bg-white p-5">
+          <SectionHeading
+            title="厂家档案"
+            hint="开单缺货时按商品上的厂家自动向该厂家补货；已被商品或单据引用的厂家请停用，不要删除"
+          />
           <MasterDataManager
             entityLabel="厂家"
             columns={[
@@ -204,15 +290,13 @@ export default async function ProductsPage({
             toggleAction={toggleSupplierStatusAction}
             deleteAction={deleteSupplierAction}
           />
-        </div>
-      </details>
+        </section>
+      )}
 
-      <details className="rounded-xl border border-gray-200 bg-white">
-        <summary className="cursor-pointer rounded-t-xl px-5 py-3 text-sm font-medium text-gray-900 transition-colors hover:bg-gray-50">
-          商品分类管理（{categories.length} 个）
-          <span className="ml-2 text-xs font-normal text-gray-400">点击展开/收起 · 有商品的分类不可删除，请停用</span>
-        </summary>
-        <div className="border-t border-gray-100 p-5">
+      {tab === "options" && (
+        <div className="grid gap-6 lg:grid-cols-2">
+        <section className="rounded-xl border border-gray-200 bg-white p-5">
+          <SectionHeading title="商品分类" hint="有商品的分类不可删除，请停用" />
           <MasterDataManager
             entityLabel="分类"
             columns={[
@@ -233,15 +317,10 @@ export default async function ProductsPage({
             toggleAction={toggleCategoryStatusAction}
             deleteAction={deleteCategoryAction}
           />
-        </div>
-      </details>
+        </section>
 
-      <details className="rounded-xl border border-gray-200 bg-white">
-        <summary className="cursor-pointer rounded-t-xl px-5 py-3 text-sm font-medium text-gray-900 transition-colors hover:bg-gray-50">
-          单位字典管理（{units.length} 个）
-          <span className="ml-2 text-xs font-normal text-gray-400">点击展开/收起 · 被商品引用的单位不可删除，请停用</span>
-        </summary>
-        <div className="border-t border-gray-100 p-5">
+        <section className="rounded-xl border border-gray-200 bg-white p-5">
+          <SectionHeading title="计量单位" hint="被商品引用的单位不可删除，请停用" />
           <MasterDataManager
             entityLabel="单位"
             columns={[
@@ -262,9 +341,11 @@ export default async function ProductsPage({
             toggleAction={toggleUnitStatusAction}
             deleteAction={deleteUnitAction}
           />
+        </section>
         </div>
-      </details>
+      )}
 
+      {tab === "products" && (
       <div className="space-y-2">
         <div className="flex items-baseline gap-2">
           <h2 className="text-sm font-semibold text-gray-900">
@@ -272,8 +353,11 @@ export default async function ProductsPage({
           </h2>
           <span className="text-xs text-gray-400">{products.length} 个</span>
           {selected && (
-            <Link href="/products" className="text-xs text-blue-600 hover:underline">
-              清除筛选
+            <Link
+              href={`/products${q ? `?q=${encodeURIComponent(q)}` : ""}`}
+              className="text-xs text-blue-600 hover:underline"
+            >
+              清除厂家筛选
             </Link>
           )}
         </div>
@@ -360,6 +444,7 @@ export default async function ProductsPage({
           deleteAction={deleteProductAction}
         />
       </div>
+      )}
     </div>
   );
 }
