@@ -1186,8 +1186,10 @@ export function NewSaleForm({
                     </InlineField>
                   </div>
 
-                  {/* 补货：用库存 / 需现场进货 / 现场进价 / 多补 */}
-                  <div className="mt-2.5 grid grid-cols-2 gap-x-5 gap-y-2 rounded-md bg-gray-50 px-3 py-2.5 lg:grid-cols-4">
+                  {/* 补货：用库存 / 需现场进货 / 现场进价 / 多补
+                      这里与上面的「交易信息」保持同一种排版（内联字段、无底色框），
+                      只用一条细分隔线区分两行，避免整块灰底与其它区域风格不一致 */}
+                  <div className="mt-2.5 grid grid-cols-2 gap-x-5 gap-y-2 border-t border-gray-100 pt-2.5 lg:grid-cols-4">
                     <InlineField label="用库存">
                       <input
                         name={`item_${i}_stockUsed`}
