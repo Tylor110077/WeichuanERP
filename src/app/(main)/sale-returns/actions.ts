@@ -10,6 +10,7 @@ import { writeAudit } from "@/lib/audit";
 import { applyStockChange } from "@/lib/stock-cost";
 import { buildOrderNo, ORDER_NO_PREFIXES, todayCompact } from "@/lib/order-no";
 import { firstIssueMessage, requiredNumber } from "@/lib/form-number";
+import { parseReturnRows } from "@/lib/return-rows";
 
 export type FormState = { error?: string; ok?: string } | null;
 
@@ -18,7 +19,7 @@ const itemSchema = z.object({
   quantity: requiredNumber({
     invalid: "请填写退货数量",
     min: 0.001,
-    minMessage: "退货数量必须大于 0",
+    minMessage: "退货数量必须大于 0（不退货的行留空即可）",
     max: 9_999_999.999,
     maxMessage: "退货数量过大",
   }),
@@ -32,7 +33,7 @@ const itemSchema = z.object({
 
 const createSchema = z.object({
   saleOrderId: z.coerce.number().int().positive(),
-  items: z.array(itemSchema).min(1, "请至少添加一行退货商品"),
+  items: z.array(itemSchema).min(1, "请至少填写一行退货数量（不退货的行留空即可）"),
 });
 
 function round2(n: number): number {
@@ -47,16 +48,9 @@ export async function createSaleReturnAction(
   if (!user) return { error: "未登录" };
   if (user.role === "boss") return { error: "无退货开单权限" };
 
-  const items: unknown[] = [];
-  let i = 0;
-  while (formData.has(`item_${i}_orderItemId`)) {
-    items.push({
-      orderItemId: formData.get(`item_${i}_orderItemId`),
-      quantity: formData.get(`item_${i}_quantity`),
-      unitPrice: formData.get(`item_${i}_unitPrice`),
-    });
-    i++;
-  }
+  // 不退货的行（数量留空或填 0）整行跳过：不校验它的退货价，
+  // 这样"只退其中两样、其余留空"就能直接提交（见 lib/return-rows.ts）
+  const { items } = parseReturnRows(formData);
   const parsed = createSchema.safeParse({
     saleOrderId: formData.get("saleOrderId"),
     items,

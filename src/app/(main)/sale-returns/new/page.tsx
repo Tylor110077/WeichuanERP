@@ -3,7 +3,7 @@ import { NoPermission } from "@/components/empty-state";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
-import { ReturnForm } from "./return-form";
+import { ReturnForm } from "@/components/return-form";
 
 export const metadata = { title: "销售退货 - 玮川进销存" };
 
@@ -89,7 +89,7 @@ export default async function NewSaleReturnPage({
           ← 返回原单
         </Link>
       </div>
-      <ReturnForm saleOrderId={order.id} rows={rows} />
+      <ReturnForm direction="sale" orderId={order.id} rows={rows} />
     </div>
   );
 }
