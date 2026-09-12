@@ -45,8 +45,11 @@ export default async function PriceAnalysisPage({
     : null;
 
   const t = analysis?.totals;
-  const detailRows = analysis ? [...analysis.points].reverse().slice(0, 500) : [];
-  const detailCapped = analysis ? analysis.points.length > 500 : false;
+  // 大数据量：明细表与图表都只取最近 N 笔（2 万单实测全量下发会让单页达到 3 MB、图表要画上千个点）
+  const CHART_POINTS = 300;
+  const DETAIL_ROWS = 200;
+  const detailRows = analysis ? [...analysis.points].reverse().slice(0, DETAIL_ROWS) : [];
+  const detailCapped = analysis ? analysis.points.length > DETAIL_ROWS : false;
 
   return (
     <div className="space-y-6">
@@ -127,6 +130,7 @@ export default async function PriceAnalysisPage({
                 <span className="ml-2 text-xs font-normal text-gray-400">
                   灰点＝每笔实际售价 ・ 橙点＝每笔进价（区间＝每日最高/最低进价跨天相连着色） ・{" "}
                   {analysis.byDay.length} 天 / {analysis.points.length} 笔销售
+                  {analysis.points.length > CHART_POINTS && `（图表仅画最近 ${CHART_POINTS} 笔）`}
                 </span>
               </h2>
               <span className="text-xs text-gray-400">{label}</span>
@@ -137,7 +141,7 @@ export default async function PriceAnalysisPage({
               </div>
             ) : (
               <PriceChart
-                points={analysis.points}
+                points={analysis.points.slice(-CHART_POINTS)}
                 byDay={analysis.byDay}
                 refSalePrice={analysis.product.refSalePrice}
               />
@@ -147,7 +151,12 @@ export default async function PriceAnalysisPage({
           {/* 每日售价统计：当日最高/最低售价分别是哪一单、利润率多少 */}
           {analysis.byDay.length > 0 && (
             <div>
-              <h2 className="mb-2 text-sm font-semibold text-gray-900">每日售价统计</h2>
+              <h2 className="mb-2 text-sm font-semibold text-gray-900">
+              每日售价统计
+              {analysis.byDay.length > 90 && (
+                <span className="ml-2 text-xs font-normal text-gray-400">仅显示最近 90 天</span>
+              )}
+            </h2>
               <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
                 <table className="min-w-full divide-y divide-gray-200 text-sm">
                   <thead className="bg-gray-50 text-left text-xs text-gray-500">
@@ -164,7 +173,7 @@ export default async function PriceAnalysisPage({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 [&>tr]:transition-colors [&>tr:hover]:bg-gray-100/70">
-                    {[...analysis.byDay].reverse().map((d) => {
+                    {[...analysis.byDay].reverse().slice(0, 90).map((d) => {
                       const one = d.highest === d.lowest;
                       return (
                         <tr key={d.dayTs}>
@@ -260,7 +269,7 @@ export default async function PriceAnalysisPage({
           <div>
             <h2 className="mb-2 text-sm font-semibold text-gray-900">
               交易明细
-              {detailCapped && <span className="ml-2 text-xs font-normal text-gray-400">仅显示最近 500 笔</span>}
+              {detailCapped && <span className="ml-2 text-xs font-normal text-gray-400">仅显示最近 {DETAIL_ROWS} 笔</span>}
             </h2>
             <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
               <table className="min-w-full divide-y divide-gray-200 text-sm">

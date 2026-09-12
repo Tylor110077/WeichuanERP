@@ -4,7 +4,7 @@ import { EmptyState, NoPermission } from "@/components/empty-state";
 import { btnSecondary, btnSuccess, segActive } from "@/lib/ui";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
-import { buildReport, REPORT_TABS, type ReportTabKey } from "@/lib/reports";
+import { buildReport, MAX_REPORT_ROWS, REPORT_TABS, type ReportTabKey } from "@/lib/reports";
 import { DateShortcuts } from "@/components/date-shortcuts";
 import { RelatedLinks } from "@/components/related-links";
 
@@ -86,6 +86,12 @@ export default async function ReportsPage({
           查询
         </button>
       </FilterForm>
+
+      {result.capped && (
+        <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-700">
+          数据量较大，下表仅展示前 {MAX_REPORT_ROWS} 行（按时间倒序）。完整数据请点右上角「导出 Excel」。
+        </p>
+      )}
 
       <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
         <table className="min-w-full divide-y divide-gray-200 text-sm">

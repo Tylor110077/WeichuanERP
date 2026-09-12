@@ -23,6 +23,7 @@ export default async function ReceivablesPage({
     from?: string;
     to?: string;
     counterId?: string;
+    page?: string;
   }>;
 }) {
   const user = await getCurrentUser();
@@ -38,6 +39,9 @@ export default async function ReceivablesPage({
   const isReceivable = view === "receivable";
   const range = dateRange(params.from, params.to);
   const counterId = params.counterId ? Number(params.counterId) : undefined;
+  // 单据表按页展示（合计仍用 SQL 聚合，不受分页影响）
+  const page = Math.max(1, Number(params.page) || 1);
+  const PAGE_SIZE = 50;
 
   const orders = isReceivable
     ? await prisma.saleOrder.findMany({
@@ -105,12 +109,25 @@ export default async function ReceivablesPage({
     const total = Number((o as { totalAmount: unknown }).totalAmount);
     return total - paid - returned > 0;
   });
+  const pageCount = Math.max(1, Math.ceil(unpaidOrders.length / PAGE_SIZE));
+  const pagedOrders = unpaidOrders.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
   const counterOptions =
     isReceivable
       ? await prisma.customer.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } })
       : await prisma.supplier.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } });
 
   const isDefaultRange = !params.from && !params.to;
+
+  /** 分页链接：保留视图、期间与对象筛选 */
+  const pageHref = (p: number) => {
+    const sp = new URLSearchParams({ view });
+    if (params.from) sp.set("from", params.from);
+    if (params.to) sp.set("to", params.to);
+    if (params.counterId) sp.set("counterId", params.counterId);
+    if (p > 1) sp.set("page", String(p));
+    return `/receivables-payables?${sp.toString()}`;
+  };
 
   const viewHref = (v: string) => {
     const sp = new URLSearchParams({ view: v });
@@ -201,7 +218,7 @@ export default async function ReceivablesPage({
                 </td>
               </tr>
             )}
-            {unpaidOrders.map((o) => {
+            {pagedOrders.map((o) => {
               const returned = o.returns.reduce((r, x) => r + Number(x.totalAmount), 0);
               const paid = isReceivable ? Number((o as { receivedAmount: unknown }).receivedAmount) : Number((o as { paidAmount: unknown }).paidAmount);
               const total = Number((o as { totalAmount: unknown }).totalAmount);
@@ -230,6 +247,22 @@ export default async function ReceivablesPage({
           </tbody>
         </table>
       </div>
+
+      {pageCount > 1 && (
+        <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm">
+          {page > 1 ? (
+            <Link href={pageHref(page - 1)} className="text-blue-600 hover:underline">上一页</Link>
+          ) : (
+            <span className="text-gray-400">上一页</span>
+          )}
+          <span className="text-gray-600">第 {page} / {pageCount} 页</span>
+          {page < pageCount ? (
+            <Link href={pageHref(page + 1)} className="text-blue-600 hover:underline">下一页</Link>
+          ) : (
+            <span className="text-gray-400">下一页</span>
+          )}
+        </div>
+      )}
 
       {/* 合计：放在单据表下方，直观反映当前筛选条件下共多少未结清 */}
       <div className="rounded-xl border border-gray-200 bg-white p-5">

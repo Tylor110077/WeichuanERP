@@ -218,6 +218,8 @@ model Product {
   @@index([categoryId])
   @@index([status])
   @@map("products")
+  @@index([manufacturer])
+
 }
 
 model Supplier {
@@ -256,6 +258,8 @@ model Customer {
   @@index([name])
   @@index([groupId])
   @@map("customers")
+  @@index([phone])
+
 }
 
 // 客户组织（分类，客户归属单一组织，可移动；同组织/标签管理页维护）
@@ -324,6 +328,9 @@ model PurchaseOrder {
   @@index([operatorId])
   @@index([createdAt])
   @@map("purchase_orders")
+  @@index([status, createdAt])
+  @@index([supplierId, createdAt])
+
 }
 
 model PurchaseOrderItem {
@@ -378,6 +385,9 @@ model SaleOrder {
   @@index([operatorId])
   @@index([createdAt])
   @@map("sale_orders")
+  @@index([status, createdAt])
+  @@index([customerId, createdAt])
+
 }
 
 model SaleOrderItem {
@@ -429,6 +439,8 @@ model PurchaseReturn {
 
   @@index([purchaseOrderId])
   @@map("purchase_returns")
+  @@index([createdAt])
+
 }
 
 model PurchaseReturnItem {
@@ -470,6 +482,8 @@ model SaleReturn {
 
   @@index([saleOrderId])
   @@map("sale_returns")
+  @@index([createdAt])
+
 }
 
 model SaleReturnItem {
@@ -538,4 +552,6 @@ model StockMovement {
   @@index([productId, createdAt])
   @@index([bizOrderNo])
   @@map("stock_movements")
+  @@index([bizType, createdAt])
+
 }

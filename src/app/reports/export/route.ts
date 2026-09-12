@@ -19,7 +19,8 @@ export async function GET(request: NextRequest) {
   const from = sp.get("from") ?? undefined;
   const to = sp.get("to") ?? undefined;
 
-  const result = await buildReport(tab, from, to);
+  // 导出需要全量数据，不受报表页的行数上限约束
+  const result = await buildReport(tab, from, to, { unlimited: true });
 
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet(result.title);
