@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { FilterForm } from "@/components/filter-form";
 import { EmptyState, NoPermission } from "@/components/empty-state";
 import { btnSecondary, inputBase } from "@/lib/ui";
@@ -6,6 +7,8 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { DateShortcuts } from "@/components/date-shortcuts";
 import { RelatedLinks } from "@/components/related-links";
+
+const PAGE_SIZE = 50;
 
 export const metadata = { title: "销售分析 - 玮川进销存" };
 
@@ -17,7 +20,7 @@ export const metadata = { title: "销售分析 - 玮川进销存" };
 export default async function SalesAnalysisPage({
   searchParams,
 }: {
-  searchParams: Promise<{ quick?: string; from?: string; to?: string }>;
+  searchParams: Promise<{ quick?: string; from?: string; to?: string; page?: string }>;
 }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
@@ -109,10 +112,23 @@ export default async function SalesAnalysisPage({
     })
     .sort((a, b) => (a.date < b.date ? -1 : 1));
 
-  // 展示上限：商品可能有上千个，页面只渲染前 PRODUCT_ROWS_LIMIT 行（按利润倒序），
-  // 配合表格内的滚动条；完整数据用「报表中心」导出。
-  const PRODUCT_ROWS_LIMIT = 500;
-  const shownProductRows = productRows.slice(0, PRODUCT_ROWS_LIMIT);
+  // 商品维度会随商品数量增长：按页展示（默认 50 行/页），而不是只截前 N 行——
+  // 截断会让人以为"就这么多"，分页则能看到全部，页面长度也是固定的。
+  const productPageCount = Math.max(1, Math.ceil(productRows.length / PAGE_SIZE));
+  // 页码夹在有效范围内：换期间后商品变少时，不要把用户留在一个空的第 N 页
+  const page = Math.min(Math.max(1, Number(params.page) || 1), productPageCount);
+  const pagedProductRows = productRows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  /** 翻页链接：保留期间筛选（quick/from/to），只改 page */
+  const pageHref = (target: number) => {
+    const sp = new URLSearchParams();
+    if (params.quick) sp.set("quick", params.quick);
+    if (params.from) sp.set("from", params.from);
+    if (params.to) sp.set("to", params.to);
+    if (target > 1) sp.set("page", String(target));
+    const qs = sp.toString();
+    return `/sales-analysis${qs ? `?${qs}` : ""}`;
+  };
 
   return (
     <div className="space-y-6">
@@ -155,12 +171,11 @@ export default async function SalesAnalysisPage({
           商品维度
           <span className="ml-2 text-xs font-normal text-gray-400">
             按利润排序 ・ 共 {productRows.length} 个商品
-            {productRows.length > shownProductRows.length &&
-              ` ・ 只显示前 ${shownProductRows.length} 个（完整数据见报表中心导出）`}
+            {productPageCount > 1 && ` ・ 第 ${page} / ${productPageCount} 页`}
           </span>
         </h2>
         {/* 商品多时页面会很长、DOM 也重：表格内部滚动 + 表头吸顶（同客户组织等长表做法） */}
-        <div className="scroll-thin max-h-[32rem] overflow-auto rounded-xl border border-gray-200 bg-white">
+        <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
         <table className="min-w-full divide-y divide-gray-200 text-sm">
           <thead className="sticky top-0 z-10 bg-gray-50 text-left text-xs text-gray-500">
             <tr>
@@ -186,7 +201,7 @@ export default async function SalesAnalysisPage({
                 </td>
               </tr>
             )}
-            {shownProductRows.map((r) => (
+            {pagedProductRows.map((r) => (
               <tr key={r.code}>
                 <td className="whitespace-nowrap px-4 py-2.5 text-gray-600">{r.code}</td>
                 <td className="px-4 py-2.5 text-gray-900">{r.name}</td>
@@ -214,6 +229,21 @@ export default async function SalesAnalysisPage({
           </tfoot>
         </table>
         </div>
+        {productPageCount > 1 && (
+          <div className="mt-3 flex items-center gap-3 text-sm">
+            {page > 1 ? (
+              <Link href={pageHref(page - 1)} className="text-blue-600 hover:underline">上一页</Link>
+            ) : (
+              <span className="text-gray-400">上一页</span>
+            )}
+            <span className="text-gray-600">第 {page} / {productPageCount} 页</span>
+            {page < productPageCount ? (
+              <Link href={pageHref(page + 1)} className="text-blue-600 hover:underline">下一页</Link>
+            ) : (
+              <span className="text-gray-400">下一页</span>
+            )}
+          </div>
+        )}
       </div>
 
       <div>
