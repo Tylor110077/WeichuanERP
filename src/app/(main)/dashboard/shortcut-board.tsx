@@ -1,0 +1,264 @@
+"use client";
+
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
+import { btnPrimary } from "@/lib/ui";
+import { MAX_SHORTCUTS, SHORTCUT_GROUPS, type ShortcutDef } from "@/lib/shortcuts";
+import { saveShortcutsAction, resetShortcutsAction } from "./shortcut-actions";
+
+/**
+ * 工作台「快捷入口」面板。
+ *
+ * 查看态：每块是一个链接，点一下直达（如「开售卖单」）。
+ * 编辑态：每块出现 ← → 移除；下方列出还能加的入口，点一下就加进来；保存后写回当前用户。
+ *
+ * 上限 MAX_SHORTCUTS：工作台放太多等于没有重点，加满后给明确提示而不是静默失败。
+ */
+export function ShortcutBoard({
+  shortcuts,
+  catalog,
+}: {
+  /** 当前显示的入口（已按角色过滤） */
+  shortcuts: ShortcutDef[];
+  /** 该角色可选的入口全集（编辑态用来展示"还能加什么"） */
+  catalog: ShortcutDef[];
+}) {
+  const router = useRouter();
+  const [editing, setEditing] = useState(false);
+  // draft 只在编辑态用；查看态直接渲染服务端给的 shortcuts，
+  // 这样「保存 / 恢复默认」后 router.refresh() 带回来的新值立刻生效（本地副本不会盖住它）
+  const [draft, setDraft] = useState<ShortcutDef[]>(shortcuts);
+  const [msg, setMsg] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  const list = editing ? draft : shortcuts;
+  const chosen = new Set(draft.map((s) => s.id));
+  const addable = catalog.filter((s) => !chosen.has(s.id));
+
+  function openEdit() {
+    setDraft(shortcuts);
+    setMsg(null);
+    setEditing(true);
+  }
+
+  function move(index: number, delta: number) {
+    const next = [...draft];
+    const target = index + delta;
+    if (target < 0 || target >= next.length) return;
+    [next[index], next[target]] = [next[target], next[index]];
+    setDraft(next);
+  }
+
+  function remove(id: string) {
+    setDraft((list) => list.filter((s) => s.id !== id));
+  }
+
+  function add(def: ShortcutDef) {
+    setDraft((list) => (list.length >= MAX_SHORTCUTS ? list : [...list, def]));
+  }
+
+  function save() {
+    startTransition(async () => {
+      const r = await saveShortcutsAction(draft.map((s) => s.id));
+      if (r?.error) {
+        setMsg({ kind: "error", text: r.error });
+        return;
+      }
+      setEditing(false);
+      setMsg({ kind: "ok", text: "已保存" });
+      router.refresh();
+    });
+  }
+
+  function resetDefault() {
+    startTransition(async () => {
+      const r = await resetShortcutsAction();
+      if (r?.error) {
+        setMsg({ kind: "error", text: r.error });
+        return;
+      }
+      setEditing(false);
+      setMsg({ kind: "ok", text: "已恢复默认" });
+      router.refresh();
+    });
+  }
+
+  const tileBase =
+    "group flex items-center gap-3 rounded-xl border bg-white p-4 transition";
+
+  return (
+    <section className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-sm font-semibold text-gray-700">
+          快捷入口
+          {editing && (
+            <span className="ml-2 text-xs font-normal text-gray-400">
+              已选 {draft.length} / {MAX_SHORTCUTS}
+            </span>
+          )}
+        </h2>
+        {!editing ? (
+          <div className="flex items-center gap-3">
+            {msg?.kind === "ok" && (
+              <span className="text-xs text-green-700">{msg.text}</span>
+            )}
+            <button type="button" onClick={openEdit} className="text-xs text-blue-600 hover:underline">
+              编辑
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-3">
+            <button type="button" onClick={resetDefault} disabled={pending} className="text-xs text-gray-500 hover:underline">
+              恢复默认
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setEditing(false);
+                setMsg(null);
+              }}
+              disabled={pending}
+              className="text-xs text-gray-500 hover:underline"
+            >
+              取消
+            </button>
+            <button type="button" onClick={save} disabled={pending} className={btnPrimary}>
+              {pending ? "保存中…" : "保存"}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {msg?.kind === "error" && (
+        <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+          {msg.text}
+        </p>
+      )}
+
+      {list.length === 0 && !editing ? (
+        <p className="rounded-xl border border-dashed border-gray-300 bg-white px-4 py-8 text-center text-sm text-gray-400">
+          还没有快捷入口，点右上角「编辑」挑几个常用的放上来。
+        </p>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {list.map((s, i) => {
+            const badge = (
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-base font-medium text-blue-600 transition group-hover:bg-blue-100">
+                {s.badge}
+              </span>
+            );
+            const text = (
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-medium text-gray-900 group-hover:text-blue-700">
+                  {s.label}
+                </span>
+                <span className="block truncate text-xs text-gray-500">{s.desc}</span>
+              </span>
+            );
+            const chevron = (
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                className="h-4 w-4 shrink-0 text-gray-300 transition group-hover:translate-x-0.5 group-hover:text-blue-500"
+              >
+                <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            );
+
+            if (!editing) {
+              return (
+                <Link key={s.id} href={s.href} className={`${tileBase} border-gray-200 hover:border-blue-300 hover:shadow-sm`}>
+                  {badge}
+                  {text}
+                  {chevron}
+                </Link>
+              );
+            }
+
+            return (
+              <div key={s.id} className={`${tileBase} border-gray-300 border-dashed`}>
+                {badge}
+                {text}
+                <span className="flex shrink-0 items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => move(i, -1)}
+                    disabled={i === 0}
+                    aria-label={`${s.label} 左移`}
+                    className="rounded border border-gray-200 px-1.5 py-0.5 text-xs text-gray-600 hover:bg-gray-50 disabled:opacity-30"
+                  >
+                    ←
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => move(i, 1)}
+                    disabled={i === list.length - 1}
+                    aria-label={`${s.label} 右移`}
+                    className="rounded border border-gray-200 px-1.5 py-0.5 text-xs text-gray-600 hover:bg-gray-50 disabled:opacity-30"
+                  >
+                    →
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => remove(s.id)}
+                    aria-label={`移除 ${s.label}`}
+                    className="rounded border border-gray-200 px-1.5 py-0.5 text-xs text-red-600 hover:bg-red-50"
+                  >
+                    ✕
+                  </button>
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {editing && (
+        <div className="space-y-3 rounded-xl border border-gray-200 bg-gray-50 p-4">
+          <p className="text-xs text-gray-500">
+            点下面的入口加到上面；加满 {MAX_SHORTCUTS} 个后先移除再添加。「恢复默认」会按你的角色重置。
+          </p>
+          {addable.length === 0 ? (
+            <p className="text-xs text-gray-400">该角色可用的入口都已放上去了。</p>
+          ) : (
+            SHORTCUT_GROUPS.map((group) => {
+              const items = addable.filter((s) => s.group === group);
+              if (items.length === 0) return null;
+              return (
+                <div key={group} className="flex flex-wrap items-center gap-2">
+                  <span className="w-16 shrink-0 text-xs text-gray-400">{group}</span>
+                  {items.map((s) => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => add(s)}
+                      disabled={draft.length >= MAX_SHORTCUTS}
+                      title={s.desc}
+                      className="rounded-full border border-gray-300 bg-white px-3 py-1 text-xs text-gray-700 transition hover:border-blue-400 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      + {s.label}
+                    </button>
+                  ))}
+                </div>
+              );
+            })
+          )}
+          {draft.length >= MAX_SHORTCUTS && (
+            <p className="text-xs text-amber-700">
+              已放满 {MAX_SHORTCUTS} 个：想加新的，先在上面移除一个。
+            </p>
+          )}
+        </div>
+      )}
+
+      {!editing && (
+        <p className="text-xs text-gray-400">
+          这块由你决定：点「编辑」增删、调整顺序，保存后只影响你自己的账号。
+        </p>
+      )}
+    </section>
+  );
+}

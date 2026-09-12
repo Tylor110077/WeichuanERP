@@ -1,16 +1,22 @@
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
+import { ShortcutBoard } from "./shortcut-board";
+import {
+  catalogForRole,
+  defaultShortcutIds,
+  readShortcutIds,
+  resolveShortcuts,
+} from "@/lib/shortcuts";
 
 /**
- * 工作台（文档 4#2）：只保留日常高频信息 —— 今日销售额、今日利润、应收总额、应付总额，
- * 以及「销售开单 / 进货开单」两个快捷入口。
- * 权限：利润涉及成本，仅管理员/老板可见；开单入口仅管理员/业务员可见（老板/财务不可开单）。
+ * 工作台（文档 4#2）：日常高频数字 —— 今日销售额、今日利润、应收总额、应付总额，
+ * 外加一块由用户自己编排的「快捷入口」：存 User.shortcuts，没设置过就按角色给一套默认。
+ * 权限：利润涉及成本，仅管理员/老板可见；开单类入口只有管理员/业务员能放（见 lib/shortcuts.ts）。
  */
 export default async function DashboardPage() {
   const user = await getCurrentUser();
   const canSeeProfit = user?.role === "admin" || user?.role === "boss";
-  const canCreateOrder = user?.role === "admin" || user?.role === "sales";
 
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
@@ -58,6 +64,15 @@ export default async function DashboardPage() {
 
   const canViewFinance = user?.role === "admin" || user?.role === "boss";
 
+  // 快捷入口：库里存 id 数组。null = 从没自定义过（用角色默认）；[] = 用户主动清空了（就显示空）
+  const role = user?.role ?? "sales";
+  const storedIds = readShortcutIds(user?.shortcuts);
+  const shortcuts = resolveShortcuts(
+    storedIds ?? defaultShortcutIds(role),
+    role
+  );
+  const catalog = catalogForRole(role);
+
   const cards: {
     label: string;
     value: string;
@@ -93,34 +108,6 @@ export default async function DashboardPage() {
       value: `¥${payableTotal.toFixed(2)}`,
       note: "全部时间的厂家未付合计",
       href: canViewFinance ? "/receivables-payables?view=payable" : undefined,
-    },
-  ];
-
-  const quickActions = [
-    {
-      href: "/sale-orders/new",
-      title: "销售开单",
-      desc: "给客户开售卖单，缺货可自动向厂家补货",
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5">
-          <path d="M6 2h9l5 5v15H6z" strokeLinejoin="round" />
-          <path d="M15 2v5h5" strokeLinejoin="round" />
-          <path d="M9 13h6M9 17h4" strokeLinecap="round" />
-        </svg>
-      ),
-      theme: "blue" as const,
-    },
-    {
-      href: "/purchase-orders/new",
-      title: "进货开单",
-      desc: "向厂家开进货单，入库后自动计入库存成本",
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5">
-          <path d="M3 7l9-4 9 4v10l-9 4-9-4z" strokeLinejoin="round" />
-          <path d="M3 7l9 4 9-4M12 11v10" strokeLinejoin="round" />
-        </svg>
-      ),
-      theme: "green" as const,
     },
   ];
 
@@ -194,46 +181,7 @@ export default async function DashboardPage() {
         })}
       </div>
 
-      {/* 快捷开单 */}
-      {canCreateOrder && (
-        <div className="space-y-3">
-          <h2 className="text-sm font-semibold text-gray-700">快捷开单</h2>
-          <div className="grid gap-4 sm:grid-cols-2">
-            {quickActions.map((action) => (
-              <Link
-                key={action.href}
-                href={action.href}
-                className="group flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-5 transition hover:border-blue-300 hover:shadow-sm"
-              >
-                <span
-                  className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg ${
-                    action.theme === "blue"
-                      ? "bg-blue-50 text-blue-600 group-hover:bg-blue-100"
-                      : "bg-green-50 text-green-600 group-hover:bg-green-100"
-                  }`}
-                >
-                  {action.icon}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-base font-medium text-gray-900 group-hover:text-blue-700">
-                    {action.title}
-                  </span>
-                  <span className="block text-xs text-gray-500">{action.desc}</span>
-                </span>
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  className="h-4 w-4 shrink-0 text-gray-300 transition group-hover:translate-x-0.5 group-hover:text-blue-500"
-                >
-                  <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
+      <ShortcutBoard shortcuts={shortcuts} catalog={catalog} />
     </div>
   );
 }
