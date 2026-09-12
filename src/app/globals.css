@@ -15,6 +15,37 @@
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
 }
 
+/*
+ * 浏览器兼容兜底：让边框不依赖 @property。
+ *
+ * Tailwind v4 的 `border` 是 `border-style: var(--tw-border-style); border-width: 1px`，
+ * 而 --tw-border-style 的初始值 `solid` 是靠 @property 注册给的。浏览器**不支持 @property** 时
+ * （Tailwind v4 要求 Safari 16.4+ / Chrome 111+ / Firefox 128+），这个 var() 解析不出值，
+ * 按 CSS 规范该声明会退化成初始值 → `border-style: none` → **整站的边框全部消失**：
+ * 输入框看起来"没有框"、卡片没有轮廓、表格分隔线也没了，但颜色、间距、字号都正常，
+ * 所以很像"某个字段的样式坏了"，其实是一类环境问题（已用探针页复现验证）。
+ *
+ * 下面把 --tw-border-style 用**普通自定义属性**声明在 :root 上：
+ * - 不支持的浏览器里它就是普通变量、会继承下去 → 边框正常；
+ * - 支持的浏览器里它被注册为 inherits:false，只在 :root 生效、不会外泄，
+ *   各元素照旧用注册的初始值 solid → 与改动前完全一致（无副作用）。
+ *
+ * 其余几个变量（间距/位移/阴影）同理：属性没解析出来会让外边距或位移整块失效。
+ */
+:root {
+  --tw-border-style: solid;
+  --tw-space-y-reverse: 0;
+  --tw-divide-y-reverse: 0;
+  --tw-translate-x: 0;
+  --tw-translate-y: 0;
+  --tw-translate-z: 0;
+  --tw-shadow: 0 0 #0000;
+  --tw-inset-shadow: 0 0 #0000;
+  --tw-ring-shadow: 0 0 #0000;
+  --tw-inset-ring-shadow: 0 0 #0000;
+  --tw-ring-offset-shadow: 0 0 #0000;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
