@@ -31,55 +31,88 @@ export default async function SalesAnalysisPage({
   const quick = params.quick ?? "month";
   const { gte, lte, label } = resolveRange(quick, params.from, params.to);
 
-  const orders = await prisma.saleOrder.findMany({
-    where: { status: "confirmed", createdAt: { gte, lte } },
-    include: {
-      items: {
-        include: { product: { select: { code: true, name: true, unit: { select: { name: true } } } } },
-      },
-    },
-    orderBy: { createdAt: "asc" },
-    take: 5000,
-  });
+  // 数据全部在 SQL 里聚合：原来是把区间内最多 5000 张单连同明细拉进内存再遍历，
+  // 单子一多就是这个页面的卡顿来源（性能文档第 8 节记的待办）。
+  const where = { status: "confirmed" as const, createdAt: { gte, lte } };
 
-  // 汇总
-  const totalSales = orders.reduce((s, o) => s + Number(o.totalAmount), 0);
-  let totalCost = 0;
-  const byProduct = new Map<number, { code: string; name: string; unit: string; qty: number; sales: number; cost: number }>();
-  const byDay = new Map<string, { count: number; sales: number; cost: number }>();
-  for (const o of orders) {
-    const dayKey = o.createdAt.toLocaleDateString("zh-CN");
-    const day = byDay.get(dayKey) ?? { count: 0, sales: 0, cost: 0 };
-    day.count += 1;
-    day.sales += Number(o.totalAmount);
-    for (const it of o.items) {
-      totalCost += Number(it.costAmount);
-      day.cost += Number(it.costAmount);
-      const cur = byProduct.get(it.productId) ?? {
-        code: it.product.code,
-        name: it.product.name,
-        unit: it.product.unit.name,
-        qty: 0,
-        sales: 0,
-        cost: 0,
-      };
-      cur.qty += Number(it.quantity);
-      cur.sales += Number(it.amount);
-      cur.cost += Number(it.costAmount);
-      byProduct.set(it.productId, cur);
-    }
-    byDay.set(dayKey, day);
-  }
+  const [orderAgg, itemAgg, productAgg, dayTotals, dayCosts] = await Promise.all([
+    // 单据级：销售额、单数
+    prisma.saleOrder.aggregate({ where, _sum: { totalAmount: true }, _count: true }),
+    // 明细级：成本快照
+    prisma.saleOrderItem.aggregate({ where: { saleOrder: where }, _sum: { costAmount: true } }),
+    // 商品维度
+    prisma.saleOrderItem.groupBy({
+      by: ["productId"],
+      where: { saleOrder: where },
+      _sum: { quantity: true, amount: true, costAmount: true },
+    }),
+    // 按日：销售额与单数（DATE(CONVERT_TZ(...)) 把 UTC 存储换算成北京时间的自然日，
+    // 与页面上"今天/本周"这些快捷筛选的口径一致）
+    prisma.$queryRaw<{ day: Date; orderCount: bigint | number; sales: number | null }[]>`
+      SELECT DATE(CONVERT_TZ(so.created_at, '+00:00', '+08:00')) AS day,
+             COUNT(*) AS orderCount,
+             COALESCE(SUM(so.total_amount), 0) AS sales
+      FROM sale_orders so
+      WHERE so.status = 'confirmed' AND so.created_at BETWEEN ${gte} AND ${lte}
+      GROUP BY day ORDER BY day
+    `,
+    // 按日：成本（来自明细，按所属单据的日期归集）
+    prisma.$queryRaw<{ day: Date; cost: number | null }[]>`
+      SELECT DATE(CONVERT_TZ(so.created_at, '+00:00', '+08:00')) AS day,
+             COALESCE(SUM(soi.cost_amount), 0) AS cost
+      FROM sale_order_items soi
+      JOIN sale_orders so ON so.id = soi.sale_order_id
+      WHERE so.status = 'confirmed' AND so.created_at BETWEEN ${gte} AND ${lte}
+      GROUP BY day ORDER BY day
+    `,
+  ]);
+
+  const totalSales = Number(orderAgg._sum.totalAmount ?? 0);
+  const totalCost = Number(itemAgg._sum.costAmount ?? 0);
+  const orderCount = orderAgg._count;
   const totalProfit = totalSales - totalCost;
   const totalMargin = totalSales > 0 ? (totalProfit / totalSales) * 100 : 0;
 
-  const productRows = [...byProduct.values()]
-    .map((r) => ({ ...r, profit: r.sales - r.cost, margin: r.sales > 0 ? ((r.sales - r.cost) / r.sales) * 100 : 0 }))
+  // 商品维度的编码/名称/单位另取一次（groupBy 只能拿到 productId）
+  const productIds = productAgg.map((r) => r.productId);
+  const products = await prisma.product.findMany({
+    where: { id: { in: productIds } },
+    select: { id: true, code: true, name: true, unit: { select: { name: true } } },
+  });
+  const productById = new Map(products.map((p) => [p.id, p]));
+
+  const productRows = productAgg
+    .map((r) => {
+      const p = productById.get(r.productId);
+      const sales = Number(r._sum.amount ?? 0);
+      const cost = Number(r._sum.costAmount ?? 0);
+      return {
+        code: p?.code ?? "—",
+        name: p?.name ?? "（商品已删除）",
+        unit: p?.unit.name ?? "",
+        qty: Number(r._sum.quantity ?? 0),
+        sales,
+        cost,
+        profit: sales - cost,
+        margin: sales > 0 ? ((sales - cost) / sales) * 100 : 0,
+      };
+    })
     .sort((a, b) => b.profit - a.profit);
 
-  const dayRows = [...byDay.entries()]
-    .map(([date, v]) => ({ date, ...v, profit: v.sales - v.cost }))
+  const costByDay = new Map(dayCosts.map((d) => [d.day.toLocaleDateString("zh-CN"), Number(d.cost ?? 0)]));
+  const dayRows = dayTotals
+    .map((d) => {
+      const date = d.day.toLocaleDateString("zh-CN");
+      const sales = Number(d.sales ?? 0);
+      const cost = costByDay.get(date) ?? 0;
+      return { date, count: Number(d.orderCount), sales, cost, profit: sales - cost };
+    })
     .sort((a, b) => (a.date < b.date ? -1 : 1));
+
+  // 展示上限：商品可能有上千个，页面只渲染前 PRODUCT_ROWS_LIMIT 行（按利润倒序），
+  // 配合表格内的滚动条；完整数据用「报表中心」导出。
+  const PRODUCT_ROWS_LIMIT = 500;
+  const shownProductRows = productRows.slice(0, PRODUCT_ROWS_LIMIT);
 
   return (
     <div className="space-y-6">
@@ -107,7 +140,7 @@ export default async function SalesAnalysisPage({
         <button type="submit" className={btnSecondary}>
           查询
         </button>
-        <span className="text-xs text-gray-500">{label} ・ {orders.length} 单</span>
+        <span className="text-xs text-gray-500">{label} ・ {orderCount} 单</span>
       </FilterForm>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -117,9 +150,19 @@ export default async function SalesAnalysisPage({
         <SummaryCard label="总体利润率" value={`${totalMargin.toFixed(2)}%`} highlight={totalMargin >= 0} />
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+      <div>
+        <h2 className="mb-2 text-sm font-semibold text-gray-900">
+          商品维度
+          <span className="ml-2 text-xs font-normal text-gray-400">
+            按利润排序 ・ 共 {productRows.length} 个商品
+            {productRows.length > shownProductRows.length &&
+              ` ・ 只显示前 ${shownProductRows.length} 个（完整数据见报表中心导出）`}
+          </span>
+        </h2>
+        {/* 商品多时页面会很长、DOM 也重：表格内部滚动 + 表头吸顶（同客户组织等长表做法） */}
+        <div className="scroll-thin max-h-[32rem] overflow-auto rounded-xl border border-gray-200 bg-white">
         <table className="min-w-full divide-y divide-gray-200 text-sm">
-          <thead className="bg-gray-50 text-left text-xs text-gray-500">
+          <thead className="sticky top-0 z-10 bg-gray-50 text-left text-xs text-gray-500">
             <tr>
               <th className="whitespace-nowrap px-4 py-3 font-medium">编码</th>
               <th className="whitespace-nowrap px-4 py-3 font-medium">商品</th>
@@ -143,7 +186,7 @@ export default async function SalesAnalysisPage({
                 </td>
               </tr>
             )}
-            {productRows.map((r) => (
+            {shownProductRows.map((r) => (
               <tr key={r.code}>
                 <td className="whitespace-nowrap px-4 py-2.5 text-gray-600">{r.code}</td>
                 <td className="px-4 py-2.5 text-gray-900">{r.name}</td>
@@ -170,13 +213,17 @@ export default async function SalesAnalysisPage({
             </tr>
           </tfoot>
         </table>
+        </div>
       </div>
 
       <div>
-        <h2 className="mb-2 text-sm font-semibold text-gray-900">按日汇总</h2>
-        <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+        <h2 className="mb-2 text-sm font-semibold text-gray-900">
+          按日汇总
+          <span className="ml-2 text-xs font-normal text-gray-400">共 {dayRows.length} 天</span>
+        </h2>
+        <div className="scroll-thin max-h-[24rem] overflow-auto rounded-xl border border-gray-200 bg-white">
           <table className="min-w-full divide-y divide-gray-200 text-sm">
-            <thead className="bg-gray-50 text-left text-xs text-gray-500">
+            <thead className="sticky top-0 z-10 bg-gray-50 text-left text-xs text-gray-500">
               <tr>
                 <th className="whitespace-nowrap px-4 py-3 font-medium">日期</th>
                 <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">单数</th>
