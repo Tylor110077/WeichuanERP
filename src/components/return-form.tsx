@@ -13,6 +13,8 @@ import type { FormState } from "@/app/(main)/sale-returns/actions";
  * - **不填就是不退**：退货数量留空或填 0，这一行就不退；
  *   想只退其中几样时，其余行留空直接提交即可（不必先删行）。
  * - **不允许负数**：输入框挡住负号，服务端也会再校验一次。
+ * - **行是固定的**：原单里"还有可退数量"的商品全部列出（数量初始为空＝不退），
+ *   不能增行也不能删行——"退什么"只通过数量表达，少一步操作。
  * - **快捷「全部退」**：一键把每行填成它的可退数量；「清空」用于反悔重填。
  * - 超出可退数量：一边输入一边给红字提示，失焦时自动收到上限，服务端另有兜底校验。
  *
@@ -82,25 +84,6 @@ export function ReturnForm({
     setLines((prev) => prev.map((row, i) => (i === index ? { ...row, ...next } : row)));
   }
 
-  function addLine() {
-    setLines((prev) => [
-      ...prev,
-      { orderItemId: "", label: "", unitName: "", max: 0, quantity: "", unitPrice: "" },
-    ]);
-  }
-
-  function onSelect(index: number, orderItemId: string) {
-    const opt = rows.find((r) => String(r.orderItemId) === orderItemId);
-    patch(index, {
-      orderItemId,
-      label: opt ? `${opt.code} ${opt.name}` : "",
-      unitName: opt?.unitName ?? "",
-      max: opt?.remaining ?? 0,
-      quantity: "",
-      unitPrice: opt ? String(opt.unitPrice) : "",
-    });
-  }
-
   /** 数量输入：挡住负号；超出可退数量只在失焦时收到上限（输入过程中不打断） */
   function onQtyChange(index: number, raw: string) {
     if (raw.startsWith("-")) return; // 不允许负数：直接不接受这次输入
@@ -148,7 +131,6 @@ export function ReturnForm({
               <th className="w-16 px-4 py-3 font-medium">单位</th>
               <th className="w-36 px-4 py-3 font-medium">退货价</th>
               <th className="w-28 px-4 py-3 text-right font-medium tabular-nums">金额</th>
-              <th className="w-14 px-4 py-3 font-medium"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 [&>tr]:transition-colors [&>tr:hover]:bg-gray-100/70">
@@ -157,21 +139,9 @@ export function ReturnForm({
               return (
                 <tr key={i}>
                   <td className="px-4 py-2">
-                    <select
-                      name={`item_${i}_orderItemId`}
-                      value={line.orderItemId}
-                      onChange={(e) => onSelect(i, e.target.value)}
-                      className={cellInput}
-                    >
-                      <option value="">请选择原单商品（不选＝此行不用）</option>
-                      {rows
-                        .filter((r) => r.remaining > 0)
-                        .map((r) => (
-                          <option key={r.orderItemId} value={r.orderItemId}>
-                            {r.code} {r.name}（可退 {fmt(r.remaining)}）
-                          </option>
-                        ))}
-                    </select>
+                    {/* 行就是原单的商品，不必再选一次：id 用隐藏域提交，名字直接展示 */}
+                    <input type="hidden" name={`item_${i}_orderItemId`} value={line.orderItemId} />
+                    <span className="block py-1.5 text-sm text-gray-900">{line.label}</span>
                   </td>
                   <td className="px-4 py-2 text-gray-600">{line.max ? fmt(line.max) : "—"}</td>
                   <td className="px-4 py-2">
@@ -209,24 +179,12 @@ export function ReturnForm({
                   <td className="px-4 py-2 text-right text-gray-900 tabular-nums">
                     {lineAmount(line).toFixed(2)}
                   </td>
-                  <td className="px-4 py-2 text-right tabular-nums">
-                    <button
-                      type="button"
-                      onClick={() => setLines((prev) => prev.filter((_, j) => j !== i))}
-                      className="whitespace-nowrap text-xs text-red-500 hover:underline"
-                    >
-                      删除
-                    </button>
-                  </td>
                 </tr>
               );
             })}
           </tbody>
         </table>
         <div className="flex flex-wrap items-center gap-3 border-t border-gray-100 px-4 py-3">
-          <button type="button" onClick={addLine} className="text-sm text-blue-600 hover:underline">
-            + 添加退货行
-          </button>
           <button type="button" onClick={returnAll} className={btnSmallSolid}>
             全部退
           </button>
@@ -237,13 +195,11 @@ export function ReturnForm({
           >
             清空
           </button>
-          <span className="text-xs text-gray-400">
-            「全部退」把每行填成它的可退数量；只想退其中几样时，其余行留空即可
-          </span>
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
+      {/* 合计放左边、主按钮靠右（与其它页面的提交区一致，不再挤在中间） */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <span className="text-sm text-gray-600">
           {offsetLabel}：
           <span className="text-base font-semibold text-gray-900">¥{total.toFixed(2)}</span>
@@ -252,15 +208,13 @@ export function ReturnForm({
             {lines.length > activeCount && `，其余 ${lines.length - activeCount} 行未退`}
           </span>
         </span>
-        <button type="submit" disabled={pending || activeCount === 0} className={btnWarnSolid}>
-          {pending ? "提交中…" : "确认退货"}
-        </button>
-        {activeCount === 0 && (
-          <span className="text-xs text-gray-500">
-            还没填退货数量：填了才会退，不退货的行留空即可
-          </span>
-        )}
-        {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
+        <div className="flex flex-wrap items-center gap-3">
+          {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
+          {activeCount === 0 && <span className="text-xs text-gray-400">还没填退货数量</span>}
+          <button type="submit" disabled={pending || activeCount === 0} className={btnWarnSolid}>
+            {pending ? "提交中…" : "确认退货"}
+          </button>
+        </div>
       </div>
     </form>
   );

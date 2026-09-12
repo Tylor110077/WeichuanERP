@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { NoPermission } from "@/components/empty-state";
 import Link from "next/link";
+import { btnSecondary } from "@/lib/ui";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { ReturnForm } from "@/components/return-form";
@@ -85,7 +86,7 @@ export default async function NewPurchaseReturnPage({
         <h1 className="text-lg font-semibold text-gray-900">
           进货退货 ｜ 原单 {order.orderNo}（{order.supplier.name}）
         </h1>
-        <Link href={`/purchase-orders/${order.id}`} className="text-sm text-gray-500 hover:underline">
+        <Link href={`/purchase-orders/${order.id}`} className={btnSecondary}>
           ← 返回原单
         </Link>
       </div>
