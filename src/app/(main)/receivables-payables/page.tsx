@@ -410,10 +410,6 @@ export default async function ReceivablesPage({
             ))}
           </div>
         )}
-        <p className="mt-3 border-t border-gray-100 pt-3 text-xs text-gray-400">
-          口径：单额 − 已{isReceivable ? "收" : "付"} − 未作废退货冲减，只统计{isReceivable ? "非作废售卖单" : "未作废进货单"}。
-          工作台的「{isReceivable ? "应收" : "应付"}总额」是全部时间的累计值，与这里按筛选期间统计的数字含义不同。
-        </p>
       </div>
     </div>
   );
