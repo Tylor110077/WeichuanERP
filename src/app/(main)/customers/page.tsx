@@ -8,6 +8,7 @@ import { AutoFilterForm } from "@/components/auto-filter-form";
 import { PageTabs, resolveTab } from "@/components/page-tabs";
 import { MasterRail } from "@/components/master-rail";
 import { FilterForm } from "@/components/filter-form";
+import { SearchInput } from "@/components/search-input";
 import { EmptyState } from "@/components/empty-state";
 import { buildCustomerProfile } from "@/lib/customer-profile";
 import { CustomerManager } from "./customer-manager";
@@ -223,7 +224,7 @@ export default async function CustomersPage({
               <FilterForm className="flex flex-wrap items-end gap-3">
                 <div className="min-w-56 flex-1">
                   <label htmlFor="q" className="block text-xs font-medium text-gray-600">搜索客户</label>
-                  <input
+                  <SearchInput
                     id="q"
                     type="search"
                     name="q"

@@ -16,6 +16,7 @@ import { createQuickCategoryAction, type QuickCategoryResult } from "../../categ
 import { createQuickUnitAction, type QuickUnitResult } from "../../units/actions";
 import { createQuickSupplierAction } from "../../suppliers/actions";
 import { FormStateAlert } from "@/components/form-alert";
+import { selectAllOnClick, selectAllOnFocus } from "@/components/select-all-on-focus";
 import {
   productHintsForOrder,
   searchCustomersForOrder,
@@ -649,7 +650,11 @@ export function NewSaleForm({
                 placeholder="搜索客户…"
                 value={customerQuery}
                 onChange={(e) => onCustomerQueryChange(e.target.value)}
-                onFocus={() => setShowCandidates(true)}
+                onFocus={(e) => {
+                  selectAllOnFocus(e);
+                  setShowCandidates(true);
+                }}
+                onClick={selectAllOnClick}
                 onBlur={() => setShowCandidates(false)}
                 className={`w-full ${inputCls} pr-32`}
               />
@@ -1083,7 +1088,11 @@ export function NewSaleForm({
                   placeholder="搜索商品：名称 / 型号 / 厂家 / 编码"
                   value={row.productQuery}
                   onChange={(e) => onProductInputChange(i, "name", e.target.value)}
-                  onFocus={(e) => openProductPanel(e, i)}
+                  onFocus={(e) => {
+                    selectAllOnFocus(e);
+                    openProductPanel(e, i);
+                  }}
+                  onClick={selectAllOnClick}
                   onBlur={() => setProductPanel(null)}
                   className={`${inputCls} min-w-0 flex-1`}
                 />

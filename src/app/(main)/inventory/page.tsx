@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { FilterForm } from "@/components/filter-form";
+import { SearchInput } from "@/components/search-input";
 import { EmptyState } from "@/components/empty-state";
 import { btnSecondary } from "@/lib/ui";
 import { getCurrentUser } from "@/lib/auth/session";
@@ -103,7 +104,7 @@ export default async function InventoryPage({
       </div>
 
       <FilterForm className="flex flex-wrap items-center gap-3 rounded-xl border border-gray-200 bg-white p-4">
-        <input
+        <SearchInput
           name="q"
           type="text"
           placeholder="编码 / 名称搜索"

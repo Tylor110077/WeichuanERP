@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { selectAllOnClick, selectAllOnFocus } from "./select-all-on-focus";
 
 export interface SearchSelectOption {
   value: string;
@@ -77,7 +78,12 @@ export function SearchSelect({
         value={query}
         placeholder={placeholder}
         onChange={(e) => onChange2(e.target.value)}
-        onFocus={() => setOpen(true)}
+        onFocus={(e) => {
+          // 聚焦即全选：框里通常留着已选名称，直接打字不该变成追加
+          selectAllOnFocus(e);
+          setOpen(true);
+        }}
+        onClick={selectAllOnClick}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
         className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-400 focus:outline-none"
       />

@@ -19,6 +19,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { JSX } from "react";
+import { selectAllOnClick, selectAllOnFocus } from "./select-all-on-focus";
 
 export interface RailItem {
   /** 唯一键，React key 用 */
@@ -102,6 +103,8 @@ export function MasterRail({
       <div className="px-3 py-2">
         <input
           type="search"
+          onFocus={selectAllOnFocus}
+          onClick={selectAllOnClick}
           value={keyword}
           onChange={(event) => setKeyword(event.target.value)}
           placeholder={searchPlaceholder}

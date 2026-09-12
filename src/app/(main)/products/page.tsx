@@ -7,6 +7,7 @@ import { MasterDataManager } from "@/components/master-data-manager";
 import { PageTabs, resolveTab } from "@/components/page-tabs";
 import { MasterRail } from "@/components/master-rail";
 import { FilterForm } from "@/components/filter-form";
+import { SearchInput } from "@/components/search-input";
 import { deleteProductAction, saveProductAction, toggleProductStatusAction } from "./actions";
 import {
   deleteCategoryAction,
@@ -237,7 +238,7 @@ export default async function ProductsPage({
               <FilterForm className="flex flex-wrap items-end gap-2">
                 <div>
                   <label htmlFor="q" className="block text-xs font-medium text-gray-600">搜索商品</label>
-                  <input
+                  <SearchInput
                     id="q"
                     type="search"
                     name="q"

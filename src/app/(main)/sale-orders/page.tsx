@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { FilterForm } from "@/components/filter-form";
+import { SearchInput } from "@/components/search-input";
 import { EmptyState } from "@/components/empty-state";
 import { badgeDanger, badgeMuted, badgeOk, btnPrimary, btnSecondary } from "@/lib/ui";
 import Link from "next/link";
@@ -110,7 +111,7 @@ export default async function SaleOrdersPage({
       />
 
       <FilterForm className="flex flex-wrap items-center gap-3 rounded-xl border border-gray-200 bg-white p-4">
-        <input
+        <SearchInput
           name="q"
           type="text"
           placeholder="单据号搜索"
