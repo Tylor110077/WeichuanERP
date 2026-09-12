@@ -25,7 +25,7 @@ export const metadata = { title: "商品与厂家 - 玮川进销存" };
 const NO_MFR = "（未填写厂家）";
 
 /** 页签白名单：非法的 ?tab= 值回落到「商品」，避免出现空白页 */
-const TAB_KEYS = ["products", "manufacturers", "options"] as const;
+const TAB_KEYS = ["products", "manufacturers", "categories", "units"] as const;
 
 /** 商品与厂家会越来越多：列表按页取，不在首屏全量渲染 */
 const PAGE_SIZE = 50;
@@ -186,11 +186,18 @@ export default async function ProductsPage({
             hint: "厂家档案：缺货开单会按商品上的厂家自动向该厂家补货",
           },
           {
-            key: "options",
-            label: "分类与单位",
-            count: `${categories.length} · ${units.length}`,
-            href: tabHref("options"),
-            hint: "商品分类与计量单位字典",
+            key: "categories",
+            label: "商品分类",
+            count: categories.length,
+            href: tabHref("categories"),
+            hint: "商品分类字典：有商品的分类不可删除，请停用",
+          },
+          {
+            key: "units",
+            label: "计量单位",
+            count: units.length,
+            href: tabHref("units"),
+            hint: "计量单位字典：被商品引用的单位不可删除，请停用",
           },
         ]}
       />
@@ -428,10 +435,9 @@ export default async function ProductsPage({
         </section>
       )}
 
-      {tab === "options" && (
-        <div className="grid gap-6 lg:grid-cols-2">
-          <section className="rounded-xl border border-gray-200 bg-white p-5">
-            <SectionHeading title="商品分类" hint="有商品的分类不可删除，请停用" />
+      {tab === "categories" && (
+        <section className="rounded-xl border border-gray-200 bg-white p-5">
+          <SectionHeading title="商品分类" hint="有商品的分类不可删除，请停用" />
             <MasterDataManager
                         entityLabel="分类"
                         columns={[
@@ -453,8 +459,11 @@ export default async function ProductsPage({
                         deleteAction={deleteCategoryAction}
                       />
           </section>
-          <section className="rounded-xl border border-gray-200 bg-white p-5">
-            <SectionHeading title="计量单位" hint="被商品引用的单位不可删除，请停用" />
+      )}
+
+      {tab === "units" && (
+        <section className="rounded-xl border border-gray-200 bg-white p-5">
+          <SectionHeading title="计量单位" hint="被商品引用的单位不可删除，请停用" />
             <MasterDataManager
                         entityLabel="单位"
                         columns={[
@@ -476,7 +485,6 @@ export default async function ProductsPage({
                         deleteAction={deleteUnitAction}
                       />
           </section>
-        </div>
       )}
     </div>
   );

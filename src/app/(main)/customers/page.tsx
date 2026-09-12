@@ -23,7 +23,7 @@ import {
 export const metadata = { title: "客户管理 - 玮川进销存" };
 
 /** 页签白名单：非法的 ?tab= 回落到「客户」 */
-const TAB_KEYS = ["customers", "groups", "profile"] as const;
+const TAB_KEYS = ["customers", "groups", "tags", "profile"] as const;
 
 /** 客户会越来越多：列表按页取，不在首屏全量渲染 */
 const PAGE_SIZE = 50;
@@ -169,10 +169,17 @@ export default async function CustomersPage({
           },
           {
             key: "groups",
-            label: "组织与标签",
-            count: `${groups.length} · ${tags.length}`,
+            label: "客户组织",
+            count: groups.length,
             href: tabHref("groups"),
-            hint: "客户组织（可移动归属）与标签（一个客户可挂多个）",
+            hint: "客户组织：客户归属可移动，未被引用可删除",
+          },
+          {
+            key: "tags",
+            label: "客户标签",
+            count: tags.length,
+            href: tabHref("tags"),
+            hint: "客户标签：一个客户可挂多个，未被引用可删除",
           },
           {
             key: "profile",
@@ -302,9 +309,8 @@ export default async function CustomersPage({
         </div>
       )}
 
-            {tab === "groups" && (
-              <div className="grid gap-6 lg:grid-cols-2">
-              <section className="rounded-xl border border-gray-200 bg-white p-5">
+      {tab === "groups" && (
+        <section className="rounded-xl border border-gray-200 bg-white p-5">
                 <SectionHeading title="客户组织" hint="客户归属组织可移动，未被引用可删除" />
                 <MasterDataManager
                   entityLabel="组织"
@@ -326,9 +332,12 @@ export default async function CustomersPage({
                   toggleAction={toggleCustomerGroupStatusAction}
                   deleteAction={deleteCustomerGroupAction}
                 />
-              </section>
-              <section className="rounded-xl border border-gray-200 bg-white p-5">
-                <SectionHeading title="客户标签" hint="一个客户可挂多个标签，未被引用可删除" />
+        </section>
+      )}
+
+      {tab === "tags" && (
+        <section className="rounded-xl border border-gray-200 bg-white p-5">
+          <SectionHeading title="客户标签" hint="一个客户可挂多个标签，未被引用可删除" />
                 <MasterDataManager
                   entityLabel="标签"
                   columns={[
@@ -349,12 +358,11 @@ export default async function CustomersPage({
                   toggleAction={toggleCustomerTagStatusAction}
                   deleteAction={deleteCustomerTagAction}
                 />
-              </section>
-              </div>
-            )}
+        </section>
+      )}
 
-            {tab === "profile" && (
-              <section className="rounded-xl border border-gray-200 bg-white p-5">
+      {tab === "profile" && (
+        <section className="rounded-xl border border-gray-200 bg-white p-5">
                 <SectionHeading
                   title="客户画像"
                   hint="按客户统计单数、销售额、成本、毛利与平均利润率；点行内「看明细」进入该客户详情"
