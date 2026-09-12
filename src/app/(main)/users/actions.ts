@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { z } from "zod";
 import type { UserRole } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
@@ -16,12 +17,16 @@ const createUserSchema = z.object({
     .max(50)
     .regex(/^[A-Za-z0-9_]+$/, "账号仅支持字母、数字、下划线"),
   displayName: z.string().trim().min(1, "请填写姓名").max(50),
-  role: z.enum(["admin", "sales", "boss"]),
+  role: z.enum(["admin", "sales", "boss"], { error: "请选择角色" }),
   password: z.string().min(1, "请填写密码").max(100),
 });
 
 export type FormState = { error?: string; ok?: string } | null;
 
+/**
+ * 新建用户（独立页表单）：校验失败返回提示，成功后回到用户列表。
+ * 列表页只保留「+ 新建用户」入口，不再内联表单——页面越简单越好找。
+ */
 export async function createUserAction(
   _prev: FormState,
   formData: FormData
@@ -65,7 +70,7 @@ export async function createUserAction(
     },
   });
   revalidatePath("/users");
-  return { ok: `用户 ${username} 创建成功` };
+  redirect("/users");
 }
 
 export async function resetPasswordAction(

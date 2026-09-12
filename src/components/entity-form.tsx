@@ -137,6 +137,7 @@ export function EntityForm({
                 step={f.step}
                 required={f.required}
                 maxLength={f.maxLength}
+                minLength={f.minLength}
                 placeholder={f.placeholder}
                 defaultValue={value}
                 className={inputCls}

@@ -11,10 +11,12 @@ export interface FieldDef {
   label: string;
   required?: boolean;
   maxLength?: number;
+  /** 密码等需要下限长度的字段（如初始密码 ≥8 位） */
+  minLength?: number;
   step?: string;
   placeholder?: string;
   /** "select"/"multiselect" 通过 options 提供候选；"searchselect" 为可搜索下拉（选项多时）；缺省为文本 */
-  type?: "text" | "number" | "select" | "multiselect" | "searchselect" | "manufacturer";
+  type?: "text" | "number" | "password" | "select" | "multiselect" | "searchselect" | "manufacturer";
   options?: { value: string; label: string }[];
   /** searchselect：值为空时的候选标签（如「未分组」） */
   noneLabel?: string;
