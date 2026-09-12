@@ -62,7 +62,7 @@ export function UnpaidOrderTable({
     <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
       {/* 列多（开关 + 8 列）：给最小宽度，宁可窄屏左右滑动，也不要把「展开」压成竖排、
             把商品概览挤成四行。加「客户/厂家」列后实测 68rem 时行高 41px、无竖排；商品列另外给了个最小宽度防止再被饿死。 */}
-      <table className="min-w-[68rem] divide-y divide-gray-200 text-sm [&_td]:align-top">
+      <table className="w-full min-w-[68rem] divide-y divide-gray-200 text-sm [&_td]:align-top">
         <thead className="bg-gray-50 text-left text-xs text-gray-500">
           <tr>
             <th className="w-20 px-4 py-3">

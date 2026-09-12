@@ -93,7 +93,7 @@ export function MasterDataManager({
         scrollClassName ? `scroll-thin ${scrollClassName} overflow-auto` : "overflow-x-auto",
       ].join(" ")}
     >
-      <table className={`divide-y divide-gray-200 text-sm ${minWidthClass}`}>
+      <table className={`w-full divide-y divide-gray-200 text-sm ${minWidthClass}`}>
         <thead
           className={[
             "bg-gray-50 text-left text-xs text-gray-500",

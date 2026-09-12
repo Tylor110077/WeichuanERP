@@ -264,7 +264,7 @@ export default async function InventoryPage({
       </p>
 
       <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
-        <table className="min-w-[68rem] divide-y divide-gray-200 text-sm">
+        <table className="w-full min-w-[68rem] divide-y divide-gray-200 text-sm">
           <thead className="bg-gray-50 text-left text-xs text-gray-500">
             <tr>
               <th className="whitespace-nowrap px-4 py-3 font-medium">编码</th>

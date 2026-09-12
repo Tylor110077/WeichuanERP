@@ -158,7 +158,7 @@ export default async function SaleOrdersPage({
       <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
                 {/* 列多（10 列）：给表格一个最小宽度，宁可窄屏左右滑动，也不要把每格压成六七行
             或把「泰山」拆成竖排两字。实测 72rem 时行高 141px→41px，且短内容都能单行放下。 */}
-        <table className="min-w-[72rem] divide-y divide-gray-200 text-sm">
+        <table className="w-full min-w-[72rem] divide-y divide-gray-200 text-sm">
           <thead className="bg-gray-50 text-left text-xs text-gray-500">
             <tr>
               <th className="whitespace-nowrap px-4 py-3 font-medium">单据号</th>

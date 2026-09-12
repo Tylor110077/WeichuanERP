@@ -302,7 +302,7 @@ export default async function ReceivablesPage({
               {itemPageCount > 1 && ` ・ 第 ${page} / ${itemPageCount} 页`}
             </span>
           </div>
-          <table className="min-w-[72rem] divide-y divide-gray-200 text-sm [&_td]:align-top">
+          <table className="w-full min-w-[72rem] divide-y divide-gray-200 text-sm [&_td]:align-top">
             <thead className="bg-gray-50 text-left text-xs text-gray-500">
               <tr>
                 <th className="whitespace-nowrap px-4 py-3 font-medium">日期</th>
