@@ -345,13 +345,14 @@ export default async function ReceivablesPage({
         </div>
       ) : (
         <>
-          <div className="border-b border-gray-100 rounded-t-xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900">
-            未结清单据（{isReceivable ? "应收" : "应付"}）
-            <span className="ml-2 text-xs font-normal text-gray-400">
-              共 {unsettledCount} 张 ・ 点行首「展开」看该单商品 ・ 点右侧「详情 / 登记」进单据登记
-              {unsettledCount > unpaidOrders.length && `（下表仅显示最近 ${unpaidOrders.length} 张，合计已含全部）`}
-            </span>
-          </div>
+          {/* 原来这里有一条"未结清单据（应收）共 N 张 ・ 点行首展开…"的横条：
+              标题与张数在下方合计卡里已有，操作说明属于多余的话，整条去掉。
+              下面这条"只显示最近 N 张"是防误判的提示（表格上限 200 行），只在真的截断时出现。 */}
+          {unsettledCount > unpaidOrders.length && (
+            <p className="text-xs text-amber-700">
+              共 {unsettledCount} 张未结清，下表仅显示最近 {unpaidOrders.length} 张（合计已含全部）
+            </p>
+          )}
           <UnpaidOrderTable
             rows={unpaidOrderRows}
             labels={{ total: isReceivable ? "应收" : "应付", paid: isReceivable ? "已收" : "已付" }}
