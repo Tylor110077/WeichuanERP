@@ -1164,6 +1164,10 @@ export function NewSaleForm({
           const extra = extraRestock(row);
           const qtyNum = Number(row.quantity) || 0;
           const stockCap = Math.min(row.stockQty, qtyNum);
+          /** 商品自己没库存：用库存这一格填什么都不生效，直接禁用并说明原因 */
+          const noStock = row.stockQty <= 0;
+          /** 填得比可用的还多：实际按上限算，得让用户看见，不能静默改数 */
+          const overCap = !noStock && row.stockUsed.trim() !== "" && Number(row.stockUsed) > stockCap;
           // 售价下方的"点一下填入"提示：优先该客户上次成交价，其次全局参考价
           const priceHint =
             customerId && lastCustomerPrice != null ? (
@@ -1282,7 +1286,18 @@ export function NewSaleForm({
                     <RowField
                       label="用库存"
                       className="w-[7rem]"
-                      hint={used > 0 ? `用 ${used.toFixed(3)}` : "全部现场进货"}
+                      hint={
+                        noStock
+                          ? "无库存，只能现场进货"
+                          : qtyNum <= 0
+                            ? "先填数量"
+                            : overCap
+                              ? `超上限，按 ${stockCap.toFixed(3)} 计`
+                              : used > 0
+                                ? `用 ${used.toFixed(3)}`
+                                : "全部现场进货"
+                      }
+                      hintClass={noStock || overCap ? "font-medium text-amber-600" : "text-gray-400"}
                       hintTitle="使用现有库存的数量（成本按原移动加权成本，不可改价）；填 0 表示全部现场进货"
                     >
                       <input
@@ -1291,15 +1306,29 @@ export function NewSaleForm({
                         min="0"
                         step="0.001"
                         inputMode="decimal"
-                        placeholder={stockCap.toFixed(3)}
-                        value={row.stockUsed}
+                        placeholder={noStock ? "—" : stockCap.toFixed(3)}
+                        disabled={noStock}
+                        // 零库存时连框里的旧值一起清掉（例如恢复的草稿里留着上次填的数），
+                        // 免得出现"灰掉的框里还写着 5"这种自相矛盾的画面
+                        value={noStock ? "" : row.stockUsed}
                         onChange={(e) => {
                           const v = e.target.value;
                           if (v.startsWith("-")) return; // 不允许负数
                           setRows((prev) => prev.map((r, j) => (j === i ? { ...r, stockUsed: v } : r)));
                         }}
-                        title="使用现有库存的数量（成本按原移动加权成本，不可改价）；填 0 表示全部现场进货"
-                        className={inputNumCls}
+                        // 失焦时按上限收敛：框里别留着一个没生效的数字
+                        onBlur={() => {
+                          if (!overCap) return;
+                          setRows((prev) =>
+                            prev.map((r, j) => (j === i ? { ...r, stockUsed: stockCap.toFixed(3) } : r))
+                          );
+                        }}
+                        title={
+                          noStock
+                            ? "该商品当前没有库存，只能现场进货（用库存不可填）"
+                            : "使用现有库存的数量（成本按原移动加权成本，不可改价）；填 0 表示全部现场进货"
+                        }
+                        className={`${inputNumCls} disabled:bg-gray-100 disabled:text-gray-400`}
                       />
                     </RowField>
                     <RowField
