@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
 import { badgeDanger, badgeMuted, badgeOk, badgePending } from "@/lib/ui";
 import { ROLE_LABELS } from "@/lib/auth/roles";
@@ -53,6 +53,11 @@ const COLS = 10;
 
 export function PurchaseOrderTable({ rows, children }: { rows: PurchaseOrderRow[]; children?: React.ReactNode }) {
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
+  /**
+   * 「展开全部」会把当页所有单据的商品行一次渲染出来（20 张单 × 每单商品行）。
+   * 用 transition 让它可中断：弱机上点下去不会把界面冻住，按钮也给出「展开中」的反馈。
+   */
+  const [expanding, startExpand] = useTransition();
   const allOpen = rows.length > 0 && rows.every((r) => expanded.has(r.id));
 
   return (
@@ -65,11 +70,11 @@ export function PurchaseOrderTable({ rows, children }: { rows: PurchaseOrderRow[
               {rows.length > 0 && (
                 <button
                   type="button"
-                  onClick={() => setExpanded(allOpen ? new Set() : new Set(rows.map((r) => r.id)))}
+                  onClick={() => startExpand(() => setExpanded(allOpen ? new Set() : new Set(rows.map((r) => r.id))))}
                   title={allOpen ? "全部收起" : "全部展开"}
                   className="whitespace-nowrap text-xs text-blue-600 hover:underline"
                 >
-                  {allOpen ? "收起" : "展开"}
+                  {allOpen ? "收起" : expanding ? "展开中…" : "展开"}
                 </button>
               )}
               <span className="ml-2 font-medium">单据号</span>
