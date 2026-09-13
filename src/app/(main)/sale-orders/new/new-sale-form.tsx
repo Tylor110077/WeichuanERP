@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useMemo, useState, useTransition } from "react";
+import { memo, useActionState, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { badgeInfo, btnPrimary, btnSmallPrimary, btnSmallSolid, inputBase, tagInfo, tagPending } from "@/lib/ui";
@@ -538,33 +538,6 @@ export function NewSaleForm({
     setQuickOrgMsg(null);
   }
 
-  function emptyRow(): Row {
-    return {
-      productId: "",
-      productLabel: "",
-      productCode: "",
-      productQuery: "",
-      manufacturer: "",
-      unitName: "",
-      unitId: "",
-      stockQty: 0,
-
-      avgCost: 0,
-      lastCustomerPrice: null,
-      quantity: "",
-      unitPrice: "",
-      lastGlobalSalePrice: 0,
-      supplierId: "",
-      supplyPrice: "",
-      extraQty: "",
-
-      stockUsed: "",
-
-      remark: "",
-      hasLastSupplier: false,
-      estimated: false,
-    };
-  }
 
   // 商品候选弹层（fixed 定位，避免被表格 overflow 裁剪）
   const [productPanel, setProductPanel] = useState<{ index: number; top: number; left: number; width: number } | null>(null);
@@ -694,40 +667,13 @@ export function NewSaleForm({
   }
 
   /** 本次使用的现有库存量：留空＝尽量用库存（上限为库存与需求量），可改小甚至填 0（全部现场进货）。 */
-  function usedStock(row: Row): number {
-    if (row.estimated) return 0; // 估价行不占库存
-    const qty = Number(row.quantity);
-    if (!Number.isFinite(qty) || qty <= 0) return 0;
-    const cap = Math.max(Math.min(row.stockQty, qty), 0);
-    if (row.stockUsed.trim() === "") return cap;
-    const v = Number(row.stockUsed);
-    return Number.isFinite(v) ? Math.max(0, Math.min(v, cap)) : cap;
-  }
 
   /** 需现场进货的数量 = 客户需求量 − 使用库存量（界面只读展示）。 */
-  function needPurchase(row: Row): number {
-    if (row.estimated) return 0; // 估价行先不进货，等问到价格再补单
-    const qty = Number(row.quantity);
-    if (!Number.isFinite(qty) || qty <= 0) return 0;
-    return Math.max(qty - usedStock(row), 0);
-  }
 
   /** 多补量：在客户需求之外额外多进的备货（负数/空视为 0）。 */
-  function extraRestock(row: Row): number {
-    const v = Number(row.extraQty);
-    return Number.isFinite(v) && v > 0 ? v : 0;
-  }
 
   /** 本次补货总量 = 需现场进货 + 多补备货。 */
-  function restockTotal(row: Row): number {
-    return needPurchase(row) + extraRestock(row);
-  }
 
-  function lineAmount(row: Row): number {
-    const q = Number(row.quantity);
-    const price = Number(row.unitPrice);
-    return Number.isFinite(q) && Number.isFinite(price) ? q * price : 0;
-  }
 
   function onCreateProduct() {
     if (!newProduct.name.trim()) {
@@ -861,6 +807,33 @@ export function NewSaleForm({
       setStarred(false);
     },
   });
+
+  /**
+   * 行组件（SaleRow）要调的回调：用 ref 存最新实现 + 一层稳定外壳。
+   * 不这么做的话每次渲染都是新函数引用，React.memo 就永远拦不住重渲染。
+   */
+  const rowActionsRef = useRef({
+    chooseProduct,
+    onProductInputChange,
+    openProductPanel,
+    searchProducts,
+    quickUnitForRow,
+  });
+  useEffect(() => {
+    rowActionsRef.current = { chooseProduct, onProductInputChange, openProductPanel, searchProducts, quickUnitForRow };
+  });
+  const rowActions = useMemo(
+    () => ({
+      chooseProduct: (i: number, p: ProductOption) => rowActionsRef.current.chooseProduct(i, p),
+      onProductInputChange: (i: number, f: "code" | "name", v: string) =>
+        rowActionsRef.current.onProductInputChange(i, f, v),
+      openProductPanel: (e: React.FocusEvent<HTMLInputElement>, i: number) =>
+        rowActionsRef.current.openProductPanel(e, i),
+      searchProducts: (r: Row | undefined) => rowActionsRef.current.searchProducts(r),
+      quickUnitForRow: (i: number, name: string) => rowActionsRef.current.quickUnitForRow(i, name),
+    }),
+    []
+  );
 
   const total = rows.reduce((s, r) => s + lineAmount(r), 0);
 
@@ -1393,7 +1366,312 @@ export function NewSaleForm({
 
       {/* 商品清单：每行一个商品。整行做成卡片，卡内字段按「成交 / 补货 / 结算」三组排成一行 */}
       <div className="space-y-3">
-        {rows.map((row, i) => {
+        {rows.map((row, i) => (
+          <SaleRow
+            key={i}
+            row={row}
+            i={i}
+            setRows={setRows}
+            unitOptions={unitOptions}
+            canSeeCost={canSeeCost}
+            canCreateProduct={canCreateProduct}
+            customerId={customerId}
+            selectedCustomer={selectedCustomer}
+            panelActive={panelActive}
+            setPanelActive={setPanelActive}
+            setShowCreateProduct={setShowCreateProduct}
+            setNewProduct={setNewProduct}
+            setProductPanel={setProductPanel}
+            chooseProduct={rowActions.chooseProduct}
+            onProductInputChange={rowActions.onProductInputChange}
+            openProductPanel={rowActions.openProductPanel}
+            searchProducts={rowActions.searchProducts}
+            quickUnitForRow={rowActions.quickUnitForRow}
+          />
+        ))}
+      </div>
+
+      {/* 底部操作与合计（去边框，融入区域） */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setRows((prev) => [...prev, emptyRow()])}
+            className={btnSmallPrimary}
+          >
+            + 添加商品行
+          </button>
+          {canCreateProduct && (
+            <button
+              type="button"
+              onClick={() => {
+                setShowCreateProduct((v) => !v);
+                setProductMsg(null);
+              }}
+              className={btnSmallPrimary}
+            >
+              {showCreateProduct ? "收起" : "+ 新建商品"}
+            </button>
+          )}
+          {/* 估价商品：连商品都还没定，只给一个临时名先把单开出来（展开后是一组紧凑的输入+确认） */}
+          <button
+            type="button"
+            onClick={() => setShowEstimate((v) => !v)}
+            title="连商品都还没定：先记一个临时名把单开出来，厂家与进价以后到「估价待补单」里补"
+            className={`rounded-full border border-dashed px-2.5 py-1 text-xs font-medium transition ${
+              showEstimate
+                ? "border-amber-400 bg-amber-50 text-amber-700"
+                : "border-amber-300 text-amber-700 hover:bg-amber-50"
+            }`}
+          >
+            ＋ 估价商品
+          </button>
+          {showEstimate && (
+            <span className="flex items-center">
+              <input
+                value={estimateName}
+                onChange={(e) => setEstimateName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    quickAddEstimated();
+                  }
+                }}
+                autoFocus
+                placeholder="临时品名，如 YJV 3*2.5 待定"
+                className="h-9 w-52 rounded-l-md border border-r-0 border-amber-300 px-2 text-sm focus:outline-none"
+              />
+              <button
+                type="button"
+                onClick={quickAddEstimated}
+                disabled={estimatePending}
+                className="h-9 rounded-r-md border border-amber-300 bg-amber-50 px-3 text-xs font-medium text-amber-700 transition hover:bg-amber-100 disabled:opacity-50"
+              >
+                {estimatePending ? "添加中…" : "加这一行"}
+              </button>
+            </span>
+          )}
+        </div>
+        <div className="text-sm text-gray-600">
+          合计：
+          <span className="text-lg font-semibold tabular-nums text-gray-900">¥{total.toFixed(2)}</span>
+        </div>
+      </div>
+
+        </div>
+      </details>
+
+      {productPanel && (() => {
+        const row = rows[productPanel.index];
+        const hits = searchProducts(row);
+        /** 置顶的「＋ 新建商品」也参与键盘选择，占第 0 位 */
+        const hasCreate = !!(canCreateProduct && row && row.productQuery.trim());
+        return (
+          <div
+            style={{ position: "fixed", top: productPanel.top, left: productPanel.left, width: productPanel.width }}
+            className="z-50 max-h-64 overflow-auto rounded-md border border-gray-200 bg-white shadow-lg"
+          >
+            {hits.length === 0 && (
+              <div className="px-3 py-2 text-xs text-gray-400">
+                {searching ? "搜索中…" : searchError ? `搜索失败：${searchError}` : "无匹配商品（试试厂家、型号、名称、编码）"}
+              </div>
+            )}
+            {canCreateProduct && row && row.productQuery.trim() && (
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  setProductMsg(null);
+                  setNewProduct((prev) => ({ ...prev, name: (row.productCode.trim() + " " + row.productQuery.trim()).trim() }));
+                  setShowCreateProduct(true);
+                  setProductPanel(null);
+                }}
+                className={`block w-full border-t border-gray-100 px-3 py-2 text-left text-sm text-blue-600 ${
+                  panelActive === 0 ? "bg-blue-50" : "hover:bg-blue-50"
+                }`}
+              >
+                ＋ 新建商品：「{row.productQuery.trim()}」
+              </button>
+            )}
+            {hits.map((p, i) => (
+              <button
+                type="button"
+                key={p.id}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => chooseProduct(productPanel.index, p)}
+                ref={(el) => {
+                  if (el && panelActive === i + (hasCreate ? 1 : 0)) el.scrollIntoView({ block: "nearest" });
+                }}
+                className={`block w-full px-3 py-2 text-left text-sm text-gray-900 ${
+                  panelActive === i + (hasCreate ? 1 : 0) ? "bg-blue-50" : "hover:bg-blue-50"
+                }`}
+              >
+                <span className="flex flex-wrap items-center gap-1.5">
+                  <span className="font-medium">
+                    {p.code} {p.name}
+                  </span>
+                  <span
+                    className={p.manufacturer ? tagInfo : tagPending}
+                  >
+                    {p.manufacturer || "未填厂家"}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    库存 {p.stockQty.toFixed(3)}
+                  </span>
+                </span>
+              </button>
+            ))}
+          </div>
+        );
+      })()}
+
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          type="submit"
+          disabled={pending || !customerId}
+          title={!customerId ? "请先选择客户" : undefined}
+          className={btnPrimary}
+        >
+          {pending ? "提交中…" : "提交售卖单"}
+        </button>
+        {!customerId && (
+          <span className="text-sm text-amber-600">请先在上方选择客户，再提交单据</span>
+        )}
+        <FormStateAlert state={state} />
+      </div>
+    </form>
+  );
+}
+
+
+/**
+ * 商品行的字段列：固定宽度的「标签 / 值 / 提示」三层。
+ *
+ * 提示层恒占一行高度（没有提示也留空）——之前整行数值对不齐就是这里：
+ * 有的列把"均价"塞进数值同一行、有的列提示折成三行，相邻列的数值就被顶歪了。
+ */
+
+
+// ─────────────────────────── 模块作用域：开单行的零件 ───────────────────────────
+
+/** 只依赖 row 本身的纯计算：行组件与主组件共用，所以放在模块作用域（不随渲染重新创建）。 */
+function usedStock(row: Row): number {
+  if (row.estimated) return 0; // 估价行不占库存
+  const qty = Number(row.quantity);
+  if (!Number.isFinite(qty) || qty <= 0) return 0;
+  const cap = Math.max(Math.min(row.stockQty, qty), 0);
+  if (row.stockUsed.trim() === "") return cap;
+  const v = Number(row.stockUsed);
+  return Number.isFinite(v) ? Math.max(0, Math.min(v, cap)) : cap;
+}
+
+function needPurchase(row: Row): number {
+  if (row.estimated) return 0; // 估价行先不进货，等问到价格再补单
+  const qty = Number(row.quantity);
+  if (!Number.isFinite(qty) || qty <= 0) return 0;
+  return Math.max(qty - usedStock(row), 0);
+}
+
+function extraRestock(row: Row): number {
+  const v = Number(row.extraQty);
+  return Number.isFinite(v) && v > 0 ? v : 0;
+}
+
+function restockTotal(row: Row): number {
+  return needPurchase(row) + extraRestock(row);
+}
+
+function lineAmount(row: Row): number {
+  const q = Number(row.quantity);
+  const price = Number(row.unitPrice);
+  return Number.isFinite(q) && Number.isFinite(price) ? q * price : 0;
+}
+
+function emptyRow(): Row {
+  return {
+    productId: "",
+    productLabel: "",
+    productCode: "",
+    productQuery: "",
+    manufacturer: "",
+    unitName: "",
+    unitId: "",
+    stockQty: 0,
+
+    avgCost: 0,
+    lastCustomerPrice: null,
+    quantity: "",
+    unitPrice: "",
+    lastGlobalSalePrice: 0,
+    supplierId: "",
+    supplyPrice: "",
+    extraQty: "",
+
+    stockUsed: "",
+
+    remark: "",
+    hasLastSupplier: false,
+    estimated: false,
+  };
+}
+
+/**
+ * 商品行。用 React.memo 包起来：只改自己这一行时，其它行不会跟着重渲染。
+ * 改之前是每敲一个字就把整张单的所有行全部重渲染一遍——行数一多，弱机上就会卡。
+ * 所有 props 都是「行对象 / 数字 / 布尔 / state 的 setter / 稳定外壳过的回调」，
+ * 所以只要这一行没变，memo 就能跳过它。
+ */
+const SaleRow = memo(function SaleRow({
+  row,
+  i,
+  setRows,
+  unitOptions,
+  canSeeCost,
+  canCreateProduct,
+  customerId,
+  selectedCustomer,
+  panelActive,
+  setPanelActive,
+  setShowCreateProduct,
+  setNewProduct,
+  setProductPanel,
+  chooseProduct,
+  onProductInputChange,
+  openProductPanel,
+  searchProducts,
+  quickUnitForRow,
+}: {
+  row: Row;
+  i: number;
+  setRows: React.Dispatch<React.SetStateAction<Row[]>>;
+  unitOptions: UnitOption[];
+  canSeeCost: boolean;
+  canCreateProduct: boolean;
+  customerId: string;
+  selectedCustomer: CustomerOption | null | undefined;
+  panelActive: number;
+  setPanelActive: React.Dispatch<React.SetStateAction<number>>;
+  setShowCreateProduct: React.Dispatch<React.SetStateAction<boolean>>;
+  setNewProduct: React.Dispatch<
+    React.SetStateAction<{
+      name: string;
+      manufacturer: string;
+      categoryId: string;
+      unitId: string;
+      refSalePrice: string;
+      refPurchasePrice: string;
+      minStock: string;
+    }>
+  >;
+  setProductPanel: React.Dispatch<
+    React.SetStateAction<{ index: number; top: number; left: number; width: number } | null>
+  >;
+  chooseProduct: (index: number, p: ProductOption) => void;
+  onProductInputChange: (index: number, field: "code" | "name", value: string) => void;
+  openProductPanel: (e: React.FocusEvent<HTMLInputElement>, index: number) => void;
+  searchProducts: (row: Row | undefined) => ProductOption[];
+  quickUnitForRow: (index: number, name: string) => void;
+}) {
           const used = usedStock(row);
           // 两个价格提示都要能「点一下填入售价」：取成 const，闭包里 TS 的窄化才成立
           const lastCustomerPrice = row.lastCustomerPrice;
@@ -1774,166 +2052,4 @@ export function NewSaleForm({
               )}
             </div>
           );
-        })}
-      </div>
-
-      {/* 底部操作与合计（去边框，融入区域） */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setRows((prev) => [...prev, emptyRow()])}
-            className={btnSmallPrimary}
-          >
-            + 添加商品行
-          </button>
-          {canCreateProduct && (
-            <button
-              type="button"
-              onClick={() => {
-                setShowCreateProduct((v) => !v);
-                setProductMsg(null);
-              }}
-              className={btnSmallPrimary}
-            >
-              {showCreateProduct ? "收起" : "+ 新建商品"}
-            </button>
-          )}
-          {/* 估价商品：连商品都还没定，只给一个临时名先把单开出来（展开后是一组紧凑的输入+确认） */}
-          <button
-            type="button"
-            onClick={() => setShowEstimate((v) => !v)}
-            title="连商品都还没定：先记一个临时名把单开出来，厂家与进价以后到「估价待补单」里补"
-            className={`rounded-full border border-dashed px-2.5 py-1 text-xs font-medium transition ${
-              showEstimate
-                ? "border-amber-400 bg-amber-50 text-amber-700"
-                : "border-amber-300 text-amber-700 hover:bg-amber-50"
-            }`}
-          >
-            ＋ 估价商品
-          </button>
-          {showEstimate && (
-            <span className="flex items-center">
-              <input
-                value={estimateName}
-                onChange={(e) => setEstimateName(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    quickAddEstimated();
-                  }
-                }}
-                autoFocus
-                placeholder="临时品名，如 YJV 3*2.5 待定"
-                className="h-9 w-52 rounded-l-md border border-r-0 border-amber-300 px-2 text-sm focus:outline-none"
-              />
-              <button
-                type="button"
-                onClick={quickAddEstimated}
-                disabled={estimatePending}
-                className="h-9 rounded-r-md border border-amber-300 bg-amber-50 px-3 text-xs font-medium text-amber-700 transition hover:bg-amber-100 disabled:opacity-50"
-              >
-                {estimatePending ? "添加中…" : "加这一行"}
-              </button>
-            </span>
-          )}
-        </div>
-        <div className="text-sm text-gray-600">
-          合计：
-          <span className="text-lg font-semibold tabular-nums text-gray-900">¥{total.toFixed(2)}</span>
-        </div>
-      </div>
-
-        </div>
-      </details>
-
-      {productPanel && (() => {
-        const row = rows[productPanel.index];
-        const hits = searchProducts(row);
-        /** 置顶的「＋ 新建商品」也参与键盘选择，占第 0 位 */
-        const hasCreate = !!(canCreateProduct && row && row.productQuery.trim());
-        return (
-          <div
-            style={{ position: "fixed", top: productPanel.top, left: productPanel.left, width: productPanel.width }}
-            className="z-50 max-h-64 overflow-auto rounded-md border border-gray-200 bg-white shadow-lg"
-          >
-            {hits.length === 0 && (
-              <div className="px-3 py-2 text-xs text-gray-400">
-                {searching ? "搜索中…" : searchError ? `搜索失败：${searchError}` : "无匹配商品（试试厂家、型号、名称、编码）"}
-              </div>
-            )}
-            {canCreateProduct && row && row.productQuery.trim() && (
-              <button
-                type="button"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => {
-                  setProductMsg(null);
-                  setNewProduct((prev) => ({ ...prev, name: (row.productCode.trim() + " " + row.productQuery.trim()).trim() }));
-                  setShowCreateProduct(true);
-                  setProductPanel(null);
-                }}
-                className={`block w-full border-t border-gray-100 px-3 py-2 text-left text-sm text-blue-600 ${
-                  panelActive === 0 ? "bg-blue-50" : "hover:bg-blue-50"
-                }`}
-              >
-                ＋ 新建商品：「{row.productQuery.trim()}」
-              </button>
-            )}
-            {hits.map((p, i) => (
-              <button
-                type="button"
-                key={p.id}
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => chooseProduct(productPanel.index, p)}
-                ref={(el) => {
-                  if (el && panelActive === i + (hasCreate ? 1 : 0)) el.scrollIntoView({ block: "nearest" });
-                }}
-                className={`block w-full px-3 py-2 text-left text-sm text-gray-900 ${
-                  panelActive === i + (hasCreate ? 1 : 0) ? "bg-blue-50" : "hover:bg-blue-50"
-                }`}
-              >
-                <span className="flex flex-wrap items-center gap-1.5">
-                  <span className="font-medium">
-                    {p.code} {p.name}
-                  </span>
-                  <span
-                    className={p.manufacturer ? tagInfo : tagPending}
-                  >
-                    {p.manufacturer || "未填厂家"}
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    库存 {p.stockQty.toFixed(3)}
-                  </span>
-                </span>
-              </button>
-            ))}
-          </div>
-        );
-      })()}
-
-      <div className="flex flex-wrap items-center gap-3">
-        <button
-          type="submit"
-          disabled={pending || !customerId}
-          title={!customerId ? "请先选择客户" : undefined}
-          className={btnPrimary}
-        >
-          {pending ? "提交中…" : "提交售卖单"}
-        </button>
-        {!customerId && (
-          <span className="text-sm text-amber-600">请先在上方选择客户，再提交单据</span>
-        )}
-        <FormStateAlert state={state} />
-      </div>
-    </form>
-  );
-}
-
-
-/**
- * 商品行的字段列：固定宽度的「标签 / 值 / 提示」三层。
- *
- * 提示层恒占一行高度（没有提示也留空）——之前整行数值对不齐就是这里：
- * 有的列把"均价"塞进数值同一行、有的列提示折成三行，相邻列的数值就被顶歪了。
- */
-
+});
