@@ -101,7 +101,7 @@ export default async function PriceAnalysisPage({
           </form>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <DateShortcuts basePath="/price-analysis" extraQuery={{ productId: productId ? String(productId) : "" }} />
+          <DateShortcuts current={{ from: params.from, to: params.to }} basePath="/price-analysis" extraQuery={{ productId: productId ? String(productId) : "" }} />
           <span className="text-xs text-gray-500">{label}</span>
         </div>
       </div>

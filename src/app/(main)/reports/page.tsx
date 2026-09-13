@@ -66,7 +66,7 @@ export default async function ReportsPage({
         ))}
       </div>
 
-      <DateShortcuts basePath="/reports" extraQuery={{ tab }} />
+      <DateShortcuts current={{ from: params.from, to: params.to }} basePath="/reports" extraQuery={{ tab }} />
 
       <FilterForm className="flex flex-wrap items-end gap-3 rounded-xl border border-gray-200 bg-white p-4">
         <div>

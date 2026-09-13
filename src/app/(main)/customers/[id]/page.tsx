@@ -95,7 +95,7 @@ export default async function CustomerDetailPage({
               {keyword && `・品名/编码含「${keyword}」`}
             </span>
           </h2>
-          <DateShortcuts basePath={`/customers/${id}`} extraQuery={{ q: keyword }} />
+          <DateShortcuts current={{ from: query.from, to: query.to }} basePath={`/customers/${id}`} extraQuery={{ q: keyword }} />
         </div>
 
         {/* 自定义时间段 + 按品名/编码搜单：与销售分析同一套用法（改日期即筛、文本回车即筛） */}

@@ -264,7 +264,7 @@ export default async function ReceivablesPage({
         )}
       </div>
 
-      <DateShortcuts
+      <DateShortcuts current={{ from: params.from, to: params.to }}
         basePath="/receivables-payables"
         extraQuery={{ view, counterId: params.counterId ?? "" }}
       />

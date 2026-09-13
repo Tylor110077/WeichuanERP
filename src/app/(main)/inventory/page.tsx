@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { FilterForm } from "@/components/filter-form";
+import { DateShortcuts } from "@/components/date-shortcuts";
 import { SearchInput } from "@/components/search-input";
 import { SearchSelectFilter } from "@/components/search-select-filter";
 import { initials } from "@/lib/pinyin";
@@ -192,6 +193,17 @@ export default async function InventoryPage({
           </span>
         )}
       </div>
+
+      {/* 进货时间筛选也配上快捷档（与其它列表一致：全部时间 / 今日 / 本周 / 本月…） */}
+      <DateShortcuts
+        basePath="/inventory"
+        extraQuery={{
+          q: params.q ?? "",
+          manufacturer: params.manufacturer ?? "",
+          category: params.category ?? "",
+        }}
+        current={{ from: params.from, to: params.to }}
+      />
 
       <FilterForm className="flex flex-wrap items-end gap-3 rounded-xl border border-gray-200 bg-white p-4">
         <div>

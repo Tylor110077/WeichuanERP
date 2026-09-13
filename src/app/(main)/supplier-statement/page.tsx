@@ -118,7 +118,7 @@ export default async function SupplierStatementPage({
         </Link>
       </div>
 
-      <DateShortcuts basePath="/supplier-statement" extraQuery={{ supplierId: String(effectiveSupplierId), status: status ?? "" }} />
+      <DateShortcuts current={{ from: params.from, to: params.to }} basePath="/supplier-statement" extraQuery={{ supplierId: String(effectiveSupplierId), status: status ?? "" }} />
 
       <FilterForm className="flex flex-wrap items-end gap-3 rounded-xl border border-gray-200 bg-white p-4">
         <div>

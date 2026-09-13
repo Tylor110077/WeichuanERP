@@ -68,7 +68,7 @@ export default async function AuditLogsPage({
         <span className="text-xs text-gray-500">共 {total} 条</span>
       </div>
 
-      <DateShortcuts basePath="/audit-logs" />
+      <DateShortcuts current={{ from: params.from, to: params.to }} basePath="/audit-logs" />
 
       <FilterForm className="flex flex-wrap items-end gap-3 rounded-xl border border-gray-200 bg-white p-4">
         <div>

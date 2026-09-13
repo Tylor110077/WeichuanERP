@@ -141,7 +141,7 @@ export default async function StockMovementsPage({
         </div>
       </div>
 
-      <DateShortcuts basePath="/stock-movements" extraQuery={{ productId: productId ? String(productId) : "", bizType: bizType ?? "" }} />
+      <DateShortcuts current={{ from: params.from, to: params.to }} basePath="/stock-movements" extraQuery={{ productId: productId ? String(productId) : "", bizType: bizType ?? "" }} />
 
       <FilterForm className="flex flex-wrap items-center gap-3 rounded-xl border border-gray-200 bg-white p-4">
         <SearchSelect

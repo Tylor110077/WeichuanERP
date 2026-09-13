@@ -128,7 +128,7 @@ export default async function PurchaseOrdersPage({
         )}
       </div>
 
-      <DateShortcuts
+      <DateShortcuts current={{ from: params.from, to: params.to }}
         basePath="/purchase-orders"
         extraQuery={{
           supplierId: supplierId != null ? String(supplierId) : "",

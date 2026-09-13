@@ -154,7 +154,7 @@ export default async function PaymentsPage({
         {stat("净流入（收 − 付）", `¥${net.toFixed(2)}`, net >= 0 ? "text-gray-900" : "text-red-600")}
       </div>
 
-      <DateShortcuts
+      <DateShortcuts current={{ from: params.from, to: params.to }}
         basePath="/payments"
         extraQuery={{ direction: direction ?? "", status: params.status ?? "", q: q ?? "" }}
       />

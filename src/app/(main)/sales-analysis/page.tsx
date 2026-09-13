@@ -143,7 +143,7 @@ export default async function SalesAnalysisPage({
         />
       </div>
 
-      <DateShortcuts basePath="/sales-analysis" />
+      <DateShortcuts current={{ from: params.from, to: params.to }} basePath="/sales-analysis" />
       <FilterForm className="flex flex-wrap items-end gap-3 rounded-xl border border-gray-200 bg-white p-4">
         <div>
           <label htmlFor="from" className="block text-xs font-medium text-gray-600">自定义开始</label>
