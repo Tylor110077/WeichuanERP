@@ -92,6 +92,10 @@ interface Row {
 }
 
 const inputCls = `w-full ${inputBase}`;
+/** 数字输入：等宽数字 + 右对齐，一列数字才扫得动 */
+const inputNumCls = `${inputCls} text-right tabular-nums`;
+/** 只读数值：与输入框同高同内边距，保证同行里"能填的"和"只看的"数值基线一致 */
+const readOnlyValue = "flex h-9 items-center px-2 tabular-nums";
 
 export function NewSaleForm({
   customers,
@@ -1105,8 +1109,8 @@ export function NewSaleForm({
         />
       </div>
 
-      {/* 商品清单：每行一个商品，字段标签内联、行间以分隔线区隔（避免多层边框） */}
-      <div className="divide-y divide-gray-100 border-y border-gray-100">
+      {/* 商品清单：每行一个商品。整行做成卡片，卡内字段按「成交 / 补货 / 结算」三组排成一行 */}
+      <div className="space-y-3">
         {rows.map((row, i) => {
           const used = usedStock(row);
           // 两个价格提示都要能「点一下填入售价」：取成 const，闭包里 TS 的窄化才成立
@@ -1116,8 +1120,40 @@ export function NewSaleForm({
           const extra = extraRestock(row);
           const qtyNum = Number(row.quantity) || 0;
           const stockCap = Math.min(row.stockQty, qtyNum);
+          // 售价下方的"点一下填入"提示：优先该客户上次成交价，其次全局参考价
+          const priceHint =
+            customerId && lastCustomerPrice != null ? (
+              <button
+                type="button"
+                onClick={() =>
+                  setRows((prev) =>
+                    prev.map((r, j) => (j === i ? { ...r, unitPrice: lastCustomerPrice.toFixed(2) } : r))
+                  )
+                }
+                title={`点一下填入 ${selectedCustomer?.name ?? "该客户"} 上次成交价 ¥${lastCustomerPrice.toFixed(2)}`}
+                className="block w-full cursor-pointer truncate text-left text-blue-600 underline decoration-dotted underline-offset-2 hover:decoration-solid"
+              >
+                上次 ¥{lastCustomerPrice.toFixed(2)}
+              </button>
+            ) : globalRefPrice > 0 ? (
+              <button
+                type="button"
+                onClick={() =>
+                  setRows((prev) =>
+                    prev.map((r, j) => (j === i ? { ...r, unitPrice: globalRefPrice.toFixed(2) } : r))
+                  )
+                }
+                title={`点一下填入全局最近成交价 ¥${globalRefPrice.toFixed(2)}`}
+                className="block w-full cursor-pointer truncate text-left text-gray-500 underline decoration-dotted underline-offset-2 hover:text-blue-600 hover:decoration-solid"
+              >
+                参考价 ¥{globalRefPrice.toFixed(2)}
+              </button>
+            ) : undefined;
           return (
-            <div key={i} className="py-4">
+            <div
+              key={i}
+              className="rounded-xl border border-gray-200 bg-gray-50/70 p-3 transition focus-within:border-blue-300 hover:border-gray-300"
+            >
               {/* 商品 */}
               <div className="flex items-center gap-2">
                 <input
@@ -1165,11 +1201,11 @@ export function NewSaleForm({
 
               {row.productId ? (
                 <>
-                  {/* 交易信息 + 补货信息排成**一行**：窗口窄就横向滑动看后面的字段，
-                      不再折成两行（用户反馈横向滑动比折行更好用）。
-                      每个字段固定宽度、shrink-0，所以不会被压扁。 */}
-                  <div className="scroll-thin mt-2.5 flex items-start gap-x-4 overflow-x-auto pb-1.5">
-                    <InlineField label="数量" required className="w-[7rem] shrink-0">
+                  {/* 三组字段排成一行：窗口窄就横向滑动看后面的（不折行）。
+                      每列都是「标签 / 值 / 提示」三层，提示层恒占一行高度，
+                      所以某列有没有提示都不会把相邻列的数值顶得参差不齐。 */}
+                  <div className="scroll-thin mt-3 flex items-start gap-x-3 overflow-x-auto pb-1.5">
+                    <RowField label="数量" required className="w-[6.5rem]">
                       <input
                         name={`item_${i}_quantity`}
                         type="number"
@@ -1181,71 +1217,30 @@ export function NewSaleForm({
                         onChange={(e) =>
                           setRows((prev) => prev.map((r, j) => (j === i ? { ...r, quantity: e.target.value } : r)))
                         }
-                        className={inputCls}
+                        className={inputNumCls}
                       />
-                    </InlineField>
-                    <InlineField label="单位" className="w-[5rem] shrink-0">
-                      <span className="block py-1.5 text-sm text-gray-700">{row.unitName || "—"}</span>
-                    </InlineField>
-                    <InlineField label="库存" className="w-[8rem] shrink-0">
-                      <span className="block py-1.5 text-sm tabular-nums text-gray-700">
+                    </RowField>
+                    <RowField label="单位" className="w-[4.5rem]">
+                      <span className={`${readOnlyValue} text-sm text-gray-700`}>{row.unitName || "—"}</span>
+                    </RowField>
+                    <RowField
+                      label="库存"
+                      className="w-[7rem]"
+                      hint={canSeeCost && row.avgCost > 0 ? `均价 ¥${row.avgCost.toFixed(2)}` : undefined}
+                    >
+                      <span className={`${readOnlyValue} justify-end text-sm text-gray-700`}>
                         {row.stockQty.toFixed(3)}
-                        {canSeeCost && row.avgCost > 0 && (
-                          <span className="ml-1 text-xs text-gray-400">均价 ¥{row.avgCost.toFixed(2)}</span>
-                        )}
                       </span>
-                    </InlineField>
-                    <InlineField label="售价" required className="w-[8.5rem] shrink-0">
-                      <input
-                        name={`item_${i}_unitPrice`}
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        required
-                        value={row.unitPrice}
-                        onChange={(e) =>
-                          setRows((prev) => prev.map((r, j) => (j === i ? { ...r, unitPrice: e.target.value } : r)))
-                        }
-                        className={inputCls}
-                      />
-                      {customerId && lastCustomerPrice != null && (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setRows((prev) =>
-                              prev.map((r, j) => (j === i ? { ...r, unitPrice: lastCustomerPrice.toFixed(2) } : r))
-                            )
-                          }
-                          title="点一下填入这个售价"
-                          className="mt-1 block cursor-pointer text-xs text-blue-600 underline decoration-dotted underline-offset-2 hover:decoration-solid"
-                        >
-                          上次（{selectedCustomer?.name ?? "该客户"}）¥{lastCustomerPrice.toFixed(2)}
-                        </button>
-                      )}
-                      {(!customerId || lastCustomerPrice == null) && globalRefPrice > 0 && (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setRows((prev) =>
-                              prev.map((r, j) => (j === i ? { ...r, unitPrice: globalRefPrice.toFixed(2) } : r))
-                            )
-                          }
-                          title="点一下填入这个售价"
-                          className="mt-1 block cursor-pointer text-xs text-gray-500 underline decoration-dotted underline-offset-2 hover:text-blue-600 hover:decoration-solid"
-                        >
-                          上次参考价 ¥{globalRefPrice.toFixed(2)}
-                        </button>
-                      )}
-                    </InlineField>
-                    <InlineField label="金额" className="w-[6.5rem] shrink-0">
-                      <span className="block py-1.5 text-base font-semibold tabular-nums text-gray-900">
-                        ¥{lineAmount(row).toFixed(2)}
-                      </span>
-                    </InlineField>
-                    {/* 交易信息与补货之间用一根竖线分开（原来是行分隔线） */}
-                    <div className="w-px shrink-0 self-stretch bg-gray-100" />
+                    </RowField>
 
-                    <InlineField label="用库存" className="w-[8rem] shrink-0">
+                    <RowDivider />
+
+                    <RowField
+                      label="用库存"
+                      className="w-[7rem]"
+                      hint={used > 0 ? `用 ${used.toFixed(3)}` : "全部现场进货"}
+                      hintTitle="使用现有库存的数量（成本按原移动加权成本，不可改价）；填 0 表示全部现场进货"
+                    >
                       <input
                         name={`item_${i}_stockUsed`}
                         type="number"
@@ -1260,21 +1255,24 @@ export function NewSaleForm({
                           setRows((prev) => prev.map((r, j) => (j === i ? { ...r, stockUsed: v } : r)));
                         }}
                         title="使用现有库存的数量（成本按原移动加权成本，不可改价）；填 0 表示全部现场进货"
-                        className={inputCls}
+                        className={inputNumCls}
                       />
-                      <div className="mt-1 text-xs text-gray-400">
-                        {used > 0 ? `用 ${used.toFixed(3)}` : "不用库存（全部现场进货）"}
-                      </div>
-                    </InlineField>
-                    <InlineField label="需进货" className="w-[6rem] shrink-0">
-                      <span className={`block py-1.5 text-sm tabular-nums ${need > 0 ? "font-medium text-amber-600" : "text-gray-400"}`}>
+                    </RowField>
+                    <RowField
+                      label="需进货"
+                      className="w-[5.5rem]"
+                      hint={need > 0 && !row.manufacturer ? "商品未填厂家" : undefined}
+                      hintClass="font-medium text-red-500"
+                    >
+                      <span
+                        className={`${readOnlyValue} justify-end text-sm ${
+                          need > 0 ? "font-medium text-amber-600" : "text-gray-400"
+                        }`}
+                      >
                         {need.toFixed(3)}
                       </span>
-                      {need > 0 && !row.manufacturer && (
-                        <div className="mt-1 text-xs text-red-500">商品未填厂家</div>
-                      )}
-                    </InlineField>
-                    <InlineField label="进价" className="w-[7rem] shrink-0">
+                    </RowField>
+                    <RowField label="进价" className="w-[6.5rem]">
                       <input
                         name={`item_${i}_supplyPrice`}
                         type="number"
@@ -1288,10 +1286,15 @@ export function NewSaleForm({
                         }
                         placeholder={need > 0 ? "" : "—"}
                         title="现场进货价（仅需进货部分适用）"
-                        className={`${inputCls} disabled:bg-gray-100 disabled:text-gray-400`}
+                        className={`${inputNumCls} disabled:bg-gray-100 disabled:text-gray-400`}
                       />
-                    </InlineField>
-                    <InlineField label="多补" className="w-[6.5rem] shrink-0">
+                    </RowField>
+                    <RowField
+                      label="多补"
+                      className="w-[6rem]"
+                      hint={extra > 0 ? `补货共 ${restockTotal(row).toFixed(3)}` : undefined}
+                      hintClass="font-medium text-blue-600"
+                    >
                       <input
                         name={`item_${i}_extraQty`}
                         type="number"
@@ -1307,17 +1310,38 @@ export function NewSaleForm({
                           setRows((prev) => prev.map((r, j) => (j === i ? { ...r, extraQty: v } : r)));
                         }}
                         title="多补：客户需求之外额外多进备货（不计入该客户成本）"
-                        className={`${inputCls} disabled:bg-gray-100 disabled:text-gray-400`}
+                        className={`${inputNumCls} disabled:bg-gray-100 disabled:text-gray-400`}
                       />
-                      {extra > 0 && (
-                        <div className="mt-1 text-xs text-blue-600">补货共 {restockTotal(row).toFixed(3)}</div>
-                      )}
-                    </InlineField>
+                    </RowField>
+
+                    <RowDivider />
+
+                    {/* 售价放最后：先把数量、库存、补货都定下来，最后定价——
+                        紧跟着的"金额"就是它的结果 */}
+                    <RowField label="售价" required className="w-[8rem]" hint={priceHint}>
+                      <input
+                        name={`item_${i}_unitPrice`}
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        required
+                        value={row.unitPrice}
+                        onChange={(e) =>
+                          setRows((prev) => prev.map((r, j) => (j === i ? { ...r, unitPrice: e.target.value } : r)))
+                        }
+                        className={inputNumCls}
+                      />
+                    </RowField>
+                    <RowField label="金额" className="w-[7rem]">
+                      <span className={`${readOnlyValue} justify-end text-base font-semibold text-gray-900`}>
+                        ¥{lineAmount(row).toFixed(2)}
+                      </span>
+                    </RowField>
                   </div>
 
                   {/* 行备注 */}
-                  <div className="mt-2.5 flex items-center gap-2">
-                    <span className="w-16 shrink-0 text-xs text-gray-500">行备注</span>
+                  <div className="mt-2 flex items-center gap-2">
+                    <span className="w-14 shrink-0 text-[11px] leading-4 text-gray-500">行备注</span>
                     <input
                       name={`item_${i}_remark`}
                       type="text"
@@ -1445,26 +1469,46 @@ export function NewSaleForm({
 }
 
 
-/** 内联字段：标签在左、内容在右，比"标签独占一行"更紧凑 */
-function InlineField({
+/**
+ * 商品行的字段列：固定宽度的「标签 / 值 / 提示」三层。
+ *
+ * 提示层恒占一行高度（没有提示也留空）——之前整行数值对不齐就是这里：
+ * 有的列把"均价"塞进数值同一行、有的列提示折成三行，相邻列的数值就被顶歪了。
+ */
+function RowField({
   label,
   required,
-  children,
+  hint,
+  hintTitle,
+  hintClass = "text-gray-400",
   className = "",
+  children,
 }: {
   label: string;
   required?: boolean;
-  children: React.ReactNode;
-  /** 外层类名：排成一行时用 w-* + shrink-0 固定每格宽度 */
+  /** 值下方的一行小字（如均价、上次价）；不传也占位，保证各列高度一致 */
+  hint?: React.ReactNode;
+  hintTitle?: string;
+  hintClass?: string;
+  /** 列宽，如 w-[7rem] */
   className?: string;
+  children: React.ReactNode;
 }) {
   return (
-    <div className={`flex items-start gap-2 ${className}`}>
-      <span className="w-14 shrink-0 py-1.5 text-xs text-gray-500">
+    <div data-field={label} className={`shrink-0 ${className}`}>
+      <span className="block truncate text-[11px] leading-4 text-gray-500">
         {label}
         {required && <span className="text-red-500"> *</span>}
       </span>
-      <div className="min-w-0 flex-1">{children}</div>
+      <div className="mt-1">{children}</div>
+      <div className={`mt-1 h-4 truncate text-[11px] leading-4 ${hintClass}`} title={hintTitle}>
+        {hint}
+      </div>
     </div>
   );
+}
+
+/** 字段分组之间的竖线：高度跟着整行自适应 */
+function RowDivider() {
+  return <div className="mx-1 w-px shrink-0 self-stretch bg-gray-200" />;
 }
