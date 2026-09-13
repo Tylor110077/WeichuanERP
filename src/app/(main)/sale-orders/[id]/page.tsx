@@ -198,7 +198,18 @@ export default async function SaleOrderDetailPage({
             {order.items.map((item) => (
               <tr key={item.id}>
                 <td className="px-4 py-2.5 text-gray-600">{item.product.code}</td>
-                <td className="px-4 py-2.5 text-gray-900">{item.product.name}</td>
+                <td className="px-4 py-2.5 text-gray-900">
+                  {item.product.name}
+                  {/* 估价行：详情页也一眼看出哪几行成本还没定 */}
+                  {item.estimated && (
+                    <span
+                      className={`ml-1.5 ${item.estimatedResolvedAt ? "whitespace-nowrap rounded bg-green-50 px-1.5 py-0.5 text-xs text-green-700" : "whitespace-nowrap rounded bg-amber-50 px-1.5 py-0.5 text-xs text-amber-700"}`}
+                      title={item.estimatedResolvedAt ? "估价行，成本已补" : "估价行：成本未补，到「估价待补单」里填厂家与进价"}
+                    >
+                      {item.estimatedResolvedAt ? "估价·已补" : "估价待补"}
+                    </span>
+                  )}
+                </td>
                 <td className="px-4 py-2.5 text-gray-900">
                   <div>{Number(item.quantity).toFixed(3)}</div>
                   {(() => {

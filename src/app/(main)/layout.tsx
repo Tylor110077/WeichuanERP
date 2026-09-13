@@ -23,6 +23,8 @@ const NAV_GROUPS: {
       { href: "/sale-orders", label: "售卖单", roles: ALL_ROLES },
       { href: "/purchase-orders", label: "进货单", roles: ALL_ROLES },
       { href: "/sale-returns", label: "退货单", roles: ALL_ROLES },
+      // 开售卖单时只填了售价、进价与货源还没定的行，都收在这里补
+      { href: "/pending-estimates", label: "估价待补单", roles: ["admin", "boss"] },
       // 没填完的单据都收在这里，分售卖/进货两类
       { href: "/drafts", label: "开单草稿", roles: ALL_ROLES },
     ],
