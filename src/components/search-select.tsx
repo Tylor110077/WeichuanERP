@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { selectAllOnClick, selectAllOnFocus } from "./select-all-on-focus";
 import { matchesSearch } from "@/lib/pinyin";
 import { inputBase } from "@/lib/ui";
@@ -69,6 +70,45 @@ export function SearchSelect({
   /** 远程候选（onSearch 模式下使用）；null 表示还没搜过 */
   const [remote, setRemote] = useState<SearchSelectOption[] | null>(null);
 
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  /** 面板锚点：fixed 定位所需的位置与可用高度（见下方 place） */
+  const [anchor, setAnchor] = useState<
+    { left: number; width: number; top?: number; bottom?: number; maxHeight: number } | null
+  >(null);
+
+  /**
+   * 候选面板要 fixed + portal 渲染，不能用「相对输入框绝对定位」。
+   * 开单行的字段条是横向滚动容器（overflow-x-auto），绝对定位的面板会被容器裁掉，
+   * 表现为下拉只露一半、还被下面的内容压住。
+   */
+  const place = useCallback(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    // 面板比输入框略宽：窄字段（如「单位」）才放得下「＋ 新建单位：「名字」」
+    const width = Math.max(r.width, 176);
+    const left = Math.max(8, Math.min(r.left, window.innerWidth - width - 8));
+    const below = window.innerHeight - r.bottom - 8;
+    const up = below < 240 && r.top - 8 > below; // 下面放不下且上面更宽敞时向上翻
+    setAnchor(
+      up
+        ? { left, width, bottom: window.innerHeight - r.top + 4, maxHeight: Math.min(224, Math.max(96, r.top - 12)) }
+        : { left, width, top: r.bottom + 4, maxHeight: Math.min(224, Math.max(96, below)) }
+    );
+  }, []);
+
+  // 容器滚动/窗口缩放时跟着锚点走：面板是 fixed，不跟就会飘在旧位置
+  useEffect(() => {
+    if (!open) return;
+    const move = () => place();
+    window.addEventListener("scroll", move, true);
+    window.addEventListener("resize", move);
+    return () => {
+      window.removeEventListener("scroll", move, true);
+      window.removeEventListener("resize", move);
+    };
+  }, [open, place]);
+
   const keyword = query.trim();
   const exact = all.find((o) => o.label === keyword);
   /**
@@ -127,6 +167,7 @@ export function SearchSelect({
     setQuery(text);
     const hit = all.find((o) => o.label === text.trim());
     setValue(hit ? hit.value : "");
+    place();
     setOpen(true);
     setActive(-1); // 换了关键词，原来的高亮就不作数了
   }
@@ -172,6 +213,7 @@ export function SearchSelect({
     <div className={`relative ${className}`}>
       <input type="hidden" name={name} value={value} />
       <input
+        ref={inputRef}
         type="text"
         autoComplete="off"
         value={query}
@@ -181,6 +223,7 @@ export function SearchSelect({
         onFocus={(e) => {
           // 聚焦即全选：框里通常留着已选名称，直接打字不该变成追加
           selectAllOnFocus(e);
+          place();
           setOpen(true);
         }}
         onClick={selectAllOnClick}
@@ -188,8 +231,20 @@ export function SearchSelect({
         onBlur={() => setTimeout(() => setOpen(false), 150)}
         className={`${inputBase} w-full`}
       />
-      {open && (
-        <div className="absolute z-30 mt-1 max-h-56 w-full overflow-auto rounded-md border border-gray-200 bg-white shadow-lg">
+      {open &&
+        anchor &&
+        createPortal(
+          <div
+            style={{
+              position: "fixed",
+              left: anchor.left,
+              width: anchor.width,
+              top: anchor.top,
+              bottom: anchor.bottom,
+              maxHeight: anchor.maxHeight,
+            }}
+            className="z-50 overflow-auto rounded-md border border-gray-200 bg-white shadow-lg"
+          >
           {/* 就地新建：输入了关键词就置顶显示，点了把名字交给调用方（不必先去别的页面建） */}
           {hasCreate && (
             <button
@@ -237,8 +292,9 @@ export function SearchSelect({
               {o.label}
             </button>
           ))}
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
     </div>
   );
 }
