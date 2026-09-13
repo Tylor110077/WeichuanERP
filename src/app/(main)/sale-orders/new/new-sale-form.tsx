@@ -1717,6 +1717,18 @@ export function NewSaleForm({
           >
             + 添加商品行
           </button>
+          {canCreateProduct && (
+            <button
+              type="button"
+              onClick={() => {
+                setShowCreateProduct((v) => !v);
+                setProductMsg(null);
+              }}
+              className={btnSmallPrimary}
+            >
+              {showCreateProduct ? "收起" : "+ 新建商品"}
+            </button>
+          )}
           {/* 估价商品：连商品都还没定，只给一个临时名先把单开出来（展开后是一组紧凑的输入+确认） */}
           <button
             type="button"
@@ -1754,18 +1766,6 @@ export function NewSaleForm({
                 {estimatePending ? "添加中…" : "加这一行"}
               </button>
             </span>
-          )}
-          {canCreateProduct && (
-            <button
-              type="button"
-              onClick={() => {
-                setShowCreateProduct((v) => !v);
-                setProductMsg(null);
-              }}
-              className={btnSmallPrimary}
-            >
-              {showCreateProduct ? "收起" : "+ 新建商品"}
-            </button>
           )}
         </div>
         <div className="text-sm text-gray-600">
