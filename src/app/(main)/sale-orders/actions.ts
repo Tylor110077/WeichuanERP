@@ -15,6 +15,8 @@ export type FormState = { error?: string; ok?: string } | null;
 
 const itemSchema = z.object({
   productId: z.coerce.number().int().positive("请选择商品"),
+  /** 估价待补：只填售价，进价与货源后补 */
+  estimated: z.boolean().optional(),
   quantity: requiredNumber({
     invalid: "请填写数量",
     min: 0.001,
@@ -96,6 +98,8 @@ function parseCreatePayload(formData: FormData) {
       extraQty: formData.get(`item_${i}_extraQty`) || 0,
       remark: formData.get(`item_${i}_remark`) || "",
       stockUsed: formData.get(`item_${i}_stockUsed`) ?? undefined,
+      // 估价待补：这一行只知道售价，进价与货源后补（不消耗库存、不自动补货）
+      estimated: formData.get(`item_${i}_estimated`) === "1",
     });
     i++;
   }
@@ -221,6 +225,8 @@ export async function createSaleOrderAction(
           avgCost: number;
           remark: string;
           stockQtyUsed: number;
+          /** 估价待补行：成本先记 0，等补单时写回 */
+          estimated: boolean;
         }[] = [];
 
         // ① 逐行计划：本次用多少现有库存、现场进货多少
@@ -232,6 +238,7 @@ export async function createSaleOrderAction(
           purchaseQty: number; // 现场进货的数量（客户需求部分）
           extraQty: number; // 额外多补（备货，不计入该客户）
           restockTotal: number; // 补货单数量 = 现场进货 + 多补
+          estimated: boolean; // 估价待补行：不占库存、不补货、成本后补
           supplyPrice: number;
           unitId: number;
           remark: string;
@@ -251,12 +258,14 @@ export async function createSaleOrderAction(
           const product = productMap.get(it.productId)!;
           const qty = round3(it.quantity);
           const stock = Math.max(Number(product.stockQty), 0);
+          /** 估价行：只记售价，不占库存、不算成本，也就不会产生自动补货进货单 */
+          const estimated = !!it.estimated;
           // 用库存量：留空＝尽量用库存；可改小甚至填 0（全部现场进货），上限为库存与需求量
           const requested =
             it.stockUsed == null ? Math.min(stock, qty) : Math.max(Number(it.stockUsed), 0);
-          const stockUsed = round3(Math.min(requested, stock, qty));
-          const purchaseQty = round3(Math.max(qty - stockUsed, 0));
-          const extraQty = round3(Math.max(it.extraQty ?? 0, 0));
+          const stockUsed = estimated ? 0 : round3(Math.min(requested, stock, qty));
+          const purchaseQty = estimated ? 0 : round3(Math.max(qty - stockUsed, 0));
+          const extraQty = estimated ? 0 : round3(Math.max(it.extraQty ?? 0, 0));
           const restockTotal = round3(purchaseQty + extraQty);
 
           if (restockTotal > 0) {
@@ -286,6 +295,7 @@ export async function createSaleOrderAction(
             purchaseQty,
             extraQty,
             restockTotal,
+            estimated,
             supplyPrice: round2(it.supplyPrice),
             unitId: product.unitId,
             remark: it.remark ?? "",
@@ -452,6 +462,7 @@ export async function createSaleOrderAction(
             avgCost: p.qty > 0 ? round2(costAmount / p.qty) : 0,
             remark: p.remark,
             stockQtyUsed: p.stockUsed,
+            estimated: p.estimated,
           });
         }
 

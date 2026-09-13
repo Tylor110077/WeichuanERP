@@ -93,6 +93,11 @@ interface Row {
   /** 行备注（如包装、交货要求） */
   remark: string;
   hasLastSupplier: boolean;
+  /**
+   * 估价行：开单时只知道售价，进价与货源后补。
+   * 这种行不占用库存、不产生自动补货进货单，成本记 0（补单时再写回）。
+   */
+  estimated: boolean;
 }
 
 /** 草稿里存的内容：只是"用户填了什么"，商品/客户的展示信息都会由目录重新渲染出来 */
@@ -187,6 +192,7 @@ export function NewSaleForm({
           stockUsed: r.stockUsed,
           remark: r.remark,
           hasLastSupplier: !!r.supplierId,
+          estimated: false,
         }))
       : [emptyRow()]
   );
@@ -476,6 +482,7 @@ export function NewSaleForm({
 
       remark: "",
       hasLastSupplier: false,
+      estimated: false,
     };
   }
 
@@ -544,6 +551,7 @@ export function NewSaleForm({
 
             remark: "",
             hasLastSupplier: false,
+            estimated: false,
           };
         }
         return {
@@ -579,6 +587,7 @@ export function NewSaleForm({
 
               remark: "",
               hasLastSupplier: p.lastSupplierId != null,
+            estimated: false,
             }
           : row
       )
@@ -606,6 +615,7 @@ export function NewSaleForm({
 
   /** 本次使用的现有库存量：留空＝尽量用库存（上限为库存与需求量），可改小甚至填 0（全部现场进货）。 */
   function usedStock(row: Row): number {
+    if (row.estimated) return 0; // 估价行不占库存
     const qty = Number(row.quantity);
     if (!Number.isFinite(qty) || qty <= 0) return 0;
     const cap = Math.max(Math.min(row.stockQty, qty), 0);
@@ -616,6 +626,7 @@ export function NewSaleForm({
 
   /** 需现场进货的数量 = 客户需求量 − 使用库存量（界面只读展示）。 */
   function needPurchase(row: Row): number {
+    if (row.estimated) return 0; // 估价行先不进货，等问到价格再补单
     const qty = Number(row.quantity);
     if (!Number.isFinite(qty) || qty <= 0) return 0;
     return Math.max(qty - usedStock(row), 0);
@@ -705,6 +716,7 @@ export function NewSaleForm({
 
           remark: "",
           hasLastSupplier: false,
+        estimated: false,
         };
         // 未选中的行视为空行（即便输入过搜索词），替换为新商品行
         const emptyIdx = prev.findIndex((r) => !r.productId);
@@ -1407,6 +1419,8 @@ export function NewSaleForm({
                 )}
                 {/* 商品 ID 随表单提交（重新设计布局时漏掉过，务必保留） */}
                 <input type="hidden" name={`item_${i}_productId`} value={row.productId} />
+                {/* 估价待补：这一行只记售价，进价与货源后补 */}
+                <input type="hidden" name={`item_${i}_estimated`} value={row.estimated ? "1" : ""} />
                 <button
                   type="button"
                   onClick={() =>
@@ -1428,6 +1442,29 @@ export function NewSaleForm({
                       每列都是「标签 / 值 / 提示」三层，提示层恒占一行高度，
                       所以某列有没有提示都不会把相邻列的数值顶得参差不齐。 */}
                   <div className="scroll-thin mt-3 flex items-start gap-x-3 overflow-x-auto pb-1.5">
+                    <RowField label="估价" className="w-[3.5rem]">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setRows((prev) =>
+                            prev.map((r, j) => (j === i ? { ...r, estimated: !r.estimated } : r))
+                          )
+                        }
+                        aria-pressed={row.estimated}
+                        title={
+                          row.estimated
+                            ? "估价待补：只记售价，不占库存、不自动进货；到「估价待补单」里补进价与货源"
+                            : "标为估价待补（价格/货源还没定，先把单开出来）"
+                        }
+                        className={`h-9 w-full rounded-md border px-1 text-xs transition ${
+                          row.estimated
+                            ? "border-amber-300 bg-amber-50 font-medium text-amber-700"
+                            : "border-gray-300 bg-white text-gray-400 hover:border-amber-300 hover:text-amber-600"
+                        }`}
+                      >
+                        {row.estimated ? "估价" : "—"}
+                      </button>
+                    </RowField>
                     <RowField label="数量" required className="w-[6.5rem]">
                       <input
                         name={`item_${i}_quantity`}
@@ -1462,15 +1499,17 @@ export function NewSaleForm({
                       label="用库存"
                       className="w-[7rem]"
                       hint={
-                        noStock
-                          ? "无库存，只能现场进货"
-                          : qtyNum <= 0
-                            ? "先填数量"
-                            : overCap
-                              ? `超上限，按 ${stockCap.toFixed(3)} 计`
-                              : used > 0
-                                ? `用 ${used.toFixed(3)}`
-                                : "全部现场进货"
+                        row.estimated
+                          ? "估价行不占库存，成本后补"
+                          : noStock
+                            ? "无库存，只能现场进货"
+                            : qtyNum <= 0
+                              ? "先填数量"
+                              : overCap
+                                ? `超上限，按 ${stockCap.toFixed(3)} 计`
+                                : used > 0
+                                  ? `用 ${used.toFixed(3)}`
+                                  : "全部现场进货"
                       }
                       hintClass={noStock || overCap ? "font-medium text-amber-600" : "text-gray-400"}
                       hintTitle="使用现有库存的数量（成本按原移动加权成本，不可改价）；填 0 表示全部现场进货"
@@ -1481,8 +1520,8 @@ export function NewSaleForm({
                         min="0"
                         step="0.001"
                         inputMode="decimal"
-                        placeholder={noStock ? "—" : stockCap.toFixed(3)}
-                        disabled={noStock}
+                        placeholder={noStock || row.estimated ? "—" : stockCap.toFixed(3)}
+                        disabled={noStock || row.estimated}
                         // 零库存时连框里的旧值一起清掉（例如恢复的草稿里留着上次填的数），
                         // 免得出现"灰掉的框里还写着 5"这种自相矛盾的画面
                         value={noStock ? "" : row.stockUsed}
@@ -1517,7 +1556,7 @@ export function NewSaleForm({
                           need > 0 ? "font-medium text-amber-600" : "text-gray-400"
                         }`}
                       >
-                        {need.toFixed(3)}
+                        {row.estimated ? "待补" : need.toFixed(3)}
                       </span>
                     </RowField>
                     <RowField label="进价" className="w-[6.5rem]">

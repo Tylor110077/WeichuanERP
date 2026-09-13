@@ -419,6 +419,16 @@ model SaleOrderItem {
   // 现场进货部分成本按开单时填写的进价，成本快照为两者之和。
   stockQtyUsed Decimal   @default(0) @map("stock_qty_used") @db.Decimal(12, 3)
   remark      String?   @db.VarChar(200) // 行备注（如包装、交货要求）
+  /**
+   * 估价待补：开单时只知道售价、进价与货源都还不知道的行。
+   * 这种行不消耗库存、不生成自动补货进货单、成本记 0（等补单时再写回），
+   * 所以事后补成本不会影响其它单据的移动加权成本。
+   */
+  estimated                Boolean   @default(false)
+  /** 补单完成时间：有值表示这行的成本已经补齐 */
+  estimatedResolvedAt      DateTime? @map("estimated_resolved_at")
+  /** 补单时生成的那张进货单 id（便于回看成本是哪张单补的） */
+  estimatedPurchaseOrderId Int?      @map("estimated_purchase_order_id")
 
   returnItems SaleReturnItem[]
 

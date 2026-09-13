@@ -154,11 +154,20 @@ export default async function SaleOrderDetailPage({
             tone={outstanding > 0 ? "red" : "muted"}
           />
           {canSeeCost && (
-            <Amount
-              label="本单毛利（按成本快照）"
-              value={`¥${profit.toFixed(2)}`}
-              tone={profit >= 0 ? "green" : "red"}
-            />
+            <>
+              <Amount
+                label="本单毛利（按成本快照）"
+                value={`¥${profit.toFixed(2)}`}
+                tone={profit >= 0 ? "green" : "red"}
+              />
+              {/* 估价行成本还是 0，毛利会偏高：明确说出来，别让人误读 */}
+              {order.items.some((it) => it.estimated) && (
+                <p className="basis-full text-xs text-amber-700">
+                  本单含 {order.items.filter((it) => it.estimated).length} 行「估价待补」：成本尚未计入，
+                  毛利暂偏高；到「估价待补单」里补上进价与货源后即为准确值。
+                </p>
+              )}
+            </>
           )}
         </div>
       </div>
