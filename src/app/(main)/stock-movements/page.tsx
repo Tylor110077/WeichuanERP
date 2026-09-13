@@ -65,16 +65,46 @@ export default async function StockMovementsPage({
     prisma.product.findMany({ orderBy: { code: "asc" }, select: { id: true, code: true, name: true, manufacturer: true } }),
   ]);
 
-  // 单号 → 单据详情：一次查出本页涉及的进货/售卖单 id，行内单号可直接点开
+  // 单号 → 单据详情与往来对象：本页涉及的进货/售卖单，退货单顺着原单找客户或厂家
   const orderNos = [...new Set(movements.map((m) => m.bizOrderNo))];
-  const [poIds, soIds] = await Promise.all([
-    prisma.purchaseOrder.findMany({ where: { orderNo: { in: orderNos } }, select: { id: true, orderNo: true } }),
-    prisma.saleOrder.findMany({ where: { orderNo: { in: orderNos } }, select: { id: true, orderNo: true } }),
+  const [poRows, soRows, srRows, prRows] = await Promise.all([
+    prisma.purchaseOrder.findMany({
+      where: { orderNo: { in: orderNos } },
+      select: { id: true, orderNo: true, supplier: { select: { id: true, name: true } } },
+    }),
+    prisma.saleOrder.findMany({
+      where: { orderNo: { in: orderNos } },
+      select: { id: true, orderNo: true, customer: { select: { id: true, name: true } } },
+    }),
+    prisma.saleReturn.findMany({
+      where: { orderNo: { in: orderNos } },
+      select: { orderNo: true, saleOrder: { select: { customer: { select: { id: true, name: true } } } } },
+    }),
+    prisma.purchaseReturn.findMany({
+      where: { orderNo: { in: orderNos } },
+      select: { orderNo: true, purchaseOrder: { select: { supplier: { select: { id: true, name: true } } } } },
+    }),
   ]);
   const orderHrefMap = new Map<string, string>([
-    ...poIds.map((o) => [o.orderNo, `/purchase-orders/${o.id}`] as const),
-    ...soIds.map((o) => [o.orderNo, `/sale-orders/${o.id}`] as const),
+    ...poRows.map((o) => [o.orderNo, `/purchase-orders/${o.id}`] as const),
+    ...soRows.map((o) => [o.orderNo, `/sale-orders/${o.id}`] as const),
   ]);
+  /** 单号 → 往来对象：每笔进出是从哪个客户或厂家来的（退货顺着原单找） */
+  const partnerMap = new Map<string, { name: string; href: string }>();
+  for (const o of poRows) {
+    partnerMap.set(o.orderNo, { name: o.supplier.name, href: `/suppliers/${o.supplier.id}` });
+  }
+  for (const o of soRows) {
+    partnerMap.set(o.orderNo, { name: o.customer.name, href: `/customers/${o.customer.id}` });
+  }
+  for (const r of srRows) {
+    const c = r.saleOrder?.customer;
+    if (c) partnerMap.set(r.orderNo, { name: c.name, href: `/customers/${c.id}` });
+  }
+  for (const r of prRows) {
+    const s = r.purchaseOrder?.supplier;
+    if (s) partnerMap.set(r.orderNo, { name: s.name, href: `/suppliers/${s.id}` });
+  }
 
   const operatorMap = new Map(
     (
@@ -154,13 +184,14 @@ export default async function StockMovementsPage({
               <th className="whitespace-nowrap px-4 py-3 font-medium tabular-nums">变动后</th>
               <th className="whitespace-nowrap px-4 py-3 font-medium tabular-nums">成本单价</th>
               <th className="whitespace-nowrap px-4 py-3 font-medium">来源单据</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium">客户 / 厂家</th>
               <th className="whitespace-nowrap px-4 py-3 font-medium">操作人</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 [&>tr]:transition-colors [&>tr:hover]:bg-gray-100/70">
             {movements.length === 0 && (
               <tr>
-                <td colSpan={9}>
+                <td colSpan={10}>
                   <EmptyState title="该条件下没有库存变动" />
                 </td>
               </tr>
@@ -192,6 +223,16 @@ export default async function StockMovementsPage({
                       </Link>
                     ) : (
                       <span className="text-gray-600">{m.bizOrderNo}</span>
+                    )}
+                  </td>
+                  {/* 往来对象：这笔进出是跟哪个客户或厂家产生的（退货顺着原单找） */}
+                  <td className="whitespace-nowrap px-4 py-2.5">
+                    {partnerMap.has(m.bizOrderNo) ? (
+                      <Link href={partnerMap.get(m.bizOrderNo)!.href} className="text-blue-600 hover:underline">
+                        {partnerMap.get(m.bizOrderNo)!.name}
+                      </Link>
+                    ) : (
+                      <span className="text-gray-400">—</span>
                     )}
                   </td>
                   <td className="whitespace-nowrap px-4 py-2.5 text-gray-600">{operatorMap.get(m.operatorId) ?? m.operatorId}</td>
