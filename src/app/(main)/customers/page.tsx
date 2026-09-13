@@ -419,7 +419,7 @@ export default async function CustomersPage({
                       )}
                       {profileRows.map((r) => (
                         <tr key={r.id}>
-                          <td className="px-4 py-2.5 text-gray-900">{r.name}</td>
+                          <td className="whitespace-nowrap px-4 py-2.5 text-gray-900">{r.name}</td>
                           <td className="px-4 py-2.5">
                             {r.groupName ? (
                               <span className={badgeInfo}>{r.groupName}</span>
@@ -435,9 +435,9 @@ export default async function CustomersPage({
                               {r.tagNames.length === 0 && <span className="text-gray-400">—</span>}
                             </div>
                           </td>
-                          <td className="px-4 py-2.5 text-gray-900 tabular-nums">{r.count}</td>
-                          <td className="px-4 py-2.5 text-gray-900 tabular-nums">¥{r.sales.toFixed(2)}</td>
-                          <td className="px-4 py-2.5 text-gray-600 tabular-nums">¥{r.cost.toFixed(2)}</td>
+                          <td className="whitespace-nowrap px-4 py-2.5 text-gray-900 tabular-nums">{r.count}</td>
+                          <td className="whitespace-nowrap px-4 py-2.5 text-gray-900 tabular-nums">¥{r.sales.toFixed(2)}</td>
+                          <td className="whitespace-nowrap px-4 py-2.5 text-gray-600 tabular-nums">¥{r.cost.toFixed(2)}</td>
                           <td className={`px-4 py-2.5 tabular-nums font-medium ${r.profit >= 0 ? "text-green-700" : "text-red-600"}`}>
                             ¥{r.profit.toFixed(2)}
                           </td>

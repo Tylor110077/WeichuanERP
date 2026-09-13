@@ -301,15 +301,15 @@ export default async function InventoryPage({
                 <td className={`px-4 py-2.5 tabular-nums font-medium ${negative ? "text-red-600" : "text-gray-900"}`}>
                   {qty.toFixed(3)}
                 </td>
-                <td className="px-4 py-2.5 text-gray-900 tabular-nums">¥{Number(p.stockAmount).toFixed(2)}</td>
-                <td className="px-4 py-2.5 text-gray-600 tabular-nums">¥{Number(p.avgCost).toFixed(4)}</td>
-                <td className="px-4 py-2.5 text-gray-600 tabular-nums">
+                <td className="whitespace-nowrap px-4 py-2.5 text-gray-900 tabular-nums">¥{Number(p.stockAmount).toFixed(2)}</td>
+                <td className="whitespace-nowrap px-4 py-2.5 text-gray-600 tabular-nums">¥{Number(p.avgCost).toFixed(4)}</td>
+                <td className="whitespace-nowrap px-4 py-2.5 text-gray-600 tabular-nums">
                   {lastPrice.get(p.id) != null ? `¥${lastPrice.get(p.id)?.toFixed(2)}` : "—"}
                 </td>
                 <td className="px-4 py-2.5 whitespace-nowrap text-gray-600 tabular-nums">
                   {lastPurchaseAt.get(p.id)?.toLocaleDateString("zh-CN") ?? "—"}
                 </td>
-                <td className="px-4 py-2.5 text-gray-600 tabular-nums">{minStock.toFixed(3)}</td>
+                <td className="whitespace-nowrap px-4 py-2.5 text-gray-600 tabular-nums">{minStock.toFixed(3)}</td>
                 <td className="px-4 py-2.5">
                   <div className="flex items-center gap-2 whitespace-nowrap">
                     <Link
@@ -445,7 +445,7 @@ export default async function InventoryPage({
                     <td className="px-4 py-2.5 text-gray-600">
                       {b.purchaseOrder.sourceType === "auto" ? "自动补货" : "手动进货"}
                     </td>
-                    <td className="px-4 py-2.5 text-gray-900 tabular-nums">
+                    <td className="whitespace-nowrap px-4 py-2.5 text-gray-900 tabular-nums">
                       {Number(b.quantity).toFixed(3)}
                       {Number(b.restockQty) > 0 && (
                         <div className="text-xs text-blue-600">
@@ -453,8 +453,8 @@ export default async function InventoryPage({
                         </div>
                       )}
                     </td>
-                    <td className="px-4 py-2.5 text-gray-900 tabular-nums">¥{Number(b.unitPrice).toFixed(2)}</td>
-                    <td className="px-4 py-2.5 text-gray-600 tabular-nums">¥{Number(b.amount).toFixed(2)}</td>
+                    <td className="whitespace-nowrap px-4 py-2.5 text-gray-900 tabular-nums">¥{Number(b.unitPrice).toFixed(2)}</td>
+                    <td className="whitespace-nowrap px-4 py-2.5 text-gray-600 tabular-nums">¥{Number(b.amount).toFixed(2)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -464,13 +464,13 @@ export default async function InventoryPage({
                     <td colSpan={4} className="px-4 py-3 text-gray-600">
                       累计进货 / 进货加权均价
                     </td>
-                    <td className="px-4 py-3 font-medium text-gray-900 tabular-nums">
+                    <td className="whitespace-nowrap px-4 py-3 font-medium text-gray-900 tabular-nums">
                       {batchQty.toFixed(3)}
                     </td>
-                    <td className="px-4 py-3 font-medium text-gray-900 tabular-nums">
+                    <td className="whitespace-nowrap px-4 py-3 font-medium text-gray-900 tabular-nums">
                       ¥{batchAvg.toFixed(2)}
                     </td>
-                    <td className="px-4 py-3 font-medium text-gray-900 tabular-nums">
+                    <td className="whitespace-nowrap px-4 py-3 font-medium text-gray-900 tabular-nums">
                       ¥{batchAmount.toFixed(2)}
                     </td>
                   </tr>

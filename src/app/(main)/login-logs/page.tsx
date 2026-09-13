@@ -97,7 +97,7 @@ export default async function LoginLogsPage({
                   <td className="whitespace-nowrap px-4 py-2.5 text-gray-600">
                     {log.createdAt.toLocaleString("zh-CN")}
                   </td>
-                  <td className="px-4 py-2.5 text-gray-900">{log.username}</td>
+                  <td className="whitespace-nowrap px-4 py-2.5 text-gray-900">{log.username}</td>
                   <td className="px-4 py-2.5 text-gray-600">
                     {u ? `${u.displayName}（${u.username}）` : "—"}
                   </td>

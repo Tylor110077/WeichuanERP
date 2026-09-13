@@ -205,7 +205,7 @@ export default async function SaleOrdersPage({
                     <span className="font-medium text-gray-900">{o.orderNo}</span>
                   </span>
                 </td>
-                <td className="px-4 py-2.5 text-gray-900">{o.customer.name}</td>
+                <td className="whitespace-nowrap px-4 py-2.5 text-gray-900">{o.customer.name}</td>
                 <td className="px-4 py-2.5">
                   <span
                     className={
@@ -217,8 +217,8 @@ export default async function SaleOrdersPage({
                     {STATUS_LABELS[o.status]}
                   </span>
                 </td>
-                <td className="px-4 py-2.5 text-gray-900 tabular-nums">¥{Number(o.totalAmount).toFixed(2)}</td>
-                <td className="px-4 py-2.5 text-gray-600 tabular-nums">¥{Number(o.receivedAmount).toFixed(2)}</td>
+                <td className="whitespace-nowrap px-4 py-2.5 text-gray-900 tabular-nums">¥{Number(o.totalAmount).toFixed(2)}</td>
+                <td className="whitespace-nowrap px-4 py-2.5 text-gray-600 tabular-nums">¥{Number(o.receivedAmount).toFixed(2)}</td>
                 <td className="px-4 py-2.5">
                   {o.status === "voided" ? (
                     <span className="text-xs text-gray-400">—</span>
@@ -232,10 +232,10 @@ export default async function SaleOrdersPage({
                     </span>
                   )}
                 </td>
-                <td className="px-4 py-2.5 text-gray-600">
+                <td className="whitespace-nowrap px-4 py-2.5 text-gray-600">
                   {o.operator.displayName}（{ROLE_LABELS[o.operator.role]}）
                 </td>
-                <td className="px-4 py-2.5 text-gray-600">{o.createdAt.toLocaleString("zh-CN")}</td>
+                <td className="whitespace-nowrap px-4 py-2.5 text-gray-600">{o.createdAt.toLocaleString("zh-CN")}</td>
                 <td className="px-4 py-2.5">
                   {/* 详情与登记其实是同一个页面（登记只是页内的收款区块），
                       只保留一个入口：该单还有未收时直接落到收款登记处，否则进详情顶部 */}

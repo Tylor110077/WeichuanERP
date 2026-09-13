@@ -191,9 +191,9 @@ export default async function CustomerDetailPage({
                             <td className="px-3 py-1.5 text-gray-600">{it.product.code}</td>
                             <td className="truncate px-3 py-1.5">{it.product.name}</td>
                             <td className="px-3 py-1.5 text-gray-600">{it.unit.name}</td>
-                            <td className="px-3 py-1.5 tabular-nums">{Number(it.quantity).toFixed(3)}</td>
-                            <td className="px-3 py-1.5 tabular-nums">¥{Number(it.unitPrice).toFixed(2)}</td>
-                            <td className="px-3 py-1.5 tabular-nums">¥{Number(it.amount).toFixed(2)}</td>
+                            <td className="whitespace-nowrap px-3 py-1.5 tabular-nums">{Number(it.quantity).toFixed(3)}</td>
+                            <td className="whitespace-nowrap px-3 py-1.5 tabular-nums">¥{Number(it.unitPrice).toFixed(2)}</td>
+                            <td className="whitespace-nowrap px-3 py-1.5 tabular-nums">¥{Number(it.amount).toFixed(2)}</td>
                             <td className="truncate px-3 py-1.5 text-gray-500">{it.remark || "—"}</td>
                           </tr>
                         );

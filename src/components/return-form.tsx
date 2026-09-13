@@ -176,7 +176,7 @@ export function ReturnForm({
                       className={cellInput}
                     />
                   </td>
-                  <td className="px-4 py-2 text-gray-900 tabular-nums">
+                  <td className="whitespace-nowrap px-4 py-2 text-gray-900 tabular-nums">
                     {lineAmount(line).toFixed(2)}
                   </td>
                 </tr>

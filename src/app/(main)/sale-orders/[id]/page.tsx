@@ -215,11 +215,11 @@ export default async function SaleOrderDetailPage({
                   })()}
                 </td>
                 <td className="px-4 py-2.5 text-gray-600">{item.unit.name}</td>
-                <td className="px-4 py-2.5 text-gray-600 tabular-nums">¥{Number(item.unitPrice).toFixed(2)}</td>
-                <td className="px-4 py-2.5 text-gray-900 tabular-nums">¥{Number(item.amount).toFixed(2)}</td>
+                <td className="whitespace-nowrap px-4 py-2.5 text-gray-600 tabular-nums">¥{Number(item.unitPrice).toFixed(2)}</td>
+                <td className="whitespace-nowrap px-4 py-2.5 text-gray-900 tabular-nums">¥{Number(item.amount).toFixed(2)}</td>
                 <td className="px-4 py-2.5 text-gray-600">{item.remark ?? "—"}</td>
                 {canSeeCost && (
-                  <td className="px-4 py-2.5 text-gray-600 tabular-nums">
+                  <td className="whitespace-nowrap px-4 py-2.5 text-gray-600 tabular-nums">
                     ¥{Number(item.costAmount).toFixed(2)}
                   </td>
                 )}
@@ -298,9 +298,9 @@ export default async function SaleOrderDetailPage({
                         <td className="px-3 py-1.5 text-gray-600">{it.product.code}</td>
                         <td className="px-3 py-1.5">{it.product.name}</td>
                         <td className="px-3 py-1.5 text-gray-600">{it.unit.name}</td>
-                        <td className="px-3 py-1.5 tabular-nums">{Number(it.quantity).toFixed(3)}</td>
-                        <td className="px-3 py-1.5 tabular-nums">¥{Number(it.unitPrice).toFixed(2)}</td>
-                        <td className="px-3 py-1.5 tabular-nums">¥{Number(it.amount).toFixed(2)}</td>
+                        <td className="whitespace-nowrap px-3 py-1.5 tabular-nums">{Number(it.quantity).toFixed(3)}</td>
+                        <td className="whitespace-nowrap px-3 py-1.5 tabular-nums">¥{Number(it.unitPrice).toFixed(2)}</td>
+                        <td className="whitespace-nowrap px-3 py-1.5 tabular-nums">¥{Number(it.amount).toFixed(2)}</td>
                       </tr>
                     ))}
                   </tbody>

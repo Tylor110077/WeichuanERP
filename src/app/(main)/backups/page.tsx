@@ -79,8 +79,8 @@ export default async function BackupsPage() {
                   <td className="whitespace-nowrap px-4 py-2.5 text-gray-600">
                     {new Date(b.createdAt).toLocaleString("zh-CN")}
                   </td>
-                  <td className="px-4 py-2.5 text-gray-600 tabular-nums">{fmtBytes(b.bytes)}</td>
-                  <td className="px-4 py-2.5 text-gray-600 tabular-nums">
+                  <td className="whitespace-nowrap px-4 py-2.5 text-gray-600 tabular-nums">{fmtBytes(b.bytes)}</td>
+                  <td className="whitespace-nowrap px-4 py-2.5 text-gray-600 tabular-nums">
                     {b.manifest ? b.manifest.totalRows : "（清单不可读）"}
                   </td>
                   <td className="whitespace-nowrap px-5 py-2.5">

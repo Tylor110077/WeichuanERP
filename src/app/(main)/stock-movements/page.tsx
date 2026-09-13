@@ -182,9 +182,9 @@ export default async function StockMovementsPage({
                     {Number(m.changeQty) > 0 ? "+" : ""}
                     {Number(m.changeQty).toFixed(3)}
                   </td>
-                  <td className="px-4 py-2.5 text-gray-600 tabular-nums">{Number(m.beforeQty).toFixed(3)}</td>
-                  <td className="px-4 py-2.5 text-gray-600 tabular-nums">{Number(m.afterQty).toFixed(3)}</td>
-                  <td className="px-4 py-2.5 text-gray-600 tabular-nums">¥{Number(m.unitCost).toFixed(4)}</td>
+                  <td className="whitespace-nowrap px-4 py-2.5 text-gray-600 tabular-nums">{Number(m.beforeQty).toFixed(3)}</td>
+                  <td className="whitespace-nowrap px-4 py-2.5 text-gray-600 tabular-nums">{Number(m.afterQty).toFixed(3)}</td>
+                  <td className="whitespace-nowrap px-4 py-2.5 text-gray-600 tabular-nums">¥{Number(m.unitCost).toFixed(4)}</td>
                   <td className="px-4 py-2.5">
                     {ORDER_PATH[m.bizType] && orderHrefMap.has(m.bizOrderNo) ? (
                       <Link href={orderHrefMap.get(m.bizOrderNo)!} className="text-blue-600 hover:underline">
@@ -194,7 +194,7 @@ export default async function StockMovementsPage({
                       <span className="text-gray-600">{m.bizOrderNo}</span>
                     )}
                   </td>
-                  <td className="px-4 py-2.5 text-gray-600">{operatorMap.get(m.operatorId) ?? m.operatorId}</td>
+                  <td className="whitespace-nowrap px-4 py-2.5 text-gray-600">{operatorMap.get(m.operatorId) ?? m.operatorId}</td>
                 </tr>
               );
             })}

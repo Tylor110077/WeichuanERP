@@ -103,7 +103,7 @@ export default async function SaleReturnsPage({
                     {STATUS_LABELS[r.status]}
                   </span>
                 </td>
-                <td className="px-4 py-2.5 text-gray-900 tabular-nums">¥{Number(r.totalAmount).toFixed(2)}</td>
+                <td className="whitespace-nowrap px-4 py-2.5 text-gray-900 tabular-nums">¥{Number(r.totalAmount).toFixed(2)}</td>
                 <td className="px-4 py-2.5 text-gray-600">{r.operator.displayName}</td>
                 <td className="px-4 py-2.5 text-gray-600">{r.createdAt.toLocaleString("zh-CN")}</td>
                 {user.role !== "sales" && (

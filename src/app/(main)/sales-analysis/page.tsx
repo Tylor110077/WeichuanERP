@@ -206,9 +206,9 @@ export default async function SalesAnalysisPage({
                 <td className="whitespace-nowrap px-4 py-2.5 text-gray-600">{r.code}</td>
                 <td className="px-4 py-2.5 text-gray-900">{r.name}</td>
                 <td className="px-4 py-2.5 text-gray-600">{r.unit}</td>
-                <td className="px-4 py-2.5 text-gray-900 tabular-nums">{r.qty.toFixed(3)}</td>
-                <td className="px-4 py-2.5 text-gray-900 tabular-nums">¥{r.sales.toFixed(2)}</td>
-                <td className="px-4 py-2.5 text-gray-600 tabular-nums">¥{r.cost.toFixed(2)}</td>
+                <td className="whitespace-nowrap px-4 py-2.5 text-gray-900 tabular-nums">{r.qty.toFixed(3)}</td>
+                <td className="whitespace-nowrap px-4 py-2.5 text-gray-900 tabular-nums">¥{r.sales.toFixed(2)}</td>
+                <td className="whitespace-nowrap px-4 py-2.5 text-gray-600 tabular-nums">¥{r.cost.toFixed(2)}</td>
                 <td className={`px-4 py-2.5 tabular-nums font-medium ${r.profit >= 0 ? "text-green-700" : "text-red-600"}`}>
                   ¥{r.profit.toFixed(2)}
                 </td>
@@ -221,10 +221,10 @@ export default async function SalesAnalysisPage({
           <tfoot className="bg-gray-50">
             <tr className="font-medium text-gray-900">
               <td colSpan={4} className="px-4 py-3">合计</td>
-              <td className="px-4 py-3 tabular-nums">¥{totalSales.toFixed(2)}</td>
-              <td className="px-4 py-3 tabular-nums">¥{totalCost.toFixed(2)}</td>
-              <td className="px-4 py-3 tabular-nums">¥{totalProfit.toFixed(2)}</td>
-              <td className="px-4 py-3 tabular-nums">{totalMargin.toFixed(2)}%</td>
+              <td className="whitespace-nowrap px-4 py-3 tabular-nums">¥{totalSales.toFixed(2)}</td>
+              <td className="whitespace-nowrap px-4 py-3 tabular-nums">¥{totalCost.toFixed(2)}</td>
+              <td className="whitespace-nowrap px-4 py-3 tabular-nums">¥{totalProfit.toFixed(2)}</td>
+              <td className="whitespace-nowrap px-4 py-3 tabular-nums">{totalMargin.toFixed(2)}%</td>
             </tr>
           </tfoot>
         </table>
@@ -266,9 +266,9 @@ export default async function SalesAnalysisPage({
               {dayRows.map((d) => (
                 <tr key={d.date}>
                   <td className="px-4 py-2.5 text-gray-900">{d.date}</td>
-                  <td className="px-4 py-2.5 text-gray-600 tabular-nums">{d.count}</td>
-                  <td className="px-4 py-2.5 text-gray-900 tabular-nums">¥{d.sales.toFixed(2)}</td>
-                  <td className="px-4 py-2.5 text-gray-600 tabular-nums">¥{d.cost.toFixed(2)}</td>
+                  <td className="whitespace-nowrap px-4 py-2.5 text-gray-600 tabular-nums">{d.count}</td>
+                  <td className="whitespace-nowrap px-4 py-2.5 text-gray-900 tabular-nums">¥{d.sales.toFixed(2)}</td>
+                  <td className="whitespace-nowrap px-4 py-2.5 text-gray-600 tabular-nums">¥{d.cost.toFixed(2)}</td>
                   <td className={`px-4 py-2.5 tabular-nums font-medium ${d.profit >= 0 ? "text-green-700" : "text-red-600"}`}>
                     ¥{d.profit.toFixed(2)}
                   </td>

@@ -111,7 +111,7 @@ export function UnpaidOrderTable({
                       {open ? "收起" : "展开"}
                     </button>
                   </td>
-                  <td className="px-4 py-2.5 text-gray-600 tabular-nums">{o.date}</td>
+                  <td className="whitespace-nowrap px-4 py-2.5 text-gray-600 tabular-nums">{o.date}</td>
                   <td className="px-4 py-2.5">
                     <Link href={o.detailHref} className="whitespace-nowrap font-medium text-blue-600 hover:underline">
                       {o.orderNo}
@@ -150,10 +150,10 @@ export function UnpaidOrderTable({
                       </span>
                     )}
                   </td>
-                  <td className="px-4 py-2.5 text-gray-900 tabular-nums">¥{o.total.toFixed(2)}</td>
-                  <td className="px-4 py-2.5 text-gray-600 tabular-nums">¥{o.paid.toFixed(2)}</td>
-                  <td className="px-4 py-2.5 text-orange-600 tabular-nums">¥{o.returned.toFixed(2)}</td>
-                  <td className="px-4 py-2.5 font-medium text-red-600 tabular-nums">
+                  <td className="whitespace-nowrap px-4 py-2.5 text-gray-900 tabular-nums">¥{o.total.toFixed(2)}</td>
+                  <td className="whitespace-nowrap px-4 py-2.5 text-gray-600 tabular-nums">¥{o.paid.toFixed(2)}</td>
+                  <td className="whitespace-nowrap px-4 py-2.5 text-orange-600 tabular-nums">¥{o.returned.toFixed(2)}</td>
+                  <td className="whitespace-nowrap px-4 py-2.5 font-medium text-red-600 tabular-nums">
                     ¥{o.unpaid.toFixed(2)}
                   </td>
                   <td className="px-4 py-2.5">
@@ -194,9 +194,9 @@ export function UnpaidOrderTable({
                                 <td className="py-1 pr-4">{it.name}</td>
                                 <td className="py-1 pr-4 text-gray-600">{it.manufacturer || "—"}</td>
                                 <td className="py-1 pr-4 text-gray-600">{it.unit}</td>
-                                <td className="py-1 pr-4 tabular-nums">{it.qty.toFixed(3)}</td>
-                                <td className="py-1 pr-4 tabular-nums">¥{it.price.toFixed(2)}</td>
-                                <td className="py-1 pr-4 tabular-nums">¥{it.amount.toFixed(2)}</td>
+                                <td className="whitespace-nowrap py-1 pr-4 tabular-nums">{it.qty.toFixed(3)}</td>
+                                <td className="whitespace-nowrap py-1 pr-4 tabular-nums">¥{it.price.toFixed(2)}</td>
+                                <td className="whitespace-nowrap py-1 pr-4 tabular-nums">¥{it.amount.toFixed(2)}</td>
                                 <td className="py-1 text-gray-500">{it.remark || "—"}</td>
                               </tr>
                             ))}

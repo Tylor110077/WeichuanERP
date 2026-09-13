@@ -196,9 +196,9 @@ export default async function SupplierStatementPage({
                   {o.items.map((it) => (
                     <tr key={it.id} className="text-gray-900">
                       <td className="py-1">{it.product.code} {it.product.name}</td>
-                      <td className="py-1 tabular-nums">{Number(it.quantity).toFixed(3)} {it.unit.name}</td>
-                      <td className="py-1 tabular-nums">¥{Number(it.unitPrice).toFixed(2)}</td>
-                      <td className="py-1 tabular-nums">¥{Number(it.amount).toFixed(2)}</td>
+                      <td className="whitespace-nowrap py-1 tabular-nums">{Number(it.quantity).toFixed(3)} {it.unit.name}</td>
+                      <td className="whitespace-nowrap py-1 tabular-nums">¥{Number(it.unitPrice).toFixed(2)}</td>
+                      <td className="whitespace-nowrap py-1 tabular-nums">¥{Number(it.amount).toFixed(2)}</td>
                     </tr>
                   ))}
                 </tbody>

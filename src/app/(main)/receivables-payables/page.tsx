@@ -328,7 +328,7 @@ export default async function ReceivablesPage({
               )}
               {pagedItems.map((it) => (
                 <tr key={`${it.orderId}-${it.id}`}>
-                  <td className="px-4 py-2.5 text-gray-600 tabular-nums">{it.date}</td>
+                  <td className="whitespace-nowrap px-4 py-2.5 text-gray-600 tabular-nums">{it.date}</td>
                   <td className="px-4 py-2.5">
                     <Link href={it.detailHref} className="text-blue-600 hover:underline">
                       {it.orderNo}
@@ -339,9 +339,9 @@ export default async function ReceivablesPage({
                   <td className="px-4 py-2.5 text-gray-900">{it.name}</td>
                   <td className="px-4 py-2.5 text-gray-600">{it.manufacturer || "—"}</td>
                   <td className="px-4 py-2.5 text-gray-600">{it.unit}</td>
-                  <td className="px-4 py-2.5 tabular-nums">{it.qty.toFixed(3)}</td>
-                  <td className="px-4 py-2.5 tabular-nums">¥{it.price.toFixed(2)}</td>
-                  <td className="px-4 py-2.5 tabular-nums">¥{it.amount.toFixed(2)}</td>
+                  <td className="whitespace-nowrap px-4 py-2.5 tabular-nums">{it.qty.toFixed(3)}</td>
+                  <td className="whitespace-nowrap px-4 py-2.5 tabular-nums">¥{it.price.toFixed(2)}</td>
+                  <td className="whitespace-nowrap px-4 py-2.5 tabular-nums">¥{it.amount.toFixed(2)}</td>
                   <td className="px-4 py-2.5 text-gray-500">{it.remark || "—"}</td>
                 </tr>
               ))}

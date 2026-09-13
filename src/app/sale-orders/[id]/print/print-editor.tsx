@@ -327,11 +327,11 @@ export function PrintEditor({ data }: { data: PrintOrderData }) {
               <td colSpan={Math.max(visibleCols.findIndex((c) => c.key === "qty"), 1)} className="border border-gray-800 px-1 py-0.5">
                 总计
               </td>
-              <td className="border border-gray-800 px-1 py-0.5 text-right tabular-nums">
+              <td className="whitespace-nowrap border border-gray-800 px-1 py-0.5 text-right tabular-nums">
                 {totalQty.toFixed(3)}
               </td>
               <td className="border border-gray-800 px-1 py-0.5" />
-              <td className="border border-gray-800 px-1 py-0.5 text-right tabular-nums">
+              <td className="whitespace-nowrap border border-gray-800 px-1 py-0.5 text-right tabular-nums">
                 {totalAmount.toFixed(2)}
               </td>
               {visibleCols.filter((c) => ["remark", "idx"].includes(c.key)).map((c) => (

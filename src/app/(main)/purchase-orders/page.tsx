@@ -219,7 +219,8 @@ export default async function PurchaseOrdersPage({
                     <span className="font-medium text-gray-900">{o.orderNo}</span>
                   </span>
                 </td>
-                <td className="px-4 py-2.5 text-gray-900">{o.supplier.name}</td>
+                {/* 厂家名不换行：10 列的表里这列会被压到只剩两个字宽，「华旗」就竖排了 */}
+                <td className="whitespace-nowrap px-4 py-2.5 text-gray-900">{o.supplier.name}</td>
                 <td className="px-4 py-2.5">
                   <span
                     className={
@@ -233,8 +234,8 @@ export default async function PurchaseOrdersPage({
                     {STATUS_LABELS[o.status]}
                   </span>
                 </td>
-                <td className="px-4 py-2.5 text-gray-900 tabular-nums">¥{Number(o.totalAmount).toFixed(2)}</td>
-                <td className="px-4 py-2.5 text-gray-600 tabular-nums">¥{Number(o.paidAmount).toFixed(2)}</td>
+                <td className="whitespace-nowrap px-4 py-2.5 text-gray-900 tabular-nums">¥{Number(o.totalAmount).toFixed(2)}</td>
+                <td className="whitespace-nowrap px-4 py-2.5 text-gray-600 tabular-nums">¥{Number(o.paidAmount).toFixed(2)}</td>
                 <td className="px-4 py-2.5">
                   {o.status === "voided" ? (
                     <span className="text-xs text-gray-400">—</span>
@@ -248,13 +249,13 @@ export default async function PurchaseOrdersPage({
                     </span>
                   )}
                 </td>
-                <td className="px-4 py-2.5 text-gray-600">
+                <td className="whitespace-nowrap px-4 py-2.5 text-gray-600">
                   {o.sourceType === "auto" ? "自动补货" : "手动"}
                 </td>
-                <td className="px-4 py-2.5 text-gray-600">
+                <td className="whitespace-nowrap px-4 py-2.5 text-gray-600">
                   {o.operator.displayName}（{ROLE_LABELS[o.operator.role]}）
                 </td>
-                <td className="px-4 py-2.5 text-gray-600">
+                <td className="whitespace-nowrap px-4 py-2.5 text-gray-600">
                   {o.createdAt.toLocaleString("zh-CN")}
                 </td>
                 <td className="px-4 py-2.5">
