@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useMemo, useState } from "react";
+import { memo, useActionState, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { initials } from "@/lib/pinyin";
@@ -147,7 +147,8 @@ export function NewOrderForm({
   const [busy, setBusy] = useState(false);
 
   const supplierOptions = [...suppliers, ...extraSuppliers];
-  const productOptions = [...products, ...extraProducts];
+  /** 用 useMemo 固定引用：行组件（PurchaseRow）把它当 props，引用一变 memo 就全失效 */
+  const productOptions = useMemo(() => [...products, ...extraProducts], [products, extraProducts]);
   const [state, formAction, pending] = useActionState<FormState, FormData>(
     createPurchaseOrderAction,
     null
@@ -309,11 +310,6 @@ export function NewOrderForm({
     return opt && opt.refPrice > 0 ? `参考 ¥${opt.refPrice.toFixed(2)}` : undefined;
   }
 
-  function lineAmount(row: Row): number {
-    const q = Number(row.quantity);
-    const price = Number(row.unitPrice);
-    return Number.isFinite(q) && Number.isFinite(price) ? q * price : 0;
-  }
 
   // 开单草稿：填到一半切走再回来，内容还在（机制见 lib/form-draft.ts）
   // 从草稿箱点进来会带 ?draft=<id>，指定恢复哪一份；否则恢复最近那份
@@ -371,6 +367,24 @@ export function NewOrderForm({
       setStarred(false);
     },
   });
+
+  /**
+   * 行组件（PurchaseRow）要调的回调：ref 存最新实现 + 一层稳定外壳，
+   * 否则每次渲染都是新函数引用，React.memo 会直接失效。
+   */
+  const rowActionsRef = useRef({ onProductChange, startCreateProduct, refPriceHint, searchProducts });
+  useEffect(() => {
+    rowActionsRef.current = { onProductChange, startCreateProduct, refPriceHint, searchProducts };
+  });
+  const rowActions = useMemo(
+    () => ({
+      onProductChange: (i: number, v: string) => rowActionsRef.current.onProductChange(i, v),
+      startCreateProduct: (i: number, name: string) => rowActionsRef.current.startCreateProduct(i, name),
+      refPriceHint: (r: Row) => rowActionsRef.current.refPriceHint(r),
+      searchProducts: (kw: string) => rowActionsRef.current.searchProducts(kw),
+    }),
+    []
+  );
 
   const total = rows.reduce((s, r) => s + lineAmount(r), 0);
 
@@ -616,6 +630,98 @@ export function NewOrderForm({
       {/* 商品清单：每行一个商品，字段标签内联、行间以分隔线区隔 */}
       <div className="divide-y divide-gray-100 border-y border-gray-100">
         {rows.map((row, i) => (
+          <PurchaseRow
+            key={i}
+            row={row}
+            i={i}
+            setRows={setRows}
+            productOptions={productOptions}
+            onProductChange={rowActions.onProductChange}
+            startCreateProduct={rowActions.startCreateProduct}
+            refPriceHint={rowActions.refPriceHint}
+            searchProducts={rowActions.searchProducts}
+          />
+        ))}
+      </div>
+
+      {/* 底部操作与合计（去边框） */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setRows((prev) => [...prev, emptyRow()])}
+            className={btnSmallPrimary}
+          >
+            + 添加商品行
+          </button>
+          {canCreateProduct && (
+            <button type="button" onClick={openCreateProduct} className={btnSmallPrimary}>
+              {creatingProductRow != null ? "收起" : "+ 新建商品"}
+            </button>
+          )}
+        </div>
+        <div className="text-sm text-gray-600">
+          合计：
+          <span className="text-lg font-semibold tabular-nums text-gray-900">¥{total.toFixed(2)}</span>
+        </div>
+      </div>
+
+        </div>
+      </details>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          type="submit"
+          disabled={pending || !supplierId}
+          title={!supplierId ? "请先选择厂家" : undefined}
+          className={btnPrimary}
+        >
+          {pending ? "提交中…" : "提交进货单"}
+        </button>
+        {!supplierId && (
+          <span className="text-sm text-amber-600">请先在上方选择厂家，再提交单据</span>
+        )}
+        <FormStateAlert state={state} />
+      </div>
+    </form>
+  );
+}
+
+
+// ─────────────────────────── 模块作用域：进货开单行的零件 ───────────────────────────
+
+/** 只依赖 row 的纯计算，行组件与主组件共用，不随渲染重建。 */
+function lineAmount(row: Row): number {
+  const q = Number(row.quantity);
+  const price = Number(row.unitPrice);
+  return Number.isFinite(q) && Number.isFinite(price) ? q * price : 0;
+}
+
+/**
+ * 进货商品行。用 React.memo 包住：只改自己这一行时，其它行不会跟着重渲染。
+ * 之前每敲一个字，整张单的所有行都会重渲染一遍；行数一多，弱机上就会卡。
+ */
+const PurchaseRow = memo(function PurchaseRow({
+  row,
+  i,
+  setRows,
+  productOptions,
+  onProductChange,
+  startCreateProduct,
+  refPriceHint,
+  searchProducts,
+}: {
+  row: Row;
+  i: number;
+  setRows: React.Dispatch<React.SetStateAction<Row[]>>;
+  productOptions: ProductOption[];
+  onProductChange: (index: number, productId: string) => void;
+  startCreateProduct: (index: number, name: string) => void;
+  refPriceHint: (row: Row) => string | undefined;
+  searchProducts: (keyword: string) => Promise<{ value: string; label: string; py?: string }[]>;
+}) {
+  // 注意：这里的 JSX 是从 map 里整段搬过来的（含行内逻辑），只补了 return
+  return (
           <div key={i} className="py-4">
             {/* 商品 */}
             <div className="flex items-center gap-2">
@@ -714,48 +820,5 @@ export function NewOrderForm({
               <p className="mt-2 text-xs text-gray-400">选择商品后填写数量、进价与行备注</p>
             )}
           </div>
-        ))}
-      </div>
-
-      {/* 底部操作与合计（去边框） */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setRows((prev) => [...prev, emptyRow()])}
-            className={btnSmallPrimary}
-          >
-            + 添加商品行
-          </button>
-          {canCreateProduct && (
-            <button type="button" onClick={openCreateProduct} className={btnSmallPrimary}>
-              {creatingProductRow != null ? "收起" : "+ 新建商品"}
-            </button>
-          )}
-        </div>
-        <div className="text-sm text-gray-600">
-          合计：
-          <span className="text-lg font-semibold tabular-nums text-gray-900">¥{total.toFixed(2)}</span>
-        </div>
-      </div>
-
-        </div>
-      </details>
-
-      <div className="flex flex-wrap items-center gap-3">
-        <button
-          type="submit"
-          disabled={pending || !supplierId}
-          title={!supplierId ? "请先选择厂家" : undefined}
-          className={btnPrimary}
-        >
-          {pending ? "提交中…" : "提交进货单"}
-        </button>
-        {!supplierId && (
-          <span className="text-sm text-amber-600">请先在上方选择厂家，再提交单据</span>
-        )}
-        <FormStateAlert state={state} />
-      </div>
-    </form>
   );
-}
+});
