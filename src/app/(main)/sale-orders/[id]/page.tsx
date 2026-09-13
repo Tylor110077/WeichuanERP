@@ -1,6 +1,6 @@
 import { redirect, notFound } from "next/navigation";
 import { NoPermission } from "@/components/empty-state";
-import { badgeMuted, badgeOk, btnSecondary, btnWarn } from "@/lib/ui";
+import { badgeMuted, badgeOk } from "@/lib/ui";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
@@ -109,30 +109,15 @@ export default async function SaleOrderDetailPage({
           </span>
         </h1>
         <div className="flex flex-wrap items-center gap-2">
-          <a
-            href={`/sale-orders/${order.id}/print`}
-            target="_blank"
-            rel="noopener"
-            className={btnSecondary}
-          >
-            打印销售单
-          </a>
-          {order.status === "confirmed" && (
-            <Link
-              href={`/sale-returns/new?orderId=${order.id}`}
-              className={btnWarn}
-            >
-              退货
-            </Link>
-          )}
-          <Link
-            href="/sale-orders"
-            className={btnSecondary}
-          >
-            ← 返回列表
-          </Link>
-          {/* 放在最后：作废的操作提示独占一行，排中间会把返回链接挤到提示下面 */}
-          {canVoid && <DetailActions orderId={order.id} status={order.status} />}
+          <DetailActions
+            orderId={order.id}
+            status={order.status}
+            printHref={`/sale-orders/${order.id}/print`}
+            canReturn={order.status === "confirmed"}
+            returnCreateHref={`/sale-returns/new?orderId=${order.id}`}
+            returnHref="/sale-orders"
+            canVoid={canVoid}
+          />
         </div>
       </div>
 

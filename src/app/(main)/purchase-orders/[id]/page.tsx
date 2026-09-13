@@ -1,7 +1,6 @@
 import { redirect, notFound } from "next/navigation";
 import { NoPermission } from "@/components/empty-state";
-import { badgeMuted, badgeOk, badgePending, btnSecondary, btnWarn } from "@/lib/ui";
-import Link from "next/link";
+import { badgeMuted, badgeOk, badgePending } from "@/lib/ui";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { DetailActions } from "./detail-actions";
@@ -85,7 +84,6 @@ export default async function PurchaseOrderDetailPage({
   const paid = Number(order.paidAmount);
   const outstanding = total - paid - returnedSum;
 
-  const showActions = order.status !== "voided" && (canReceive || canVoid || canReturn);
 
   return (
     <div className="space-y-6">
@@ -108,30 +106,15 @@ export default async function PurchaseOrderDetailPage({
           </span>
         </h1>
         <div className="flex flex-wrap items-center gap-2">
-          {canReturn && (
-            <Link
-              href={`/purchase-returns/new?orderId=${order.id}`}
-              className={btnWarn}
-            >
-              退货
-            </Link>
-          )}
-          <Link
-            href="/purchase-orders"
-            className={btnSecondary}
-          >
-            ← 返回列表
-          </Link>
-          {/* 放在按钮组最后：它的操作提示是 basis-full 独占一行，
-              若排在中间会把后面的按钮挤到提示下面 */}
-          {showActions && (
-            <DetailActions
-              orderId={order.id}
-              status={order.status}
-              canReceive={canReceive}
-              canVoid={canVoid}
-            />
-          )}
+          <DetailActions
+            orderId={order.id}
+            status={order.status}
+            canReceive={canReceive}
+            canVoid={canVoid}
+            canReturn={canReturn}
+            returnCreateHref={`/purchase-returns/new?orderId=${order.id}`}
+            returnHref="/purchase-orders"
+          />
         </div>
       </div>
 

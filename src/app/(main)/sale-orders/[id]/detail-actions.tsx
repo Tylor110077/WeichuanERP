@@ -1,22 +1,41 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { btnDanger, btnDangerSolid, btnSecondary, btnWarn, inputBase } from "@/lib/ui";
 import { voidSaleOrderAction, type FormState } from "../actions";
 import { FormStateAlert } from "@/components/form-alert";
 
 /**
- * 单据详情页的操作：改单 / 作废。
+ * 售卖单详情页右上角的操作区。
  *
- * 「改单」= 作废原单 + 跳到开单页并把原单内容带过去。原单已经动过库存与移动加权成本，
- * 回头就地修改会把它之后所有单据的成本带偏，所以只能整单作废重开；
- * 这里只是把"作废 → 重录"两步并成一步，数据一致性仍由既有的作废逻辑保证。
+ * 排序按"破坏性递增"：打印（只输出）→ 改单（作废重开）→ 退货（部分冲减）→ 作废（整单冲回），
+ * 「← 返回列表」不参与操作、只是导航，单独放在最右且用弱样式，不跟操作抢视线。
+ * 确认表单与提示都用 basis-full 独占一行：点开时只在下方展开，不会把上面一排按钮挤走。
  */
-export function DetailActions({ orderId, status }: { orderId: number; status: string }) {
+export function DetailActions({
+  orderId,
+  status,
+  printHref,
+  canReturn,
+  returnCreateHref,
+  returnHref,
+  canVoid,
+}: {
+  orderId: number;
+  status: string;
+  /** 打印入口（没有就不显示） */
+  printHref?: string;
+  canReturn: boolean;
+  /** 发起退货的开单页地址 */
+  returnCreateHref: string;
+  returnHref: string;
+  /** 改单与作废的权限（业务员没有） */
+  canVoid: boolean;
+}) {
   const router = useRouter();
-  const [showVoidInput, setShowVoidInput] = useState(false);
-  const [showReopenInput, setShowReopenInput] = useState(false);
+  const [form, setForm] = useState<"none" | "void" | "reopen">("none");
   /** 本次提交是为了改单（作废成功后跳开单页），与普通作废区分开 */
   const [reopenIntent, setReopenIntent] = useState(false);
   const [voidState, voidAction, voidPending] = useActionState<FormState, FormData>(
@@ -30,33 +49,43 @@ export function DetailActions({ orderId, status }: { orderId: number; status: st
     }
   }, [reopenIntent, voidState, router, orderId]);
 
-  if (status === "voided") return null;
+  const voided = status === "voided";
 
   return (
     <>
-      <div className="flex items-center gap-3">
-        {!showVoidInput && !showReopenInput && (
-          <>
-            <button
-              type="button"
-              onClick={() => setShowReopenInput(true)}
-              title="作废原单，并把原单内容带到开单页去改（库存与成本会重新计算）"
-              className={btnWarn}
-            >
-              改单
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowVoidInput((v) => !v)}
-              className={btnDanger}
-            >
-              作废
-            </button>
-          </>
+      <div className="flex flex-wrap items-center gap-2">
+        {printHref && (
+          <a href={printHref} target="_blank" rel="noopener" className={btnSecondary}>
+            打印销售单
+          </a>
         )}
+        {!voided && canVoid && (
+          <button type="button" onClick={() => setForm((f) => (f === "reopen" ? "none" : "reopen"))} className={btnWarn}>
+            改单
+          </button>
+        )}
+        {!voided && canReturn && (
+          <Link href={returnCreateHref} className={btnWarn}>
+            退货
+          </Link>
+        )}
+        {!voided && canVoid && (
+          <button type="button" onClick={() => setForm((f) => (f === "void" ? "none" : "void"))} className={btnDanger}>
+            作废
+          </button>
+        )}
+        {/* 导航不跟操作并列：弱化成文字链接，并留出一点间隔 */}
+        <Link href={returnHref} className="ml-2 text-xs text-gray-500 hover:underline">
+          ← 返回列表
+        </Link>
       </div>
-      {showReopenInput && (
-        <form action={voidAction} onSubmit={() => setReopenIntent(true)} className="flex items-start gap-2">
+
+      {form === "reopen" && (
+        <form
+          action={voidAction}
+          onSubmit={() => setReopenIntent(true)}
+          className="flex basis-full flex-wrap items-start gap-2"
+        >
           <input type="hidden" name="id" value={orderId} />
           <input
             name="reason"
@@ -70,13 +99,13 @@ export function DetailActions({ orderId, status }: { orderId: number; status: st
           <button type="submit" disabled={voidPending} className={btnWarn}>
             {voidPending ? "处理中…" : "作废并去改"}
           </button>
-          <button type="button" onClick={() => setShowReopenInput(false)} className={btnSecondary}>
+          <button type="button" onClick={() => setForm("none")} className={btnSecondary}>
             取消
           </button>
         </form>
       )}
-      {showVoidInput && (
-        <form action={voidAction} className="flex items-start gap-2">
+      {form === "void" && (
+        <form action={voidAction} className="flex basis-full flex-wrap items-start gap-2">
           <input type="hidden" name="id" value={orderId} />
           <input
             name="reason"
@@ -89,7 +118,7 @@ export function DetailActions({ orderId, status }: { orderId: number; status: st
           <button type="submit" disabled={voidPending} className={btnDangerSolid}>
             {voidPending ? "处理中…" : "确认作废"}
           </button>
-          <button type="button" onClick={() => setShowVoidInput(false)} className={btnSecondary}>
+          <button type="button" onClick={() => setForm("none")} className={btnSecondary}>
             取消
           </button>
         </form>
