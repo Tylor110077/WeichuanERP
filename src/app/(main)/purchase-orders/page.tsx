@@ -95,7 +95,7 @@ export default async function PurchaseOrdersPage({
         // 行内展开要看商品，所以把商品行一起带出来
         items: {
           include: {
-            product: { select: { code: true, name: true } },
+            product: { select: { code: true, name: true, manufacturer: true } },
             unit: { select: { name: true } },
           },
         },
@@ -121,7 +121,7 @@ export default async function PurchaseOrdersPage({
               purchaseOrder: {
                 select: { id: true, orderNo: true, createdAt: true, supplier: { select: { name: true } } },
               },
-              product: { select: { code: true, name: true } },
+              product: { select: { code: true, name: true, manufacturer: true } },
               unit: { select: { name: true } },
             },
           }),
@@ -152,6 +152,7 @@ export default async function PurchaseOrdersPage({
         id: it.id,
         code: it.product.code,
         name: it.product.name,
+        manufacturer: it.product.manufacturer ?? "",
         unit: it.unit.name,
         qty: Number(it.quantity),
         price: Number(it.unitPrice),
@@ -267,6 +268,7 @@ export default async function PurchaseOrdersPage({
                 <th className="whitespace-nowrap px-4 py-3 font-medium">厂家</th>
                 <th className="whitespace-nowrap px-4 py-3 font-medium">编码</th>
                 <th className="whitespace-nowrap px-4 py-3 font-medium">品名</th>
+                <th className="whitespace-nowrap px-4 py-3 font-medium">厂家</th>
                 <th className="whitespace-nowrap px-4 py-3 font-medium">单位</th>
                 <th className="whitespace-nowrap px-4 py-3 font-medium tabular-nums">数量</th>
                 <th className="whitespace-nowrap px-4 py-3 font-medium tabular-nums">进价</th>
@@ -277,7 +279,7 @@ export default async function PurchaseOrdersPage({
             <tbody className="divide-y divide-gray-100 [&>tr]:transition-colors [&>tr:hover]:bg-gray-100/70">
               {itemRows.length === 0 && (
                 <tr>
-                  <td colSpan={10} className="px-4 py-10 text-center text-sm text-gray-400">
+                  <td colSpan={11} className="px-4 py-10 text-center text-sm text-gray-400">
                     该条件下没有商品行
                   </td>
                 </tr>
@@ -295,6 +297,7 @@ export default async function PurchaseOrdersPage({
                   <td className="whitespace-nowrap px-4 py-2.5 text-gray-900">{it.purchaseOrder.supplier.name}</td>
                   <td className="whitespace-nowrap px-4 py-2.5 text-gray-600">{it.product.code}</td>
                   <td className="whitespace-nowrap px-4 py-2.5 text-gray-900">{it.product.name}</td>
+                  <td className="whitespace-nowrap px-4 py-2.5 text-gray-600">{it.product.manufacturer || "—"}</td>
                   <td className="whitespace-nowrap px-4 py-2.5 text-gray-600">{it.unit.name}</td>
                   <td className="whitespace-nowrap px-4 py-2.5 tabular-nums">{Number(it.quantity).toFixed(3)}</td>
                   <td className="whitespace-nowrap px-4 py-2.5 tabular-nums">¥{Number(it.unitPrice).toFixed(2)}</td>

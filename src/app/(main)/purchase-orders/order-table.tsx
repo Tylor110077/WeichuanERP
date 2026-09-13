@@ -33,6 +33,8 @@ export interface PurchaseOrderRow {
     id: number;
     code: string;
     name: string;
+    /** 厂家：这批货是哪家厂的 */
+    manufacturer: string;
     unit: string;
     qty: number;
     price: number;
@@ -170,13 +172,14 @@ export function PurchaseOrderTable({ rows, children }: { rows: PurchaseOrderRow[
                         <table className="w-full table-fixed text-xs">
                           <thead className="text-left text-gray-500">
                             <tr>
-                              <th className="w-[7.5rem] py-1 font-medium">编码</th>
-                              <th className="w-[30%] py-1 font-medium">品名</th>
-                              <th className="w-[4rem] py-1 font-medium">单位</th>
-                              <th className="w-[7rem] py-1 text-right font-medium tabular-nums">数量</th>
-                              <th className="w-[7rem] py-1 text-right font-medium tabular-nums">进价</th>
-                              <th className="w-[8rem] py-1 text-right font-medium tabular-nums">金额</th>
-                              <th className="py-1 font-medium">备注</th>
+                              <th className="w-[6.5rem] py-1 font-medium">编码</th>
+                              <th className="w-[20%] py-1 font-medium">品名</th>
+                              <th className="w-[11%] py-1 font-medium">厂家</th>
+                              <th className="w-[3.5rem] py-1 font-medium">单位</th>
+                              <th className="w-[6rem] py-1 text-right font-medium tabular-nums">数量</th>
+                              <th className="w-[6.5rem] py-1 text-right font-medium tabular-nums">进价</th>
+                              <th className="w-[7rem] py-1 text-right font-medium tabular-nums">金额</th>
+                              <th className="w-[13%] py-1 font-medium">备注</th>
                             </tr>
                           </thead>
                           <tbody className="text-gray-800">
@@ -184,6 +187,7 @@ export function PurchaseOrderTable({ rows, children }: { rows: PurchaseOrderRow[
                               <tr key={it.id} className="border-t border-gray-100">
                                 <td className="truncate py-1 text-gray-600">{it.code}</td>
                                 <td className="truncate py-1">{it.name}</td>
+                                <td className="truncate py-1 text-gray-600">{it.manufacturer || "—"}</td>
                                 <td className="py-1 text-gray-600">{it.unit}</td>
                                 <td className="py-1 text-right tabular-nums">{it.qty.toFixed(3)}</td>
                                 <td className="py-1 text-right tabular-nums">¥{it.price.toFixed(2)}</td>
