@@ -1524,29 +1524,7 @@ export function NewSaleForm({
                       每列都是「标签 / 值 / 提示」三层，提示层恒占一行高度，
                       所以某列有没有提示都不会把相邻列的数值顶得参差不齐。 */}
                   <div className="scroll-thin mt-3 flex items-start gap-x-3 overflow-x-auto pb-1.5">
-                    {/* 售价在行首：先定价，再看数量与补货；紧跟着的"金额"就是它的结果 */}
-                    <RowField label="售价" required className="w-[8rem]" hint={priceHint}>
-                      <input
-                        name={`item_${i}_unitPrice`}
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        required
-                        value={row.unitPrice}
-                        onChange={(e) =>
-                          setRows((prev) => prev.map((r, j) => (j === i ? { ...r, unitPrice: e.target.value } : r)))
-                        }
-                        className={inputNumCls}
-                      />
-                    </RowField>
-                    <RowField label="金额" className="w-[7rem]">
-                      <span className={`${readOnlyValue} text-base font-semibold text-gray-900`}>
-                        ¥{lineAmount(row).toFixed(2)}
-                      </span>
-                    </RowField>
-
-                    <RowDivider />
-
+                    {/* 第一组：估价（先定这一行是否待补）→ 售价 → 金额（售价×数量，紧跟它） */}
                     <RowField label="估价" className="w-[3.5rem]">
                       <button
                         type="button"
@@ -1570,6 +1548,29 @@ export function NewSaleForm({
                         {row.estimated ? "估价" : "—"}
                       </button>
                     </RowField>
+                    <RowField label="售价" required className="w-[8rem]" hint={priceHint}>
+                      <input
+                        name={`item_${i}_unitPrice`}
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        required
+                        value={row.unitPrice}
+                        onChange={(e) =>
+                          setRows((prev) => prev.map((r, j) => (j === i ? { ...r, unitPrice: e.target.value } : r)))
+                        }
+                        className={inputNumCls}
+                      />
+                    </RowField>
+                    <RowField label="金额" className="w-[7rem]">
+                      <span className={`${readOnlyValue} text-base font-semibold text-gray-900`}>
+                        ¥{lineAmount(row).toFixed(2)}
+                      </span>
+                    </RowField>
+
+                    <RowDivider />
+
+                    {/* 第二组：数量 / 单位 */}
                     <RowField label="数量" required className="w-[6.5rem]">
                       <input
                         name={`item_${i}_quantity`}
@@ -1617,6 +1618,9 @@ export function NewSaleForm({
                         </>
                       )}
                     </RowField>
+
+                    <RowDivider />
+
                     <RowField
                       label="库存"
                       className="w-[7rem]"
@@ -1626,9 +1630,7 @@ export function NewSaleForm({
                         {row.stockQty.toFixed(3)}
                       </span>
                     </RowField>
-
-                    <RowDivider />
-
+                    {/* 第三组：库存 → 用库存（库存消耗）→ 需进货 → 进价 → 多补 */}
                     <RowField
                       label="用库存"
                       className="w-[7rem]"
