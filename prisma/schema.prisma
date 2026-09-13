@@ -136,6 +136,8 @@ model LoginLog {
   @@index([userId, success, createdAt])
   @@index([username, createdAt])
   @@index([ip, createdAt]) // IP 级登录限流查询
+  // 登录日志默认按时间倒序看
+  @@index([createdAt])
   @@map("login_logs")
 }
 
@@ -153,6 +155,8 @@ model AuditLog {
 
   @@index([entityType, entityId])
   @@index([userId, createdAt])
+  // 审计日志默认按时间倒序看
+  @@index([createdAt])
   @@map("audit_logs")
 }
 
@@ -598,5 +602,7 @@ model StockMovement {
   @@index([bizOrderNo])
   @@map("stock_movements")
   @@index([bizType, createdAt])
+  // 库存流水默认按时间倒序看，缺这个索引会全表扫描 + filesort
+  @@index([createdAt])
 
 }
