@@ -164,14 +164,14 @@ export default async function PriceAnalysisPage({
                   <thead className="bg-gray-50 text-left text-xs text-gray-500">
                     <tr>
                       <th className="whitespace-nowrap px-4 py-3 font-medium">日期</th>
-                      <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">单数</th>
-                      <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">当日成本区间</th>
+                      <th className="whitespace-nowrap px-4 py-3 font-medium tabular-nums">单数</th>
+                      <th className="whitespace-nowrap px-4 py-3 font-medium tabular-nums">当日成本区间</th>
                       <th className="whitespace-nowrap px-4 py-3 font-medium">售价最高单</th>
-                      <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">最高售价</th>
-                      <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">最高单毛利率</th>
+                      <th className="whitespace-nowrap px-4 py-3 font-medium tabular-nums">最高售价</th>
+                      <th className="whitespace-nowrap px-4 py-3 font-medium tabular-nums">最高单毛利率</th>
                       <th className="whitespace-nowrap px-4 py-3 font-medium">售价最低单</th>
-                      <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">最低售价</th>
-                      <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">最低单毛利率</th>
+                      <th className="whitespace-nowrap px-4 py-3 font-medium tabular-nums">最低售价</th>
+                      <th className="whitespace-nowrap px-4 py-3 font-medium tabular-nums">最低单毛利率</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 [&>tr]:transition-colors [&>tr:hover]:bg-gray-100/70">
@@ -180,8 +180,8 @@ export default async function PriceAnalysisPage({
                       return (
                         <tr key={d.dayTs}>
                           <td className="px-4 py-2.5 text-gray-900">{d.date}</td>
-                          <td className="px-4 py-2.5 text-right text-gray-600 tabular-nums">{d.saleCount}</td>
-                          <td className="px-4 py-2.5 text-right text-[#ea580c] tabular-nums">
+                          <td className="px-4 py-2.5 text-gray-600 tabular-nums">{d.saleCount}</td>
+                          <td className="px-4 py-2.5 text-[#ea580c] tabular-nums">
                             {d.minCost === d.maxCost
                               ? `¥${d.minCost.toFixed(2)}`
                               : `¥${d.minCost.toFixed(2)} ~ ¥${d.maxCost.toFixed(2)}`}
@@ -190,16 +190,16 @@ export default async function PriceAnalysisPage({
                             {d.highest.customer}
                             <span className="ml-1.5 text-xs text-gray-500">{d.highest.orderNo}</span>
                           </td>
-                          <td className="px-4 py-2.5 text-right font-medium text-gray-900 tabular-nums">¥{d.highest.unitPrice.toFixed(2)}</td>
-                          <td className={`px-4 py-2.5 text-right tabular-nums ${d.highest.profit >= 0 ? "text-green-700" : "text-red-600"}`}>
+                          <td className="px-4 py-2.5 font-medium text-gray-900 tabular-nums">¥{d.highest.unitPrice.toFixed(2)}</td>
+                          <td className={`px-4 py-2.5 tabular-nums ${d.highest.profit >= 0 ? "text-green-700" : "text-red-600"}`}>
                             {d.highest.margin.toFixed(2)}%
                           </td>
                           <td className="px-4 py-2.5 text-gray-900">
                             {one ? "同上（仅一单）" : d.lowest.customer}
                             {!one && <span className="ml-1.5 text-xs text-gray-500">{d.lowest.orderNo}</span>}
                           </td>
-                          <td className="px-4 py-2.5 text-right font-medium text-gray-900 tabular-nums">¥{d.lowest.unitPrice.toFixed(2)}</td>
-                          <td className={`px-4 py-2.5 text-right tabular-nums ${d.lowest.profit >= 0 ? "text-green-700" : "text-red-600"}`}>
+                          <td className="px-4 py-2.5 font-medium text-gray-900 tabular-nums">¥{d.lowest.unitPrice.toFixed(2)}</td>
+                          <td className={`px-4 py-2.5 tabular-nums ${d.lowest.profit >= 0 ? "text-green-700" : "text-red-600"}`}>
                             {d.lowest.margin.toFixed(2)}%
                           </td>
                         </tr>
@@ -219,15 +219,15 @@ export default async function PriceAnalysisPage({
                 <thead className="bg-gray-50 text-left text-xs text-gray-500">
                   <tr>
                     <th className="whitespace-nowrap px-4 py-3 font-medium">客户</th>
-                    <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">单数</th>
-                    <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">销量</th>
-                    <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">平均售价</th>
-                    <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">最低售价</th>
-                    <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">最高售价</th>
-                    <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">平均成本</th>
-                    <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">毛利</th>
-                    <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">毛利率</th>
-                    <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">最近购买</th>
+                    <th className="whitespace-nowrap px-4 py-3 font-medium tabular-nums">单数</th>
+                    <th className="whitespace-nowrap px-4 py-3 font-medium tabular-nums">销量</th>
+                    <th className="whitespace-nowrap px-4 py-3 font-medium tabular-nums">平均售价</th>
+                    <th className="whitespace-nowrap px-4 py-3 font-medium tabular-nums">最低售价</th>
+                    <th className="whitespace-nowrap px-4 py-3 font-medium tabular-nums">最高售价</th>
+                    <th className="whitespace-nowrap px-4 py-3 font-medium tabular-nums">平均成本</th>
+                    <th className="whitespace-nowrap px-4 py-3 font-medium tabular-nums">毛利</th>
+                    <th className="whitespace-nowrap px-4 py-3 font-medium tabular-nums">毛利率</th>
+                    <th className="whitespace-nowrap px-4 py-3 font-medium tabular-nums">最近购买</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 [&>tr]:transition-colors [&>tr:hover]:bg-gray-100/70">
@@ -246,19 +246,19 @@ export default async function PriceAnalysisPage({
                     return (
                       <tr key={r.customer}>
                         <td className="px-4 py-2.5 text-gray-900">{r.customer}</td>
-                        <td className="px-4 py-2.5 text-right text-gray-600 tabular-nums">{r.orderCount}</td>
-                        <td className="px-4 py-2.5 text-right text-gray-900 tabular-nums">{r.qty.toFixed(3)}</td>
-                        <td className="px-4 py-2.5 text-right font-medium text-gray-900 tabular-nums">¥{r.avgPrice.toFixed(2)}</td>
-                        <td className="px-4 py-2.5 text-right text-gray-600 tabular-nums">¥{r.minPrice.toFixed(2)}</td>
-                        <td className="px-4 py-2.5 text-right text-gray-600 tabular-nums">¥{r.maxPrice.toFixed(2)}</td>
-                        <td className="px-4 py-2.5 text-right text-gray-600 tabular-nums">¥{r.avgCost.toFixed(2)}</td>
-                        <td className={`px-4 py-2.5 text-right tabular-nums font-medium ${r.profit >= 0 ? "text-green-700" : "text-red-600"}`}>
+                        <td className="px-4 py-2.5 text-gray-600 tabular-nums">{r.orderCount}</td>
+                        <td className="px-4 py-2.5 text-gray-900 tabular-nums">{r.qty.toFixed(3)}</td>
+                        <td className="px-4 py-2.5 font-medium text-gray-900 tabular-nums">¥{r.avgPrice.toFixed(2)}</td>
+                        <td className="px-4 py-2.5 text-gray-600 tabular-nums">¥{r.minPrice.toFixed(2)}</td>
+                        <td className="px-4 py-2.5 text-gray-600 tabular-nums">¥{r.maxPrice.toFixed(2)}</td>
+                        <td className="px-4 py-2.5 text-gray-600 tabular-nums">¥{r.avgCost.toFixed(2)}</td>
+                        <td className={`px-4 py-2.5 tabular-nums font-medium ${r.profit >= 0 ? "text-green-700" : "text-red-600"}`}>
                           ¥{r.profit.toFixed(2)}
                         </td>
-                        <td className={`px-4 py-2.5 text-right tabular-nums ${r.margin >= 0 ? "text-green-700" : "text-red-600"}`}>
+                        <td className={`px-4 py-2.5 tabular-nums ${r.margin >= 0 ? "text-green-700" : "text-red-600"}`}>
                           {r.margin.toFixed(2)}%
                         </td>
-                        <td className="px-4 py-2.5 text-right text-gray-500 tabular-nums">{r.lastDate}</td>
+                        <td className="px-4 py-2.5 text-gray-500 tabular-nums">{r.lastDate}</td>
                       </tr>
                     );
                   })}
@@ -280,12 +280,12 @@ export default async function PriceAnalysisPage({
                     <th className="whitespace-nowrap px-4 py-3 font-medium">日期</th>
                     <th className="whitespace-nowrap px-4 py-3 font-medium">单号</th>
                     <th className="whitespace-nowrap px-4 py-3 font-medium">客户</th>
-                    <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">数量</th>
-                    <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">售价</th>
-                    <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">成本单价</th>
-                    <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">毛利额</th>
-                    <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">毛利率</th>
-                    <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">销售额</th>
+                    <th className="whitespace-nowrap px-4 py-3 font-medium tabular-nums">数量</th>
+                    <th className="whitespace-nowrap px-4 py-3 font-medium tabular-nums">售价</th>
+                    <th className="whitespace-nowrap px-4 py-3 font-medium tabular-nums">成本单价</th>
+                    <th className="whitespace-nowrap px-4 py-3 font-medium tabular-nums">毛利额</th>
+                    <th className="whitespace-nowrap px-4 py-3 font-medium tabular-nums">毛利率</th>
+                    <th className="whitespace-nowrap px-4 py-3 font-medium tabular-nums">销售额</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 [&>tr]:transition-colors [&>tr:hover]:bg-gray-100/70">
@@ -307,16 +307,16 @@ export default async function PriceAnalysisPage({
                         <td className="px-4 py-2.5 text-gray-900">{p.date}</td>
                         <td className="whitespace-nowrap px-4 py-2.5 text-gray-500">{p.orderNo}</td>
                         <td className="px-4 py-2.5 text-gray-900">{p.customer}</td>
-                        <td className="px-4 py-2.5 text-right text-gray-900 tabular-nums">{p.qty.toFixed(3)}</td>
-                        <td className="px-4 py-2.5 text-right font-medium text-gray-900 tabular-nums">¥{p.unitPrice.toFixed(2)}</td>
-                        <td className="px-4 py-2.5 text-right text-[#ea580c] tabular-nums">¥{p.unitCost.toFixed(2)}</td>
-                        <td className={`px-4 py-2.5 text-right tabular-nums font-medium ${p.profit >= 0 ? "text-green-700" : "text-red-600"}`}>
+                        <td className="px-4 py-2.5 text-gray-900 tabular-nums">{p.qty.toFixed(3)}</td>
+                        <td className="px-4 py-2.5 font-medium text-gray-900 tabular-nums">¥{p.unitPrice.toFixed(2)}</td>
+                        <td className="px-4 py-2.5 text-[#ea580c] tabular-nums">¥{p.unitCost.toFixed(2)}</td>
+                        <td className={`px-4 py-2.5 tabular-nums font-medium ${p.profit >= 0 ? "text-green-700" : "text-red-600"}`}>
                           ¥{p.profit.toFixed(2)}
                         </td>
-                        <td className={`px-4 py-2.5 text-right tabular-nums ${margin >= 0 ? "text-green-700" : "text-red-600"}`}>
+                        <td className={`px-4 py-2.5 tabular-nums ${margin >= 0 ? "text-green-700" : "text-red-600"}`}>
                           {margin.toFixed(2)}%
                         </td>
-                        <td className="px-4 py-2.5 text-right text-gray-900 tabular-nums">¥{p.amount.toFixed(2)}</td>
+                        <td className="px-4 py-2.5 text-gray-900 tabular-nums">¥{p.amount.toFixed(2)}</td>
                       </tr>
                     );
                   })}

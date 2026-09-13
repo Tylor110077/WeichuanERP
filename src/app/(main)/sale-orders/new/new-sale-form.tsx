@@ -105,7 +105,7 @@ interface SaleDraft {
 
 const inputCls = `w-full ${inputBase}`;
 /** 数字输入：等宽数字 + 右对齐，一列数字才扫得动 */
-const inputNumCls = `${inputCls} text-right tabular-nums`;
+const inputNumCls = `${inputCls} tabular-nums`;
 /** 只读数值：与输入框同高同内边距，保证同行里"能填的"和"只看的"数值基线一致 */
 const readOnlyValue = "flex h-9 items-center px-2 tabular-nums";
 
@@ -1306,7 +1306,7 @@ export function NewSaleForm({
                       className="w-[7rem]"
                       hint={canSeeCost && row.avgCost > 0 ? `均价 ¥${row.avgCost.toFixed(2)}` : undefined}
                     >
-                      <span className={`${readOnlyValue} justify-end text-sm text-gray-700`}>
+                      <span className={`${readOnlyValue} text-sm text-gray-700`}>
                         {row.stockQty.toFixed(3)}
                       </span>
                     </RowField>
@@ -1368,7 +1368,7 @@ export function NewSaleForm({
                       hintClass="font-medium text-red-500"
                     >
                       <span
-                        className={`${readOnlyValue} justify-end text-sm ${
+                        className={`${readOnlyValue} text-sm ${
                           need > 0 ? "font-medium text-amber-600" : "text-gray-400"
                         }`}
                       >
@@ -1436,7 +1436,7 @@ export function NewSaleForm({
                       />
                     </RowField>
                     <RowField label="金额" className="w-[7rem]">
-                      <span className={`${readOnlyValue} justify-end text-base font-semibold text-gray-900`}>
+                      <span className={`${readOnlyValue} text-base font-semibold text-gray-900`}>
                         ¥{lineAmount(row).toFixed(2)}
                       </span>
                     </RowField>

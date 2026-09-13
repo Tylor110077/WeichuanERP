@@ -312,9 +312,9 @@ export default async function ReceivablesPage({
                 <th className="whitespace-nowrap px-4 py-3 font-medium">品名</th>
                 <th className="whitespace-nowrap px-4 py-3 font-medium">生产厂家</th>
                 <th className="whitespace-nowrap px-4 py-3 font-medium">单位</th>
-                <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">数量</th>
-                <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">单价</th>
-                <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">金额</th>
+                <th className="whitespace-nowrap px-4 py-3 font-medium tabular-nums">数量</th>
+                <th className="whitespace-nowrap px-4 py-3 font-medium tabular-nums">单价</th>
+                <th className="whitespace-nowrap px-4 py-3 font-medium tabular-nums">金额</th>
                 <th className="whitespace-nowrap px-4 py-3 font-medium">备注</th>
               </tr>
             </thead>
@@ -339,9 +339,9 @@ export default async function ReceivablesPage({
                   <td className="px-4 py-2.5 text-gray-900">{it.name}</td>
                   <td className="px-4 py-2.5 text-gray-600">{it.manufacturer || "—"}</td>
                   <td className="px-4 py-2.5 text-gray-600">{it.unit}</td>
-                  <td className="px-4 py-2.5 text-right tabular-nums">{it.qty.toFixed(3)}</td>
-                  <td className="px-4 py-2.5 text-right tabular-nums">¥{it.price.toFixed(2)}</td>
-                  <td className="px-4 py-2.5 text-right tabular-nums">¥{it.amount.toFixed(2)}</td>
+                  <td className="px-4 py-2.5 tabular-nums">{it.qty.toFixed(3)}</td>
+                  <td className="px-4 py-2.5 tabular-nums">¥{it.price.toFixed(2)}</td>
+                  <td className="px-4 py-2.5 tabular-nums">¥{it.amount.toFixed(2)}</td>
                   <td className="px-4 py-2.5 text-gray-500">{it.remark || "—"}</td>
                 </tr>
               ))}

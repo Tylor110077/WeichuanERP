@@ -80,7 +80,7 @@ export function DraftBox({ userId }: { userId: number }) {
                       {d.summary.lines > 0 && ` ・ 共 ${d.summary.lines} 行`}
                     </div>
                   </div>
-                  <div className="w-24 shrink-0 text-right text-sm font-semibold tabular-nums text-gray-900">
+                  <div className="w-24 shrink-0 text-sm font-semibold tabular-nums text-gray-900">
                     ¥{d.summary.amount.toFixed(2)}
                   </div>
                   <div className="w-24 shrink-0 text-xs text-gray-400">保存于 {formatSavedAt(d.savedAt)}</div>

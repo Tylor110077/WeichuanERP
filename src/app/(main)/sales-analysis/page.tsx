@@ -182,11 +182,11 @@ export default async function SalesAnalysisPage({
               <th className="whitespace-nowrap px-4 py-3 font-medium">编码</th>
               <th className="whitespace-nowrap px-4 py-3 font-medium">商品</th>
               <th className="whitespace-nowrap px-4 py-3 font-medium">单位</th>
-              <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">销量</th>
-              <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">销售额</th>
-              <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">成本</th>
-              <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">利润</th>
-              <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">利润率</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium tabular-nums">销量</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium tabular-nums">销售额</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium tabular-nums">成本</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium tabular-nums">利润</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium tabular-nums">利润率</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 [&>tr]:transition-colors [&>tr:hover]:bg-gray-100/70">
@@ -206,13 +206,13 @@ export default async function SalesAnalysisPage({
                 <td className="whitespace-nowrap px-4 py-2.5 text-gray-600">{r.code}</td>
                 <td className="px-4 py-2.5 text-gray-900">{r.name}</td>
                 <td className="px-4 py-2.5 text-gray-600">{r.unit}</td>
-                <td className="px-4 py-2.5 text-right text-gray-900 tabular-nums">{r.qty.toFixed(3)}</td>
-                <td className="px-4 py-2.5 text-right text-gray-900 tabular-nums">¥{r.sales.toFixed(2)}</td>
-                <td className="px-4 py-2.5 text-right text-gray-600 tabular-nums">¥{r.cost.toFixed(2)}</td>
-                <td className={`px-4 py-2.5 text-right tabular-nums font-medium ${r.profit >= 0 ? "text-green-700" : "text-red-600"}`}>
+                <td className="px-4 py-2.5 text-gray-900 tabular-nums">{r.qty.toFixed(3)}</td>
+                <td className="px-4 py-2.5 text-gray-900 tabular-nums">¥{r.sales.toFixed(2)}</td>
+                <td className="px-4 py-2.5 text-gray-600 tabular-nums">¥{r.cost.toFixed(2)}</td>
+                <td className={`px-4 py-2.5 tabular-nums font-medium ${r.profit >= 0 ? "text-green-700" : "text-red-600"}`}>
                   ¥{r.profit.toFixed(2)}
                 </td>
-                <td className={`px-4 py-2.5 text-right tabular-nums ${r.margin >= 0 ? "text-green-700" : "text-red-600"}`}>
+                <td className={`px-4 py-2.5 tabular-nums ${r.margin >= 0 ? "text-green-700" : "text-red-600"}`}>
                   {r.margin.toFixed(2)}%
                 </td>
               </tr>
@@ -220,11 +220,11 @@ export default async function SalesAnalysisPage({
           </tbody>
           <tfoot className="bg-gray-50">
             <tr className="font-medium text-gray-900">
-              <td colSpan={4} className="px-4 py-3 text-right">合计</td>
-              <td className="px-4 py-3 text-right tabular-nums">¥{totalSales.toFixed(2)}</td>
-              <td className="px-4 py-3 text-right tabular-nums">¥{totalCost.toFixed(2)}</td>
-              <td className="px-4 py-3 text-right tabular-nums">¥{totalProfit.toFixed(2)}</td>
-              <td className="px-4 py-3 text-right tabular-nums">{totalMargin.toFixed(2)}%</td>
+              <td colSpan={4} className="px-4 py-3">合计</td>
+              <td className="px-4 py-3 tabular-nums">¥{totalSales.toFixed(2)}</td>
+              <td className="px-4 py-3 tabular-nums">¥{totalCost.toFixed(2)}</td>
+              <td className="px-4 py-3 tabular-nums">¥{totalProfit.toFixed(2)}</td>
+              <td className="px-4 py-3 tabular-nums">{totalMargin.toFixed(2)}%</td>
             </tr>
           </tfoot>
         </table>
@@ -256,20 +256,20 @@ export default async function SalesAnalysisPage({
             <thead className="sticky top-0 z-10 bg-gray-50 text-left text-xs text-gray-500">
               <tr>
                 <th className="whitespace-nowrap px-4 py-3 font-medium">日期</th>
-                <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">单数</th>
-                <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">销售额</th>
-                <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">成本</th>
-                <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">利润</th>
+                <th className="whitespace-nowrap px-4 py-3 font-medium tabular-nums">单数</th>
+                <th className="whitespace-nowrap px-4 py-3 font-medium tabular-nums">销售额</th>
+                <th className="whitespace-nowrap px-4 py-3 font-medium tabular-nums">成本</th>
+                <th className="whitespace-nowrap px-4 py-3 font-medium tabular-nums">利润</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 [&>tr]:transition-colors [&>tr:hover]:bg-gray-100/70">
               {dayRows.map((d) => (
                 <tr key={d.date}>
                   <td className="px-4 py-2.5 text-gray-900">{d.date}</td>
-                  <td className="px-4 py-2.5 text-right text-gray-600 tabular-nums">{d.count}</td>
-                  <td className="px-4 py-2.5 text-right text-gray-900 tabular-nums">¥{d.sales.toFixed(2)}</td>
-                  <td className="px-4 py-2.5 text-right text-gray-600 tabular-nums">¥{d.cost.toFixed(2)}</td>
-                  <td className={`px-4 py-2.5 text-right tabular-nums font-medium ${d.profit >= 0 ? "text-green-700" : "text-red-600"}`}>
+                  <td className="px-4 py-2.5 text-gray-600 tabular-nums">{d.count}</td>
+                  <td className="px-4 py-2.5 text-gray-900 tabular-nums">¥{d.sales.toFixed(2)}</td>
+                  <td className="px-4 py-2.5 text-gray-600 tabular-nums">¥{d.cost.toFixed(2)}</td>
+                  <td className={`px-4 py-2.5 tabular-nums font-medium ${d.profit >= 0 ? "text-green-700" : "text-red-600"}`}>
                     ¥{d.profit.toFixed(2)}
                   </td>
                 </tr>

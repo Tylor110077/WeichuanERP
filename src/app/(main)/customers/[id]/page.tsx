@@ -167,7 +167,7 @@ export default async function CustomerDetailPage({
                     </Link>
                     <span className="text-xs text-gray-500">{o.createdAt.toLocaleString("zh-CN")}</span>
                     <span className="ml-auto tabular-nums text-gray-900">¥{Number(o.totalAmount).toFixed(2)}</span>
-                    <span className={`w-28 text-right text-xs tabular-nums ${profit >= 0 ? "text-green-700" : "text-red-600"}`}>
+                    <span className={`w-28 text-xs tabular-nums ${profit >= 0 ? "text-green-700" : "text-red-600"}`}>
                       毛利 ¥{profit.toFixed(2)}
                     </span>
                   </div>
@@ -177,9 +177,9 @@ export default async function CustomerDetailPage({
                         <th className="w-[7.5rem] px-3 py-1.5 font-medium">编码</th>
                         <th className="w-[26%] px-3 py-1.5 font-medium">品名</th>
                         <th className="w-[4rem] px-3 py-1.5 font-medium">单位</th>
-                        <th className="w-[7.5rem] px-3 py-1.5 text-right font-medium">数量</th>
-                        <th className="w-[7.5rem] px-3 py-1.5 text-right font-medium">单价</th>
-                        <th className="w-[8.5rem] px-3 py-1.5 text-right font-medium">金额</th>
+                        <th className="w-[7.5rem] px-3 py-1.5 font-medium">数量</th>
+                        <th className="w-[7.5rem] px-3 py-1.5 font-medium">单价</th>
+                        <th className="w-[8.5rem] px-3 py-1.5 font-medium">金额</th>
                         <th className="px-3 py-1.5 font-medium">备注</th>
                       </tr>
                     </thead>
@@ -191,9 +191,9 @@ export default async function CustomerDetailPage({
                             <td className="px-3 py-1.5 text-gray-600">{it.product.code}</td>
                             <td className="truncate px-3 py-1.5">{it.product.name}</td>
                             <td className="px-3 py-1.5 text-gray-600">{it.unit.name}</td>
-                            <td className="px-3 py-1.5 text-right tabular-nums">{Number(it.quantity).toFixed(3)}</td>
-                            <td className="px-3 py-1.5 text-right tabular-nums">¥{Number(it.unitPrice).toFixed(2)}</td>
-                            <td className="px-3 py-1.5 text-right tabular-nums">¥{Number(it.amount).toFixed(2)}</td>
+                            <td className="px-3 py-1.5 tabular-nums">{Number(it.quantity).toFixed(3)}</td>
+                            <td className="px-3 py-1.5 tabular-nums">¥{Number(it.unitPrice).toFixed(2)}</td>
+                            <td className="px-3 py-1.5 tabular-nums">¥{Number(it.amount).toFixed(2)}</td>
                             <td className="truncate px-3 py-1.5 text-gray-500">{it.remark || "—"}</td>
                           </tr>
                         );

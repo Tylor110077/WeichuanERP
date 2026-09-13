@@ -99,7 +99,7 @@ export default async function ReportsPage({
           <thead className="sticky top-0 z-10 bg-gray-50 text-left text-xs text-gray-500">
             <tr>
               {result.columns.map((c) => (
-                <th key={c.key} className={`px-4 py-3 font-medium ${c.align === "right" ? "text-right tabular-nums" : ""}`}>
+                <th key={c.key} className={`px-4 py-3 font-medium ${c.align === "right" ? "tabular-nums" : ""}`}>
                   {c.label}
                 </th>
               ))}
@@ -119,7 +119,7 @@ export default async function ReportsPage({
                   const v = row[c.key];
                   const isMoney = c.key === "value" || ["amount", "paid", "returned", "unpaid", "received", "unreceived", "cost", "profit", "total", "avg", "lastPrice"].includes(c.key);
                   return (
-                    <td key={c.key} className={`px-4 py-2.5 ${c.align === "right" ? "text-right tabular-nums" : ""} ${v == null ? "text-gray-400" : "text-gray-900"}`}>
+                    <td key={c.key} className={`px-4 py-2.5 ${c.align === "right" ? "tabular-nums" : ""} ${v == null ? "text-gray-400" : "text-gray-900"}`}>
                       {v == null
                         ? "—"
                         : isMoney && typeof v === "number"

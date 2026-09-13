@@ -188,10 +188,10 @@ export default async function SaleOrderDetailPage({
               <th className="whitespace-nowrap px-4 py-3 font-medium">商品名称</th>
               <th className="whitespace-nowrap px-4 py-3 font-medium">数量</th>
               <th className="whitespace-nowrap px-4 py-3 font-medium">单位</th>
-              <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">售价</th>
-              <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">金额</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium tabular-nums">售价</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium tabular-nums">金额</th>
               <th className="whitespace-nowrap px-4 py-3 font-medium">备注</th>
-              {canSeeCost && <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">成本（快照）</th>}
+              {canSeeCost && <th className="whitespace-nowrap px-4 py-3 font-medium tabular-nums">成本（快照）</th>}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 [&>tr]:transition-colors [&>tr:hover]:bg-gray-100/70">
@@ -215,11 +215,11 @@ export default async function SaleOrderDetailPage({
                   })()}
                 </td>
                 <td className="px-4 py-2.5 text-gray-600">{item.unit.name}</td>
-                <td className="px-4 py-2.5 text-right text-gray-600 tabular-nums">¥{Number(item.unitPrice).toFixed(2)}</td>
-                <td className="px-4 py-2.5 text-right text-gray-900 tabular-nums">¥{Number(item.amount).toFixed(2)}</td>
+                <td className="px-4 py-2.5 text-gray-600 tabular-nums">¥{Number(item.unitPrice).toFixed(2)}</td>
+                <td className="px-4 py-2.5 text-gray-900 tabular-nums">¥{Number(item.amount).toFixed(2)}</td>
                 <td className="px-4 py-2.5 text-gray-600">{item.remark ?? "—"}</td>
                 {canSeeCost && (
-                  <td className="px-4 py-2.5 text-right text-gray-600 tabular-nums">
+                  <td className="px-4 py-2.5 text-gray-600 tabular-nums">
                     ¥{Number(item.costAmount).toFixed(2)}
                   </td>
                 )}
@@ -287,9 +287,9 @@ export default async function SaleOrderDetailPage({
                       <th className="w-28 px-3 py-1.5 font-medium">编码</th>
                       <th className="px-3 py-1.5 font-medium">品名</th>
                       <th className="w-16 px-3 py-1.5 font-medium">单位</th>
-                      <th className="w-28 px-3 py-1.5 text-right font-medium">退货数量</th>
-                      <th className="w-28 px-3 py-1.5 text-right font-medium">退货价</th>
-                      <th className="w-32 px-3 py-1.5 text-right font-medium">金额</th>
+                      <th className="w-28 px-3 py-1.5 font-medium">退货数量</th>
+                      <th className="w-28 px-3 py-1.5 font-medium">退货价</th>
+                      <th className="w-32 px-3 py-1.5 font-medium">金额</th>
                     </tr>
                   </thead>
                   <tbody className="text-gray-800">
@@ -298,9 +298,9 @@ export default async function SaleOrderDetailPage({
                         <td className="px-3 py-1.5 text-gray-600">{it.product.code}</td>
                         <td className="px-3 py-1.5">{it.product.name}</td>
                         <td className="px-3 py-1.5 text-gray-600">{it.unit.name}</td>
-                        <td className="px-3 py-1.5 text-right tabular-nums">{Number(it.quantity).toFixed(3)}</td>
-                        <td className="px-3 py-1.5 text-right tabular-nums">¥{Number(it.unitPrice).toFixed(2)}</td>
-                        <td className="px-3 py-1.5 text-right tabular-nums">¥{Number(it.amount).toFixed(2)}</td>
+                        <td className="px-3 py-1.5 tabular-nums">{Number(it.quantity).toFixed(3)}</td>
+                        <td className="px-3 py-1.5 tabular-nums">¥{Number(it.unitPrice).toFixed(2)}</td>
+                        <td className="px-3 py-1.5 tabular-nums">¥{Number(it.amount).toFixed(2)}</td>
                       </tr>
                     ))}
                   </tbody>

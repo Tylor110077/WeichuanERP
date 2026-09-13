@@ -82,10 +82,10 @@ export function UnpaidOrderTable({
             {/* 单据要能看出是谁的：应收视角是客户、应付视角是厂家 */}
             <th className="whitespace-nowrap px-4 py-3 font-medium">{labels.counter}</th>
             <th className="min-w-[9rem] whitespace-nowrap px-4 py-3 font-medium">商品</th>
-            <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">{labels.total}</th>
-            <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">{labels.paid}</th>
-            <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">退货冲减</th>
-            <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">
+            <th className="whitespace-nowrap px-4 py-3 font-medium tabular-nums">{labels.total}</th>
+            <th className="whitespace-nowrap px-4 py-3 font-medium tabular-nums">{labels.paid}</th>
+            <th className="whitespace-nowrap px-4 py-3 font-medium tabular-nums">退货冲减</th>
+            <th className="whitespace-nowrap px-4 py-3 font-medium tabular-nums">
               {labels.total === "应收" ? "未收" : "未付"}
             </th>
             <th className="whitespace-nowrap px-4 py-3 font-medium"></th>
@@ -150,10 +150,10 @@ export function UnpaidOrderTable({
                       </span>
                     )}
                   </td>
-                  <td className="px-4 py-2.5 text-right text-gray-900 tabular-nums">¥{o.total.toFixed(2)}</td>
-                  <td className="px-4 py-2.5 text-right text-gray-600 tabular-nums">¥{o.paid.toFixed(2)}</td>
-                  <td className="px-4 py-2.5 text-right text-orange-600 tabular-nums">¥{o.returned.toFixed(2)}</td>
-                  <td className="px-4 py-2.5 text-right font-medium text-red-600 tabular-nums">
+                  <td className="px-4 py-2.5 text-gray-900 tabular-nums">¥{o.total.toFixed(2)}</td>
+                  <td className="px-4 py-2.5 text-gray-600 tabular-nums">¥{o.paid.toFixed(2)}</td>
+                  <td className="px-4 py-2.5 text-orange-600 tabular-nums">¥{o.returned.toFixed(2)}</td>
+                  <td className="px-4 py-2.5 font-medium text-red-600 tabular-nums">
                     ¥{o.unpaid.toFixed(2)}
                   </td>
                   <td className="px-4 py-2.5">
@@ -181,9 +181,9 @@ export function UnpaidOrderTable({
                               <th className="w-[22%] py-1 pr-4 font-medium">品名</th>
                               <th className="w-[7.5rem] py-1 pr-4 font-medium">生产厂家</th>
                               <th className="w-[4rem] py-1 pr-4 font-medium">单位</th>
-                              <th className="w-[7.5rem] py-1 pr-4 text-right font-medium">数量</th>
-                              <th className="w-[7.5rem] py-1 pr-4 text-right font-medium">单价</th>
-                              <th className="w-[8.5rem] py-1 pr-4 text-right font-medium">金额</th>
+                              <th className="w-[7.5rem] py-1 pr-4 font-medium">数量</th>
+                              <th className="w-[7.5rem] py-1 pr-4 font-medium">单价</th>
+                              <th className="w-[8.5rem] py-1 pr-4 font-medium">金额</th>
                               <th className="py-1 font-medium">备注</th>
                             </tr>
                           </thead>
@@ -194,9 +194,9 @@ export function UnpaidOrderTable({
                                 <td className="py-1 pr-4">{it.name}</td>
                                 <td className="py-1 pr-4 text-gray-600">{it.manufacturer || "—"}</td>
                                 <td className="py-1 pr-4 text-gray-600">{it.unit}</td>
-                                <td className="py-1 pr-4 text-right tabular-nums">{it.qty.toFixed(3)}</td>
-                                <td className="py-1 pr-4 text-right tabular-nums">¥{it.price.toFixed(2)}</td>
-                                <td className="py-1 pr-4 text-right tabular-nums">¥{it.amount.toFixed(2)}</td>
+                                <td className="py-1 pr-4 tabular-nums">{it.qty.toFixed(3)}</td>
+                                <td className="py-1 pr-4 tabular-nums">¥{it.price.toFixed(2)}</td>
+                                <td className="py-1 pr-4 tabular-nums">¥{it.amount.toFixed(2)}</td>
                                 <td className="py-1 text-gray-500">{it.remark || "—"}</td>
                               </tr>
                             ))}

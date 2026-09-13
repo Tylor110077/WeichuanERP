@@ -65,7 +65,7 @@ export default async function PurchaseReturnsPage({
               <th className="whitespace-nowrap px-4 py-3 font-medium">原进货单</th>
               <th className="whitespace-nowrap px-4 py-3 font-medium">厂家</th>
               <th className="whitespace-nowrap px-4 py-3 font-medium">状态</th>
-              <th className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">冲减应付</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium tabular-nums">冲减应付</th>
               <th className="whitespace-nowrap px-4 py-3 font-medium">操作人</th>
               <th className="whitespace-nowrap px-4 py-3 font-medium">时间</th>
               {user.role !== "sales" && <th className="whitespace-nowrap px-4 py-3 font-medium">操作</th>}
@@ -103,7 +103,7 @@ export default async function PurchaseReturnsPage({
                     {STATUS_LABELS[r.status]}
                   </span>
                 </td>
-                <td className="px-4 py-2.5 text-right text-gray-900 tabular-nums">¥{Number(r.totalAmount).toFixed(2)}</td>
+                <td className="px-4 py-2.5 text-gray-900 tabular-nums">¥{Number(r.totalAmount).toFixed(2)}</td>
                 <td className="px-4 py-2.5 text-gray-600">{r.operator.displayName}</td>
                 <td className="px-4 py-2.5 text-gray-600">{r.createdAt.toLocaleString("zh-CN")}</td>
                 {user.role !== "sales" && (
