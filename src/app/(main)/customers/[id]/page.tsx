@@ -1,12 +1,13 @@
 import { redirect, notFound } from "next/navigation";
 import { NoPermission } from "@/components/empty-state";
 import Link from "next/link";
-import { badgeMuted, btnSecondary } from "@/lib/ui";
+import { badgeMuted, btnSecondary, inputBase } from "@/lib/ui";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { initials } from "@/lib/pinyin";
 import { EntityForm } from "@/components/entity-form";
 import { DateShortcuts } from "@/components/date-shortcuts";
+import { FilterForm } from "@/components/filter-form";
 import { buildCustomerProfile } from "@/lib/customer-profile";
 import { saveCustomerAction } from "../actions";
 
@@ -24,7 +25,7 @@ export default async function CustomerDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ from?: string; to?: string }>;
+  searchParams: Promise<{ from?: string; to?: string; q?: string }>;
 }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
@@ -45,7 +46,7 @@ export default async function CustomerDetailPage({
   const [groups, tags, profile] = await Promise.all([
     prisma.customerGroup.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, status: true } }),
     prisma.customerTag.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, status: true } }),
-    buildCustomerProfile(query.from, query.to),
+    buildCustomerProfile(query.from, query.to, query.q),
   ]);
 
   const row = profile.profileRows.find((r) => r.id === id);
@@ -53,6 +54,10 @@ export default async function CustomerDetailPage({
     .filter((o) => o.customerId === id)
     .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   const periodLabel = query.from || query.to ? `${query.from || "最早"} ~ ${query.to || "今天"}` : "全部时间";
+  /** 按品名 / 编码搜单的关键词（命中即整单带出，行里高亮命中的那几行） */
+  const keyword = query.q?.trim() ?? "";
+  const hitProduct = (code: string, name: string) =>
+    !!keyword && (name.toLowerCase().includes(keyword.toLowerCase()) || code.toLowerCase().includes(keyword.toLowerCase()));
 
   const stats: { label: string; value: string; loss?: boolean }[] = [
     { label: "成交单数", value: `${row?.count ?? 0} 张` },
@@ -82,13 +87,55 @@ export default async function CustomerDetailPage({
 
       {/* 经营画像：与销售分析、应收应付同口径（非作废售卖单 + 单据成本快照） */}
       <section className="rounded-xl border border-gray-200 bg-white p-5">
-        <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="text-sm font-semibold text-gray-900">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="flex flex-wrap items-baseline gap-2 text-sm font-semibold text-gray-900">
             经营画像
-            <span className="ml-2 text-xs font-normal text-gray-400">{periodLabel}</span>
+            <span className="text-xs font-normal text-gray-400">
+              {periodLabel}
+              {keyword && `・品名/编码含「${keyword}」`}
+            </span>
           </h2>
-          <DateShortcuts basePath={`/customers/${id}`} />
+          <DateShortcuts basePath={`/customers/${id}`} extraQuery={{ q: keyword }} />
         </div>
+
+        {/* 自定义时间段 + 按品名/编码搜单：与销售分析同一套用法（改日期即筛、文本回车即筛） */}
+        <FilterForm className="mb-4 flex flex-wrap items-end gap-3 rounded-xl border border-gray-200 bg-gray-50/70 p-3">
+          <div>
+            <label htmlFor="from" className="block text-xs font-medium text-gray-600">
+              开始
+            </label>
+            <input id="from" type="date" name="from" defaultValue={query.from ?? ""} className={`${inputBase} mt-1`} />
+          </div>
+          <div>
+            <label htmlFor="to" className="block text-xs font-medium text-gray-600">
+              结束
+            </label>
+            <input id="to" type="date" name="to" defaultValue={query.to ?? ""} className={`${inputBase} mt-1`} />
+          </div>
+          <div className="min-w-52 flex-1">
+            <label htmlFor="q" className="block text-xs font-medium text-gray-600">
+              品名 / 编码
+            </label>
+            <input
+              id="q"
+              name="q"
+              type="text"
+              defaultValue={keyword}
+              placeholder="如 YJV、P000001（回车即筛）"
+              className={`${inputBase} mt-1`}
+            />
+          </div>
+          <button type="submit" className={btnSecondary}>
+            查询
+          </button>
+          <Link href={`/customers/${id}`} className="pb-2 text-xs text-gray-500 hover:underline">
+            清除筛选
+          </Link>
+          <span className="pb-2 text-xs text-gray-500">
+            命中 {orders.length} 张单
+            {keyword && "（含「" + keyword + "」的那几行在下面高亮）"}
+          </span>
+        </FilterForm>
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
           {stats.map((s) => (
             <div key={s.label} className="rounded-lg border border-gray-100 p-3">
@@ -100,10 +147,12 @@ export default async function CustomerDetailPage({
           ))}
         </div>
 
-        <h3 className="mt-4 mb-2 text-xs font-medium text-gray-500">单据明细（{orders.length} 张）</h3>
+        <h3 className="mt-4 mb-2 text-xs font-medium text-gray-500">
+          单据明细（{orders.length} 张）
+        </h3>
         {orders.length === 0 ? (
           <p className="rounded-lg border border-dashed border-gray-200 px-3 py-6 text-center text-xs text-gray-400">
-            该期间没有已开单的售卖单
+            {keyword ? `这段时间没有含「${keyword}」的已开单售卖单` : "该期间没有已开单的售卖单"}
           </p>
         ) : (
           <div className="scroll-thin max-h-[28rem] space-y-2 overflow-y-auto">
@@ -135,17 +184,20 @@ export default async function CustomerDetailPage({
                       </tr>
                     </thead>
                     <tbody className="text-gray-800">
-                      {o.items.map((it) => (
-                        <tr key={it.id} className="border-t border-gray-50">
-                          <td className="px-3 py-1.5 text-gray-600">{it.product.code}</td>
-                          <td className="truncate px-3 py-1.5">{it.product.name}</td>
-                          <td className="px-3 py-1.5 text-gray-600">{it.unit.name}</td>
-                          <td className="px-3 py-1.5 text-right tabular-nums">{Number(it.quantity).toFixed(3)}</td>
-                          <td className="px-3 py-1.5 text-right tabular-nums">¥{Number(it.unitPrice).toFixed(2)}</td>
-                          <td className="px-3 py-1.5 text-right tabular-nums">¥{Number(it.amount).toFixed(2)}</td>
-                          <td className="truncate px-3 py-1.5 text-gray-500">{it.remark || "—"}</td>
-                        </tr>
-                      ))}
+                      {o.items.map((it) => {
+                        const hit = hitProduct(it.product.code, it.product.name);
+                        return (
+                          <tr key={it.id} className={`border-t border-gray-50 ${hit ? "bg-amber-50" : ""}`}>
+                            <td className="px-3 py-1.5 text-gray-600">{it.product.code}</td>
+                            <td className="truncate px-3 py-1.5">{it.product.name}</td>
+                            <td className="px-3 py-1.5 text-gray-600">{it.unit.name}</td>
+                            <td className="px-3 py-1.5 text-right tabular-nums">{Number(it.quantity).toFixed(3)}</td>
+                            <td className="px-3 py-1.5 text-right tabular-nums">¥{Number(it.unitPrice).toFixed(2)}</td>
+                            <td className="px-3 py-1.5 text-right tabular-nums">¥{Number(it.amount).toFixed(2)}</td>
+                            <td className="truncate px-3 py-1.5 text-gray-500">{it.remark || "—"}</td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

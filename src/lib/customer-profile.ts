@@ -17,8 +17,9 @@ export interface CustomerProfileRow {
   margin: number;
 }
 
-export async function buildCustomerProfile(from?: string, to?: string) {
+export async function buildCustomerProfile(from?: string, to?: string, productKeyword?: string) {
   const { gte, lte } = dateRange(from, to);
+  const kw = productKeyword?.trim();
 
   const [rawCustomers, orders] = await Promise.all([
     prisma.customer.findMany({
@@ -29,7 +30,21 @@ export async function buildCustomerProfile(from?: string, to?: string) {
       },
     }),
     prisma.saleOrder.findMany({
-      where: { status: "confirmed", createdAt: { gte, lte } },
+      where: {
+        status: "confirmed",
+        createdAt: { gte, lte },
+        // 按品名/编码搜单：单里只要有一行是这个商品就算命中；
+        // 命中之后统计也跟着这份筛选走，否则上面的数字和下面的单子会对不上
+        ...(kw
+          ? {
+              items: {
+                some: {
+                  product: { OR: [{ name: { contains: kw } }, { code: { contains: kw } }] },
+                },
+              },
+            }
+          : {}),
+      },
       include: {
         items: { include: { product: { select: { code: true, name: true } }, unit: { select: { name: true } } } },
       },
@@ -75,9 +90,14 @@ export async function buildCustomerProfile(from?: string, to?: string) {
   return { customers, orders, profileRows };
 }
 
+/**
+ * 时间范围：只填一头也算（只填开始＝从那天到现在，只填结束＝从最早到那天）。
+ * 以前必须两头都填才生效，但界面上写的是「最早 ~ 今天」，两边对不上。
+ */
 function dateRange(from?: string, to?: string): { gte: Date; lte: Date } {
-  if (from && to && /^\d{4}-\d{2}-\d{2}$/.test(from) && /^\d{4}-\d{2}-\d{2}$/.test(to)) {
-    return { gte: new Date(`${from}T00:00:00`), lte: new Date(`${to}T23:59:59.999`) };
-  }
-  return { gte: new Date(2000, 0, 1), lte: new Date(2100, 11, 31, 23, 59, 59, 999) };
+  const valid = (s?: string) => !!s && /^\d{4}-\d{2}-\d{2}$/.test(s);
+  return {
+    gte: valid(from) ? new Date(`${from}T00:00:00`) : new Date(2000, 0, 1),
+    lte: valid(to) ? new Date(`${to}T23:59:59.999`) : new Date(2100, 11, 31, 23, 59, 59, 999),
+  };
 }
