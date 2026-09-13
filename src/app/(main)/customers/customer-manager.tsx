@@ -185,8 +185,14 @@ export function CustomerManager({
                 <td className="px-4 py-2.5">
                   <div className="flex items-center justify-end gap-2">
                     {hideForm && editBase ? (
-                      <Link href={`${editBase}/${c.id}`} className="whitespace-nowrap text-xs text-blue-600 hover:underline">
-                        编辑
+                      /* 独立页模式：点进去是客户详情页（资料 + 画像 + 往来都在那一页），
+                         所以叫「详情」而不是「编辑」——编辑只是详情页里的一件事 */
+                      <Link
+                        href={`${editBase}/${c.id}`}
+                        title="打开客户详情：编辑资料、看画像与往来单据"
+                        className="whitespace-nowrap text-xs text-blue-600 hover:underline"
+                      >
+                        详情
                       </Link>
                     ) : (
                       <button type="button" onClick={() => startCreate(c)} className="whitespace-nowrap text-xs text-blue-600 hover:underline">
