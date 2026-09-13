@@ -93,12 +93,15 @@ export function MasterDataManager({
   // 免得条目一多就把页面拉成几千像素；滚动条常显，才看得出下面还有。
   // 已分页的列表（如商品列表）不要传，那种列表本身就有边界，套一层内滚动反而别扭。
   const table = (
-    <div
-      className={[
-        "rounded-xl border border-gray-200 bg-white",
-        scrollClassName ? `scroll-thin ${scrollClassName} overflow-auto` : "overflow-x-auto",
-      ].join(" ")}
-    >
+    <div>
+      {/* 停用/删除的反馈只显示一次：放进行里会让每一行都重复出现同一句「已删除」 */}
+      <FormStateAlert state={toggleState ?? deleteState} compact className="mb-2" />
+      <div
+        className={[
+          "rounded-xl border border-gray-200 bg-white",
+          scrollClassName ? `scroll-thin ${scrollClassName} overflow-auto` : "overflow-x-auto",
+        ].join(" ")}
+      >
       <table className={`w-full divide-y divide-gray-200 text-sm ${minWidthClass}`}>
         <thead
           className={[
@@ -172,13 +175,13 @@ export function MasterDataManager({
                       />
                     )}
                   </div>
-                  <FormStateAlert state={toggleState ?? deleteState} compact className="mt-1" />
                 </td>
               )}
             </tr>
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 

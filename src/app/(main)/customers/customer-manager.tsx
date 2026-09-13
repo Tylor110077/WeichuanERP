@@ -126,7 +126,10 @@ export function CustomerManager({
   }
 
   const table = (
-    <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+    <div>
+      {/* 停用/删除的反馈只显示一次：放进行里会让每一行都重复出现同一句「已删除」 */}
+      <FormStateAlert state={toggleState ?? deleteState} compact className="mb-2" />
+      <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
       <table className="min-w-full divide-y divide-gray-200 text-sm">
         <thead className="bg-gray-50 text-left text-xs text-gray-500">
           <tr>
@@ -210,13 +213,13 @@ export function CustomerManager({
                       disabled={deletePending}
                     />
                   </div>
-                  <FormStateAlert state={toggleState ?? deleteState} compact className="mt-1" />
                 </td>
               )}
             </tr>
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 
