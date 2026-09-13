@@ -4,7 +4,7 @@ import { NoPermission } from "@/components/empty-state";
 import { badgeDanger } from "@/lib/ui";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
-import { initials } from "@/lib/pinyin";
+import { initials } from "@/lib/pinyin-server";
 import { Pager } from "@/components/pager";
 import { FillForm } from "./fill-form";
 

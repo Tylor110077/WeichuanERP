@@ -4,7 +4,7 @@ import { btnSecondary } from "@/lib/ui";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
-import { initials } from "@/lib/pinyin";
+import { initials } from "@/lib/pinyin-server";
 import { NewOrderForm } from "./new-order-form";
 
 export const metadata = { title: "进货开单 - 玮川进销存" };

@@ -4,7 +4,7 @@ import { btnSecondary } from "@/lib/ui";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
-import { initials } from "@/lib/pinyin";
+import { initials } from "@/lib/pinyin-server";
 import { NewSaleForm } from "./new-sale-form";
 import { recentCustomersForOrder, recentProductsForOrder } from "./search-actions";
 
@@ -150,10 +150,10 @@ export default async function NewSaleOrderPage({
         customers={recentCustomers}
         suppliers={suppliers.map((s) => ({ id: s.id, name: s.name, py: initials(s.name) }))}
         products={productOptions}
-        units={units.map((u) => ({ id: u.id, name: u.name }))}
-        categories={categories.map((c) => ({ id: c.id, name: c.name }))}
-        customerGroups={groups.map((g) => ({ id: g.id, name: g.name }))}
-        customerTags={tags.map((t) => ({ id: t.id, name: t.name }))}
+        units={units.map((u) => ({ id: u.id, name: u.name, py: initials(u.name) }))}
+        categories={categories.map((c) => ({ id: c.id, name: c.name, py: initials(c.name) }))}
+        customerGroups={groups.map((g) => ({ id: g.id, name: g.name, py: initials(g.name) }))}
+        customerTags={tags.map((t) => ({ id: t.id, name: t.name, py: initials(t.name) }))}
         canCreateCustomer={user.role === "admin"}
         canCreateProduct={user.role === "admin"}
         canSeeCost={canSeeCost}

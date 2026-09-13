@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import { searchPinyin } from "./pinyin";
+import { searchPinyin } from "./pinyin-server";
 
 /**
  * 需要维护 `search_pinyin` 的模型：写这些字段时自动重算拼音串。

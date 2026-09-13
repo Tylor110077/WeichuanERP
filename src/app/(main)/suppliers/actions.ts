@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { initials } from "@/lib/pinyin-server";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
@@ -114,7 +115,7 @@ export async function deleteSupplierAction(_prev: FormState, formData: FormData)
   return { ok: "已删除" };
 }
 
-export type QuickSupplierResult = { id: number; name: string } | { error: string };
+export type QuickSupplierResult = { id: number; name: string; py: string } | { error: string };
 
 /** 商品建档处的厂家=厂家档案；不存在时按名称快速建档（仅管理员）。 */
 export async function createQuickSupplierAction(data: {
@@ -135,7 +136,7 @@ export async function createQuickSupplierAction(data: {
     after: { name: supplier.name, fromManufacturer: true },
   });
   revalidatePath("/suppliers");
-  return { id: supplier.id, name: supplier.name };
+  return { id: supplier.id, name: supplier.name, py: initials(supplier.name) };
 }
 
 /**

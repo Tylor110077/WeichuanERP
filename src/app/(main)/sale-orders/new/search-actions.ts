@@ -2,7 +2,8 @@
 
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth/session";
-import { pinyinQuery, searchPinyin } from "@/lib/pinyin";
+import { pinyinQuery } from "@/lib/pinyin";
+import { searchPinyin } from "@/lib/pinyin-server";
 
 /**
  * 开单页的"按需搜索"接口。

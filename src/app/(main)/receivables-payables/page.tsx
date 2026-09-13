@@ -6,7 +6,7 @@ import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { initials } from "@/lib/pinyin";
+import { initials } from "@/lib/pinyin-server";
 import { DateShortcuts } from "@/components/date-shortcuts";
 import { SearchSelect } from "@/components/search-select";
 import { UnpaidOrderTable } from "./unpaid-order-table";

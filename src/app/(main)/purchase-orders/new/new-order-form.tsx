@@ -3,7 +3,6 @@
 import { memo, useActionState, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { initials } from "@/lib/pinyin";
 import { useFormDraft } from "@/lib/form-draft";
 import { DraftBanner } from "@/components/draft-banner";
 import { btnPrimary, btnSmallPrimary, inputBase } from "@/lib/ui";
@@ -37,6 +36,7 @@ interface UnitOption {
 interface ProductOption {
   id: number;
   label: string;
+  py?: string;
   unitId: number;
   unitName: string;
   refPrice: number;
@@ -184,9 +184,9 @@ export function NewOrderForm({
     const list = await searchSuppliersForPurchase(keyword);
     setExtraSuppliers((prev) => {
       const seen = new Set(prev.map((x) => x.id));
-      return [...prev, ...list.filter((x) => !seen.has(x.id)).map((x) => ({ id: x.id, name: x.name, py: initials(x.name) }))];
+      return [...prev, ...list.filter((x) => !seen.has(x.id)).map((x) => ({ id: x.id, name: x.name, py: x.py ?? "" }))];
     });
-    return list.map((x) => ({ value: String(x.id), label: x.name, py: initials(x.name) }));
+    return list.map((x) => ({ value: String(x.id), label: x.name, py: x.py ?? "" }));
   }
 
   /** 远程搜商品：结果并入候选表（拿到单位与默认进价，选中时才能预填） */
@@ -197,7 +197,7 @@ export function NewOrderForm({
       for (const o of list) next[String(o.id)] = o;
       return next;
     });
-    return list.map((o) => ({ value: String(o.id), label: o.label, py: initials(o.label) }));
+    return list.map((o) => ({ value: String(o.id), label: o.label, py: o.py ?? "" }));
   }
 
   // ---- 就地新建厂家（下拉里点「＋ 新建厂家：「名字」」）----
@@ -220,7 +220,7 @@ export function NewOrderForm({
       setSupplierMsg({ error: r.error });
       return;
     }
-    setExtraSuppliers((prev) => [...prev.filter((x) => x.id !== r.id), { id: r.id, name: r.name, py: initials(r.name) }]);
+    setExtraSuppliers((prev) => [...prev.filter((x) => x.id !== r.id), { id: r.id, name: r.name, py: r.py ?? "" }]);
     setSupplierId(String(r.id)); // 建完直接选中，省一次点选
     setCreatingSupplier(false);
     setNewSupplierName("");
@@ -428,7 +428,7 @@ export function NewOrderForm({
           <SearchSelect
             key={`po-sup-${supplierId}`}
             name="supplierId"
-            options={supplierOptions.map((s) => ({ value: String(s.id), label: s.name, py: s.py ?? initials(s.name) }))}
+            options={supplierOptions.map((s) => ({ value: String(s.id), label: s.name, py: s.py ?? "" }))}
             defaultValue={supplierId}
             noneLabel="请选择厂家"
             placeholder="厂家（可搜索；没有就输入名称新建）"
@@ -562,7 +562,7 @@ export function NewOrderForm({
               <SearchSelect
                 key={`np-mfr-${newProduct.manufacturerId}`}
                 name="quickManufacturer"
-                options={supplierOptions.map((x) => ({ value: String(x.id), label: x.name, py: x.py ?? initials(x.name) }))}
+                options={supplierOptions.map((x) => ({ value: String(x.id), label: x.name, py: x.py ?? "" }))}
                 defaultValue={newProduct.manufacturerId}
                 noneLabel="请选择厂家"
                 placeholder="搜索厂家"
@@ -576,7 +576,7 @@ export function NewOrderForm({
               <SearchSelect
                 key={`np-unit-${newProduct.unitId}`}
                 name="quickUnit"
-                options={units.map((u) => ({ value: String(u.id), label: u.name, py: u.py ?? initials(u.name) }))}
+                options={units.map((u) => ({ value: String(u.id), label: u.name, py: u.py ?? "" }))}
                 defaultValue={newProduct.unitId}
                 noneLabel="请选择单位"
                 placeholder="搜索单位"
@@ -589,7 +589,7 @@ export function NewOrderForm({
               <SearchSelect
                 key={`np-cat-${newProduct.categoryId}`}
                 name="quickCategory"
-                options={categories.map((c) => ({ value: String(c.id), label: c.name, py: c.py ?? initials(c.name) }))}
+                options={categories.map((c) => ({ value: String(c.id), label: c.name, py: c.py ?? "" }))}
                 defaultValue={newProduct.categoryId}
                 noneLabel="未分类"
                 placeholder="搜索分类"
@@ -730,7 +730,7 @@ const PurchaseRow = memo(function PurchaseRow({
                 <SearchSelect
                   key={`po-prod-${i}-${row.productId}`}
                   name={`item_${i}_productId`}
-                  options={productOptions.map((p) => ({ value: String(p.id), label: p.label, py: initials(p.label) }))}
+                  options={productOptions.map((p) => ({ value: String(p.id), label: p.label, py: p.py ?? "" }))}
                   defaultValue={row.productId}
                   noneLabel="搜索并选择商品"
                   placeholder="商品（可搜索名称 / 编码 / 厂家；没有就输入名称新建）"

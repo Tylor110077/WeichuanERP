@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { initials } from "@/lib/pinyin-server";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
@@ -58,7 +59,7 @@ async function generateUniqueCode(): Promise<string> {
  */
 export async function createPlaceholderProductAction(
   name: string
-): Promise<{ id: number; code: string; name: string; unitName: string } | { error: string }> {
+): Promise<{ id: number; code: string; name: string; unitName: string; py: string } | { error: string }> {
   const user = await requireMasterDataWrite().catch(() => null);
   if (!user) return { error: "无权限新建商品" };
   const trimmed = name.trim().slice(0, 100);
@@ -83,7 +84,14 @@ export async function createPlaceholderProductAction(
     after: { code: created.code, name: trimmed, placeholder: true },
   });
   revalidatePath("/products");
-  return { id: created.id, code: created.code, name: created.name, unitName: unit.name };
+  return {
+    id: created.id,
+    code: created.code,
+    name: created.name,
+    unitName: unit.name,
+    // 下拉候选按"编码 + 名称 +（厂家）"搜，这里跟着算好拼音首字母，客户端就不用带拼音词典
+    py: initials(`${created.code} ${created.name}`),
+  };
 }
 
 async function guardAdmin() {
@@ -195,6 +203,8 @@ export type QuickProductResult =
       manufacturer: string;
       unitId: number;
       unitName: string;
+      /** 拼音首字母（下拉候选本地过滤用，服务端算好下发） */
+      py: string;
       refSalePrice: number;
       refPurchasePrice: number;
     }
@@ -259,6 +269,8 @@ export async function createQuickProductAction(data: {
         manufacturer: parsed.data.manufacturer,
         unitId: parsed.data.unitId,
         unitName: unit.name,
+        // 下拉候选按「编码 + 名称 +（厂家）」搜：跟着算好拼音首字母，客户端就不用带拼音词典
+        py: initials(`${product.code} ${product.name}（${parsed.data.manufacturer || "未填厂家"}）`),
         refSalePrice: parsed.data.refSalePrice,
         refPurchasePrice: parsed.data.refPurchasePrice,
       };

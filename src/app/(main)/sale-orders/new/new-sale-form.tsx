@@ -4,7 +4,7 @@ import { memo, useActionState, useEffect, useMemo, useRef, useState, useTransiti
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { badgeInfo, btnPrimary, btnSmallPrimary, btnSmallSolid, inputBase, tagInfo, tagPending } from "@/lib/ui";
-import { initials, matchesSearch } from "@/lib/pinyin";
+import { matchesSearch } from "@/lib/pinyin";
 import { useFormDraft } from "@/lib/form-draft";
 import { DraftBanner } from "@/components/draft-banner";
 import { SearchSelect } from "@/components/search-select";
@@ -46,10 +46,12 @@ interface CustomerOption {
 interface UnitOption {
   id: number;
   name: string;
+  py?: string;
 }
 interface CategoryOption {
   id: number;
   name: string;
+  py?: string;
 }
 interface SupplierOption {
   id: number;
@@ -139,8 +141,8 @@ export function NewSaleForm({
   products: ProductOption[];
   units: UnitOption[];
   categories: CategoryOption[];
-  customerGroups: { id: number; name: string }[];
-  customerTags: { id: number; name: string }[];
+  customerGroups: { id: number; name: string; py?: string }[];
+  customerTags: { id: number; name: string; py?: string }[];
   /** 客户-商品 → 最近成交价（参考展示，不覆盖输入） */
   canCreateCustomer: boolean;
   canCreateProduct: boolean;
@@ -1037,7 +1039,7 @@ export function NewSaleForm({
                 <SearchSelect
                   key={`qc-grp-${newCustomerGroupId}-${quickGroupOptions.length}`}
                   name="newCustomerGroupId"
-                  options={quickGroupOptions.map((g) => ({ value: String(g.id), label: g.name, py: initials(g.name) }))}
+                  options={quickGroupOptions.map((g) => ({ value: String(g.id), label: g.name, py: g.py ?? "" }))}
                   defaultValue={newCustomerGroupId}
                   noneLabel="所属组织（可选）"
                   placeholder="输入关键词搜索组织…"
@@ -1225,7 +1227,7 @@ export function NewSaleForm({
                   <SearchSelect
                     key={`np-cat-${newProduct.categoryId}-${categoryOptions.length}`}
                     name="quickCategory"
-                    options={categoryOptions.map((c) => ({ value: String(c.id), label: c.name, py: initials(c.name) }))}
+                    options={categoryOptions.map((c) => ({ value: String(c.id), label: c.name, py: c.py ?? "" }))}
                     defaultValue={newProduct.categoryId}
                     noneLabel="未分类"
                     placeholder="分类（可搜索）"
@@ -1262,7 +1264,7 @@ export function NewSaleForm({
                   <SearchSelect
                     key={`np-unit-${newProduct.unitId}-${unitOptions.length}`}
                     name="quickUnit"
-                    options={unitOptions.map((u) => ({ value: String(u.id), label: u.name, py: initials(u.name) }))}
+                    options={unitOptions.map((u) => ({ value: String(u.id), label: u.name, py: u.py ?? "" }))}
                     defaultValue={newProduct.unitId}
                     noneLabel="请选择"
                     placeholder="单位（可搜索）"
@@ -1882,7 +1884,7 @@ const SaleRow = memo(function SaleRow({
                         <SearchSelect
                           key={`est-unit-${i}-${row.unitId}-${unitOptions.length}`}
                           name={`item_${i}_unitId`}
-                          options={unitOptions.map((u) => ({ value: String(u.id), label: u.name, py: initials(u.name) }))}
+                          options={unitOptions.map((u) => ({ value: String(u.id), label: u.name, py: u.py ?? "" }))}
                           defaultValue={row.unitId}
                           noneLabel="选择单位"
                           placeholder="单位（可搜索 / 可新建）"

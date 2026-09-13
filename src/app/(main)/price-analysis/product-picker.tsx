@@ -1,10 +1,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { initials } from "@/lib/pinyin";
 import { SearchSelect } from "@/components/search-select";
 
 export interface PickerProduct {
+  py?: string;
   id: number;
   code: string;
   name: string;
@@ -41,7 +41,7 @@ export function ProductPicker({
       options={products.map((p) => ({
         value: String(p.id),
         label: `${p.code} ${p.name}（${p.manufacturer || "未填厂家"}）`,
-        py: initials(`${p.code} ${p.name} ${p.manufacturer}`),
+        py: p.py ?? "",
       }))}
       defaultValue={current ? String(current) : ""}
       noneLabel="选择商品…"

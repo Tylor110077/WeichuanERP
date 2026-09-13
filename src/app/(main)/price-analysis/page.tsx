@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { DateShortcuts } from "@/components/date-shortcuts";
 import { buildPriceAnalysis } from "@/lib/price-analysis";
+import { initials } from "@/lib/pinyin-server";
 import { PriceChart } from "./price-chart";
 import { ProductPicker } from "./product-picker";
 import Link from "next/link";
@@ -84,7 +85,7 @@ export default async function PriceAnalysisPage({
       <div className="space-y-3 rounded-xl border border-gray-200 bg-white p-4">
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-sm font-medium text-gray-700">商品</span>
-          <ProductPicker products={products} current={productId} from={params.from} to={params.to} />
+          <ProductPicker products={products.map((p) => ({ ...p, py: initials(`${p.code} ${p.name} ${p.manufacturer}`) }))} current={productId} from={params.from} to={params.to} />
           <form action="/price-analysis" className="ml-auto flex flex-wrap items-end gap-3">
             {productId ? <input type="hidden" name="productId" value={productId} /> : null}
             <div>

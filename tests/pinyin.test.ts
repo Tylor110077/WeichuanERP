@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { initials, searchPinyin, matchesSearch, pinyinQuery, hasChinese } from "../src/lib/pinyin";
+import { matchesSearch, pinyinQuery, hasChinese } from "../src/lib/pinyin";
+import { initials, searchPinyin } from "../src/lib/pinyin-server";
 
 /**
  * 回归背景：所有搜索都要支持拼音首字母（打 zjw 就能搜到「张敬玮」）。

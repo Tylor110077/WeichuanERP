@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth/session";
 import { pinyinQuery } from "@/lib/pinyin";
+import { initials } from "@/lib/pinyin-server";
 
 /**
  * 进货开单页的「按需搜索」接口。
@@ -16,11 +17,13 @@ import { pinyinQuery } from "@/lib/pinyin";
 const LIMIT = 30;
 
 export interface PurchaseSupplierOption {
+  py?: string;
   id: number;
   name: string;
 }
 
 export interface PurchaseProductOption {
+  py?: string;
   id: number;
   /** 「编码 名称（厂家）」，下拉里一眼看清是哪个厂家的哪个货 */
   label: string;
@@ -52,7 +55,7 @@ export async function searchSuppliersForPurchase(
     orderBy: { name: "asc" },
     take: LIMIT,
     select: { id: true, name: true },
-  });
+  }).then((rows) => rows.map((r) => ({ ...r, py: initials(r.name) })));
 }
 
 /** 输入关键词时搜索商品（名称/编码/厂家，支持拼音首字母） */
@@ -97,11 +100,15 @@ export async function searchProductsForPurchase(
     if (!lastByProduct.has(it.productId)) lastByProduct.set(it.productId, Number(it.unitPrice));
   }
 
-  return hits.map((h) => ({
+  return hits.map((h) => {
+    const label = `${h.code} ${h.name}（${h.manufacturer || "未填厂家"}）`;
+    return {
     id: h.id,
-    label: `${h.code} ${h.name}（${h.manufacturer || "未填厂家"}）`,
+    label,
+    py: initials(label),
     unitId: h.unitId,
     unitName: h.unit.name,
     refPrice: lastByProduct.get(h.id) ?? Number(h.refPurchasePrice),
-  }));
+    };
+  });
 }

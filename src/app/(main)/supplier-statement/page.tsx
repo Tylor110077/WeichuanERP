@@ -5,7 +5,7 @@ import { btnSecondary, inputBase, selectCls } from "@/lib/ui";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
-import { initials } from "@/lib/pinyin";
+import { initials } from "@/lib/pinyin-server";
 import { DateShortcuts } from "@/components/date-shortcuts";
 import { SearchSelect } from "@/components/search-select";
 import { PAYMENT_METHOD_LABELS as METHOD_LABELS } from "@/lib/payment-labels";

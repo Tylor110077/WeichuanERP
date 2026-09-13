@@ -3,7 +3,7 @@ import { badgeInfo, badgeMuted, btnPrimary, btnSecondary, inputBase } from "@/li
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
-import { initials } from "@/lib/pinyin";
+import { initials } from "@/lib/pinyin-server";
 import { pinyinQuery } from "@/lib/pinyin";
 import { MasterDataManager } from "@/components/master-data-manager";
 import { AutoFilterForm } from "@/components/auto-filter-form";
@@ -302,8 +302,8 @@ export default async function CustomersPage({
             emptyTitle={q ? `没有匹配「${q}」的客户` : undefined}
             emptyHint={q ? "换个关键词，或点「清除关键词」看全部" : undefined}
             customers={customersData}
-            groups={groups}
-            tags={tags}
+            groups={groups.map((g) => ({ ...g, py: initials(g.name) }))}
+            tags={tags.map((t) => ({ ...t, py: initials(t.name) }))}
             isAdmin={user.role === "admin"}
             hideForm
             editBase="/customers"

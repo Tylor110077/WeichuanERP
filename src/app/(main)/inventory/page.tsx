@@ -3,7 +3,7 @@ import { FilterForm } from "@/components/filter-form";
 import { DateShortcuts } from "@/components/date-shortcuts";
 import { SearchInput } from "@/components/search-input";
 import { SearchSelectFilter } from "@/components/search-select-filter";
-import { initials } from "@/lib/pinyin";
+import { initials } from "@/lib/pinyin-server";
 import { EmptyState } from "@/components/empty-state";
 import { btnSecondary, inputBase, selectCls } from "@/lib/ui";
 import { getCurrentUser } from "@/lib/auth/session";

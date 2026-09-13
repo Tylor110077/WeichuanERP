@@ -9,7 +9,7 @@
  *   npx tsx scripts/backfill-pinyin.ts
  */
 import { PrismaClient } from "@prisma/client";
-import { searchPinyin } from "../src/lib/pinyin";
+import { searchPinyin } from "../src/lib/pinyin-server";
 
 const prisma = new PrismaClient();
 

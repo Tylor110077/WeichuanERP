@@ -3,7 +3,7 @@ import { btnPrimary, btnSecondary, inputBase, tagInfo, tagPending } from "@/lib/
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
-import { initials } from "@/lib/pinyin";
+import { initials } from "@/lib/pinyin-server";
 import { pinyinQuery } from "@/lib/pinyin";
 import { MasterDataManager } from "@/components/master-data-manager";
 import { PageTabs, resolveTab } from "@/components/page-tabs";

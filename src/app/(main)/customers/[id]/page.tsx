@@ -4,7 +4,7 @@ import Link from "next/link";
 import { badgeMuted, btnSecondary, inputBase } from "@/lib/ui";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
-import { initials } from "@/lib/pinyin";
+import { initials } from "@/lib/pinyin-server";
 import { Pager } from "@/components/pager";
 import { EntityForm } from "@/components/entity-form";
 import { DateShortcuts } from "@/components/date-shortcuts";

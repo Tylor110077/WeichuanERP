@@ -7,7 +7,7 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { DraftResumeLink } from "@/components/draft-resume-link";
 import { prisma } from "@/lib/prisma";
 import { pinyinQuery } from "@/lib/pinyin";
-import { initials } from "@/lib/pinyin";
+import { initials } from "@/lib/pinyin-server";
 import { DateShortcuts } from "@/components/date-shortcuts";
 import { SearchSelect } from "@/components/search-select";
 import { SaleOrderTable, type SaleOrderRow } from "./order-table";

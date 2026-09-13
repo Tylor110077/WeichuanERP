@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { initials } from "@/lib/pinyin";
 import { EmptyState } from "@/components/empty-state";
 import { badgeInfo, badgeMuted, badgeOk, btnPrimary, btnSecondary, btnSmallPrimary, btnSmallSolid } from "@/lib/ui";
 import { useActionState, useState, useTransition } from "react";
@@ -44,8 +43,8 @@ export function CustomerManager({
   emptyHint,
 }: {
   customers: CustomerRowData[];
-  groups: { id: number; name: string; status: number }[];
-  tags: { id: number; name: string; status: number }[];
+  groups: { id: number; name: string; status: number; py?: string }[];
+  tags: { id: number; name: string; status: number; py?: string }[];
   isAdmin: boolean;
   /** 独立页模式：不渲染平铺表单；行内"编辑"变为链接 */
   hideForm?: boolean;
@@ -280,7 +279,7 @@ export function CustomerManager({
                 options={groupOptions.map((g) => ({
                   value: String(g.id),
                   label: g.status === 1 ? g.name : `${g.name}（停用）`,
-                  py: initials(g.name),
+                  py: g.py ?? "",
                 }))}
                 defaultValue={form.groupId}
                 noneLabel="未分组"
