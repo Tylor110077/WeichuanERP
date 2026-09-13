@@ -223,9 +223,13 @@ export function formatSavedAt(ts: number): string {
 }
 
 /**
- * 在表单里挂草稿：挂载时恢复（优先 URL 里指定的那份，否则最近一份），之后按输入防抖保存。
+ * 在表单里挂草稿：挂载时按需恢复（只有带 ?draft=<id> 从草稿箱点进来才恢复），
+ * 之后按输入防抖保存。
  *
- * @param draftId  URL 上的 ?draft=<id>（从草稿箱点进来的那份）；不传就恢复最近一份
+ * 注意：直接打开开单页（点「新建」）**一定是空白的**，不会自动带出上次的草稿——
+ * 想接着填就从草稿箱点「继续开单」。要恢复最近那份而不指定 id，用 newestDraft()。
+ *
+ * @param draftId  URL 上的 ?draft=<id>（从草稿箱点进来的那份）；不传就是新建空白单
  * @param summary  列表里要展示的摘要，随草稿一起存
  */
 export function useFormDraft<T>({
@@ -290,7 +294,7 @@ export function useFormDraft<T>({
       // 改单来的：表单已被原单内容预填，草稿不再参与
       setCurrentId(draftId ?? null);
     } else {
-      const target = draftId ? findDraft(userId, draftId) : newestDraft(userId, scope);
+      const target = draftId ? findDraft(userId, draftId) : null;
       if (target) {
         applyRef.current(target.data as T);
         setCurrentId(target.id);
