@@ -1,9 +1,8 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { FilterForm } from "@/components/filter-form";
 import { SearchInput } from "@/components/search-input";
-import { EmptyState } from "@/components/empty-state";
-import { badgeDanger, badgeMuted, badgeOk, badgePending, btnPrimary, btnSecondary, inputBase } from "@/lib/ui";
-import Link from "next/link";
+import { btnPrimary, btnSecondary, inputBase } from "@/lib/ui";
 import { getCurrentUser } from "@/lib/auth/session";
 import { DraftResumeLink } from "@/components/draft-resume-link";
 import { prisma } from "@/lib/prisma";
@@ -11,18 +10,11 @@ import { pinyinQuery } from "@/lib/pinyin";
 import { initials } from "@/lib/pinyin";
 import { DateShortcuts } from "@/components/date-shortcuts";
 import { SearchSelect } from "@/components/search-select";
-import { ROLE_LABELS } from "@/lib/auth/roles";
-import { StarToggle } from "@/components/star-toggle";
-import { togglePurchaseOrderStarAction } from "./actions";
+import { PurchaseOrderTable, type PurchaseOrderRow } from "./order-table";
 
 export const metadata = { title: "进货单 - 玮川进销存" };
 
 const PAGE_SIZE = 20;
-const STATUS_LABELS: Record<string, string> = {
-  pending: "待收货",
-  received: "已入库",
-  voided: "已作废",
-};
 
 export default async function PurchaseOrdersPage({
   searchParams,
@@ -98,12 +90,50 @@ export default async function PurchaseOrdersPage({
         supplier: { select: { name: true } },
         operator: { select: { displayName: true, role: true } },
         returns: { where: { status: "confirmed" }, select: { totalAmount: true } },
+        // 行内展开要看商品，所以把商品行一起带出来
+        items: {
+          include: {
+            product: { select: { code: true, name: true } },
+            unit: { select: { name: true } },
+          },
+        },
       },
     }),
     prisma.supplier.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
   ]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  /** 传给列表组件的数据：都算好成纯值，组件只管展示与展开 */
+  const purchaseOrderRows: PurchaseOrderRow[] = orders.map((o) => {
+    const returned = o.returns.reduce((sum, r) => sum + Number(r.totalAmount), 0);
+    const outstanding = Number(o.totalAmount) - Number(o.paidAmount) - returned;
+    return {
+      id: o.id,
+      orderNo: o.orderNo,
+      supplierName: o.supplier.name,
+      status: o.status,
+      totalAmount: Number(o.totalAmount),
+      paidAmount: Number(o.paidAmount),
+      returned,
+      sourceType: o.sourceType,
+      operatorName: o.operator.displayName,
+      operatorRole: o.operator.role,
+      createdAtLabel: o.createdAt.toLocaleString("zh-CN"),
+      starred: o.starred,
+      needsPayment: o.status !== "voided" && outstanding > 0,
+      items: o.items.map((it) => ({
+        id: it.id,
+        code: it.product.code,
+        name: it.product.name,
+        unit: it.unit.name,
+        qty: Number(it.quantity),
+        price: Number(it.unitPrice),
+        amount: Number(it.amount),
+        remark: it.remark ?? "",
+      })),
+    };
+  });
   const statusOptions = [
     { value: "", label: "全部状态" },
     { value: "pending", label: "待收货" },
@@ -182,101 +212,7 @@ export default async function PurchaseOrdersPage({
         <span className="text-xs text-gray-500">共 {total} 张</span>
       </FilterForm>
 
-      <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
-                {/* 列多（10 列）：给表格一个最小宽度，宁可窄屏左右滑动，也不要把每格压成六七行
-            或把「泰山」拆成竖排两字。实测 72rem 时行高 141px→41px，且短内容都能单行放下。 */}
-        <table className="w-full min-w-[72rem] divide-y divide-gray-200 text-sm">
-          <thead className="bg-gray-50 text-left text-xs text-gray-500">
-            <tr>
-              <th className="whitespace-nowrap px-4 py-3 font-medium">单据号</th>
-              <th className="whitespace-nowrap px-4 py-3 font-medium">厂家</th>
-              <th className="whitespace-nowrap px-4 py-3 font-medium">状态</th>
-              <th className="whitespace-nowrap px-4 py-3 font-medium tabular-nums">金额</th>
-              <th className="whitespace-nowrap px-4 py-3 font-medium tabular-nums">已付</th>
-              <th className="whitespace-nowrap px-4 py-3 font-medium">款项</th>
-              <th className="whitespace-nowrap px-4 py-3 font-medium">来源</th>
-              <th className="whitespace-nowrap px-4 py-3 font-medium">操作人</th>
-              <th className="whitespace-nowrap px-4 py-3 font-medium">开单时间</th>
-              <th className="whitespace-nowrap px-4 py-3 font-medium"></th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100 [&>tr]:transition-colors [&>tr:hover]:bg-gray-100/70">
-            {orders.length === 0 && (
-              <tr>
-                <td colSpan={10}>
-                  <EmptyState title="还没有进货单" hint="点右上角「新建进货单」录入进货" action={{ href: "/purchase-orders/new", label: "+ 新建进货单" }} />
-                </td>
-              </tr>
-            )}
-            {orders.map((o) => {
-              const returned = o.returns.reduce((sum, r) => sum + Number(r.totalAmount), 0);
-              const outstanding = Number(o.totalAmount) - Number(o.paidAmount) - returned;
-              return (
-              <tr key={o.id}>
-                <td className="whitespace-nowrap px-4 py-2.5">
-                  <span className="inline-flex items-center gap-1.5">
-                    <StarToggle id={o.id} starred={o.starred} toggle={togglePurchaseOrderStarAction} />
-                    <span className="font-medium text-gray-900">{o.orderNo}</span>
-                  </span>
-                </td>
-                {/* 厂家名不换行：10 列的表里这列会被压到只剩两个字宽，「华旗」就竖排了 */}
-                <td className="whitespace-nowrap px-4 py-2.5 text-gray-900">{o.supplier.name}</td>
-                <td className="px-4 py-2.5">
-                  <span
-                    className={
-                      o.status === "received"
-                        ? badgeOk
-                        : o.status === "voided"
-                          ? badgeMuted
-                          : badgePending
-                    }
-                  >
-                    {STATUS_LABELS[o.status]}
-                  </span>
-                </td>
-                <td className="whitespace-nowrap px-4 py-2.5 text-gray-900 tabular-nums">¥{Number(o.totalAmount).toFixed(2)}</td>
-                <td className="whitespace-nowrap px-4 py-2.5 text-gray-600 tabular-nums">¥{Number(o.paidAmount).toFixed(2)}</td>
-                <td className="px-4 py-2.5">
-                  {o.status === "voided" ? (
-                    <span className="text-xs text-gray-400">—</span>
-                  ) : outstanding <= 0 ? (
-                    <span className={badgeOk}>
-                      已结清
-                    </span>
-                  ) : (
-                    <span className={`whitespace-nowrap ${badgeDanger}`}>
-                      未结清 ¥{outstanding.toFixed(2)}
-                    </span>
-                  )}
-                </td>
-                <td className="whitespace-nowrap px-4 py-2.5 text-gray-600">
-                  {o.sourceType === "auto" ? "自动补货" : "手动"}
-                </td>
-                <td className="whitespace-nowrap px-4 py-2.5 text-gray-600">
-                  {o.operator.displayName}（{ROLE_LABELS[o.operator.role]}）
-                </td>
-                <td className="whitespace-nowrap px-4 py-2.5 text-gray-600">
-                  {o.createdAt.toLocaleString("zh-CN")}
-                </td>
-                <td className="px-4 py-2.5">
-                  {/* 同上：详情与付款登记是同一个页面，只留一个入口 */}
-                  <Link
-                    href={`/purchase-orders/${o.id}${o.status !== "voided" && outstanding > 0 ? "#payment" : ""}`}
-                    className="whitespace-nowrap text-blue-600 hover:underline"
-                    title={
-                      o.status !== "voided" && outstanding > 0
-                        ? "打开单据详情，并直接跳到付款登记处"
-                        : "打开单据详情"
-                    }
-                  >
-                    详情 / 登记
-                  </Link>
-                </td>
-              </tr>
-              );
-            })}
-          </tbody>
-        </table>
+      <PurchaseOrderTable rows={purchaseOrderRows}>
         {totalPages > 1 && (
           <div className="flex items-center gap-3 border-t border-gray-100 px-4 py-3 text-sm">
             {page > 1 ? (
@@ -298,7 +234,7 @@ export default async function PurchaseOrdersPage({
             )}
           </div>
         )}
-      </div>
+      </PurchaseOrderTable>
     </div>
   );
 
