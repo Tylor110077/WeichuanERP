@@ -93,6 +93,7 @@ export default async function NewPurchaseOrderPage() {
         products={productOptions}
         categories={categories.map((c) => ({ id: c.id, name: c.name, py: initials(c.name) }))}
         units={units.map((u) => ({ id: u.id, name: u.name, py: initials(u.name) }))}
+        currentUserId={user.id}
       />
     </div>
   );

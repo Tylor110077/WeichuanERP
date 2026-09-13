@@ -5,6 +5,7 @@ import { EmptyState } from "@/components/empty-state";
 import { badgeDanger, badgeMuted, badgeOk, badgePending, btnPrimary, btnSecondary, inputBase } from "@/lib/ui";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
+import { DraftResumeLink } from "@/components/draft-resume-link";
 import { prisma } from "@/lib/prisma";
 import { pinyinQuery } from "@/lib/pinyin";
 import { initials } from "@/lib/pinyin";
@@ -110,12 +111,15 @@ export default async function PurchaseOrdersPage({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-lg font-semibold text-gray-900">进货单</h1>
         {user.role !== "boss" && (
-          <Link
-            href="/purchase-orders/new"
-            className={btnPrimary}
-          >
-            新建进货单
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            <DraftResumeLink scope="purchase" userId={user.id} href="/purchase-orders/new" label="继续未完成的进货单" />
+            <Link
+              href="/purchase-orders/new"
+              className={btnPrimary}
+            >
+              新建进货单
+            </Link>
+          </div>
         )}
       </div>
 

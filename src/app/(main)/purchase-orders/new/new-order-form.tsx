@@ -1,7 +1,9 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useMemo, useState } from "react";
 import { initials } from "@/lib/pinyin";
+import { useFormDraft } from "@/lib/form-draft";
+import { DraftBanner } from "@/components/draft-banner";
 import { btnPrimary, btnSmallPrimary, inputBase } from "@/lib/ui";
 import { SearchSelect } from "@/components/search-select";
 import { createPurchaseOrderAction, type FormState } from "../actions";
@@ -39,10 +41,19 @@ interface ProductOption {
 
 interface Row {
   productId: string;
+  /** 选中商品的显示名（编码 + 名称）：草稿恢复时用它把下拉的显示补回来 */
+  productLabel: string;
   unitName: string;
   quantity: string;
   unitPrice: string;
   /** 行备注（如包装、交货要求） */
+  remark: string;
+}
+
+/** 草稿里存的内容：只是"用户填了什么"，商品/厂家的展示信息由目录重新渲染 */
+interface PurchaseDraft {
+  rows: Row[];
+  supplierId: string;
   remark: string;
 }
 
@@ -53,15 +64,20 @@ export function NewOrderForm({
   products,
   categories,
   units,
+  currentUserId,
 }: {
   suppliers: SupplierOption[];
   products: ProductOption[];
   /** 商品可能上千：首屏只带"最近进过货的"，其余靠 onSearch 按需搜 */
   categories: CategoryOption[];
   units: UnitOption[];
+  /** 当前用户 id：草稿按人存，同一台电脑换人登录不会串 */
+  currentUserId: number;
 }) {
   const [rows, setRows] = useState<Row[]>([emptyRow()]);
   const [supplierId, setSupplierId] = useState("");
+  /** 单据备注：原先是不受控输入，做草稿必须能取到值，改成受控 */
+  const [orderRemark, setOrderRemark] = useState("");
   // 现场新建的厂家/商品并入候选（远程搜到的也记下来，选中时才能取到单位与默认价）
   const [extraSuppliers, setExtraSuppliers] = useState<SupplierOption[]>([]);
   const [knownProducts, setKnownProducts] = useState<Record<string, ProductOption>>(() =>
@@ -92,7 +108,7 @@ export function NewOrderForm({
   );
 
   function emptyRow(): Row {
-    return { productId: "", unitName: "", quantity: "", unitPrice: "", remark: "" };
+    return { productId: "", productLabel: "", unitName: "", quantity: "", unitPrice: "", remark: "" };
   }
 
   /** 把某个候选填进某一行（新建商品后也走这里：闭包里还没有这个候选，必须显式传进来） */
@@ -103,6 +119,7 @@ export function NewOrderForm({
           ? {
               ...row,
               productId: p ? String(p.id) : "",
+              productLabel: p?.label ?? "",
               unitName: p?.unitName ?? "",
               unitPrice: p ? String(p.refPrice) : "",
             }
@@ -226,10 +243,50 @@ export function NewOrderForm({
     return Number.isFinite(q) && Number.isFinite(price) ? q * price : 0;
   }
 
+  // 开单草稿：填到一半切走再回来，内容还在（机制见 lib/form-draft.ts）
+  const draftValue = useMemo(
+    () => ({ rows, supplierId, remark: orderRemark }),
+    [rows, supplierId, orderRemark]
+  );
+  const { restoredAt, savedAt, discard, clearStored } = useFormDraft<PurchaseDraft>({
+    scope: "purchase",
+    userId: currentUserId,
+    value: draftValue,
+    // 选了厂家、写了备注、或某行选了商品，才算"有内容"；全空就把草稿删掉
+    hasContent: !!supplierId || orderRemark.trim() !== "" || rows.some((r) => !!r.productId),
+    apply: (d) => {
+      const restoredRows = Array.isArray(d.rows) && d.rows.length > 0 ? d.rows : [emptyRow()];
+      setRows(restoredRows);
+      setSupplierId(typeof d.supplierId === "string" ? d.supplierId : "");
+      setOrderRemark(typeof d.remark === "string" ? d.remark : "");
+      // 草稿里的商品可能不在首屏候选里（首屏只带"最近进过货的"）：
+      // 不补进候选，下拉会显示空白、看着像没选中
+      setExtraProducts((prev) => {
+        const have = new Set([...products, ...prev].map((p) => String(p.id)));
+        const missing = restoredRows
+          .filter((r) => r.productId && !have.has(r.productId))
+          .map((r) => ({
+            id: Number(r.productId),
+            label: r.productLabel || `#${r.productId}`,
+            unitId: 0,
+            unitName: r.unitName ?? "",
+            refPrice: 0,
+          }));
+        return missing.length > 0 ? [...prev, ...missing] : prev;
+      });
+    },
+    onDiscard: () => {
+      setRows([emptyRow()]);
+      setSupplierId("");
+      setOrderRemark("");
+    },
+  });
+
   const total = rows.reduce((s, r) => s + lineAmount(r), 0);
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form action={formAction} className="space-y-4" onSubmit={clearStored}>
+      <DraftBanner restoredAt={restoredAt} savedAt={savedAt} onDiscard={discard} />
       {/* 厂家信息（可折叠） */}
       <details open className="rounded-xl border border-gray-200 bg-white">
         <summary className="cursor-pointer rounded-t-xl px-5 py-3 text-sm font-medium text-gray-900 transition-colors hover:bg-gray-50">
@@ -310,6 +367,8 @@ export function NewOrderForm({
           name="remark"
           type="text"
           maxLength={200}
+          value={orderRemark}
+          onChange={(e) => setOrderRemark(e.target.value)}
           placeholder="选填，如交货方式、包装要求（作用于整张单据）"
           className={`${inputBase} min-w-64 flex-1`}
         />

@@ -1,8 +1,10 @@
 "use client";
 
-import { useActionState, useEffect, useState, useTransition } from "react";
+import { useActionState, useEffect, useMemo, useState, useTransition } from "react";
 import { badgeInfo, btnPrimary, btnSmallPrimary, btnSmallSolid, inputBase, tagInfo, tagPending } from "@/lib/ui";
 import { initials, matchesSearch } from "@/lib/pinyin";
+import { useFormDraft } from "@/lib/form-draft";
+import { DraftBanner } from "@/components/draft-banner";
 import { SearchSelect } from "@/components/search-select";
 import { createSaleOrderAction, type FormState } from "../actions";
 import {
@@ -91,6 +93,14 @@ interface Row {
   hasLastSupplier: boolean;
 }
 
+/** 草稿里存的内容：只是"用户填了什么"，商品/客户的展示信息都会由目录重新渲染出来 */
+interface SaleDraft {
+  rows: Row[];
+  customerId: string;
+  customerQuery: string;
+  remark: string;
+}
+
 const inputCls = `w-full ${inputBase}`;
 /** 数字输入：等宽数字 + 右对齐，一列数字才扫得动 */
 const inputNumCls = `${inputCls} text-right tabular-nums`;
@@ -108,6 +118,7 @@ export function NewSaleForm({
   canCreateCustomer,
   canCreateProduct,
   canSeeCost,
+  currentUserId,
 }: {
   customers: CustomerOption[];
   suppliers: SupplierOption[];
@@ -121,6 +132,8 @@ export function NewSaleForm({
   canCreateProduct: boolean;
   /** 成本可见性（与单据详情页 canSeeCost 同口径：业务员不可见成本/毛利） */
   canSeeCost: boolean;
+  /** 当前用户 id：草稿按人存，同一台电脑换人登录不会串 */
+  currentUserId: number;
 }) {
   const [rows, setRows] = useState<Row[]>([emptyRow()]);
   const [productOptions, setProductOptions] = useState<ProductOption[]>(products);
@@ -132,6 +145,8 @@ export function NewSaleForm({
   const [searchError, setSearchError] = useState<string | null>(null);
   const [customerId, setCustomerId] = useState("");
   const [customerQuery, setCustomerQuery] = useState("");
+  /** 单据备注：原先是不受控输入，做草稿必须能取到值，改成受控 */
+  const [saleRemark, setSaleRemark] = useState("");
   const [showCandidates, setShowCandidates] = useState(false);
 
   const selectedCustomer = customerOptions.find((c) => String(c.id) === customerId);
@@ -643,10 +658,37 @@ export function NewSaleForm({
     });
   }
 
+  // 开单草稿：填到一半切走再回来，内容还在（机制见 lib/form-draft.ts）
+  const draftValue = useMemo(
+    () => ({ rows, customerId, customerQuery, remark: saleRemark }),
+    [rows, customerId, customerQuery, saleRemark]
+  );
+  const { restoredAt, savedAt, discard, clearStored } = useFormDraft<SaleDraft>({
+    scope: "sale",
+    userId: currentUserId,
+    value: draftValue,
+    // 选了客户、写了备注、或某行开始填了，才算"有内容"；全空就把草稿删掉
+    hasContent:
+      !!customerId || saleRemark.trim() !== "" || rows.some((r) => !!r.productId || r.productQuery.trim() !== ""),
+    apply: (d) => {
+      setRows(Array.isArray(d.rows) && d.rows.length > 0 ? d.rows : [emptyRow()]);
+      setCustomerId(typeof d.customerId === "string" ? d.customerId : "");
+      setCustomerQuery(typeof d.customerQuery === "string" ? d.customerQuery : "");
+      setSaleRemark(typeof d.remark === "string" ? d.remark : "");
+    },
+    onDiscard: () => {
+      setRows([emptyRow()]);
+      setCustomerId("");
+      setCustomerQuery("");
+      setSaleRemark("");
+    },
+  });
+
   const total = rows.reduce((s, r) => s + lineAmount(r), 0);
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form action={formAction} className="space-y-4" onSubmit={clearStored}>
+      <DraftBanner restoredAt={restoredAt} savedAt={savedAt} onDiscard={discard} />
       {/* 客户信息（可折叠） */}
       <details open className="rounded-xl border border-gray-200 bg-white">
         <summary className="cursor-pointer rounded-t-xl px-5 py-3 text-sm font-medium text-gray-900 transition-colors hover:bg-gray-50">
@@ -1104,6 +1146,8 @@ export function NewSaleForm({
           name="remark"
           type="text"
           maxLength={200}
+          value={saleRemark}
+          onChange={(e) => setSaleRemark(e.target.value)}
           placeholder="选填，如交货方式、包装要求（作用于整张单据）"
           className={`${inputBase} max-w-xl min-w-56 flex-1`}
         />

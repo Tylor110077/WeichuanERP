@@ -95,6 +95,7 @@ export default async function NewSaleOrderPage() {
         canCreateCustomer={user.role === "admin"}
         canCreateProduct={user.role === "admin"}
         canSeeCost={canSeeCost}
+        currentUserId={user.id}
       />
     </div>
   );
