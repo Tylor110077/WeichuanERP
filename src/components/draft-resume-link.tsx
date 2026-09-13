@@ -2,18 +2,17 @@
 
 import Link from "next/link";
 import { useSyncExternalStore } from "react";
-import { draftKey, formatSavedAt, readDraft } from "@/lib/form-draft";
+import {
+  emptyDraftsSnapshot,
+  formatSavedAt,
+  getDraftsSnapshot,
+  subscribeDrafts,
+  type DraftScope,
+} from "@/lib/form-draft";
 
 /**
- * 草稿只存在浏览器本地，所以走 useSyncExternalStore 读：
- * 服务端快照给 null（服务端渲染时本来也看不到草稿）、挂载后再读真实值，
- * 既不会 hydration 不一致，也不用在 effect 里 setState。
- */
-const subscribe = () => () => {};
-
-/**
- * 列表页头上的「继续未完成的开单」入口：本地有草稿才出现，点进去开单页会自动恢复。
- * 没有草稿时不渲染任何东西，列表页不会多出一块空白。
+ * 列表页头上的「继续未完成的单」入口：本地有这个类型的草稿才出现，
+ * 点进去开单页会自动恢复最近那一份。没有草稿时不渲染任何东西，列表页不会多出一块空白。
  */
 export function DraftResumeLink({
   scope,
@@ -21,28 +20,31 @@ export function DraftResumeLink({
   href,
   label,
 }: {
-  scope: string;
+  scope: DraftScope;
   userId: number | string;
+  /** 开单页地址，如 /sale-orders/new（草稿 id 会作为 ?draft= 拼上去） */
   href: string;
   /** 如「继续未完成的售卖单」 */
   label: string;
 }) {
-  const savedAt = useSyncExternalStore(
-    subscribe,
-    () => readDraft<unknown>(draftKey(scope, userId))?.savedAt ?? null,
-    () => null
+  const drafts = useSyncExternalStore(
+    subscribeDrafts,
+    () => getDraftsSnapshot(userId),
+    emptyDraftsSnapshot
   );
-
-  if (savedAt == null) return null;
+  const mine = drafts.filter((d) => d.scope === scope);
+  if (mine.length === 0) return null;
+  const newest = mine[0];
 
   return (
     <Link
-      href={href}
+      href={`${href}?draft=${newest.id}`}
       className="inline-flex items-center gap-1.5 rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-800 transition hover:bg-amber-100"
-      title="点进去会自动把上次填的内容恢复出来"
+      title="点进去会自动把这份草稿恢复出来"
     >
       {label}
-      <span className="font-normal text-amber-700/80">（保存于 {formatSavedAt(savedAt)}）</span>
+      <span className="font-normal text-amber-700/80">（保存于 {formatSavedAt(newest.savedAt)}）</span>
+      {mine.length > 1 && <span className="font-normal text-amber-700/80">・共 {mine.length} 份</span>}
     </Link>
   );
 }

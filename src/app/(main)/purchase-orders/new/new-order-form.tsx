@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { initials } from "@/lib/pinyin";
 import { useFormDraft } from "@/lib/form-draft";
 import { DraftBanner } from "@/components/draft-banner";
@@ -244,13 +245,27 @@ export function NewOrderForm({
   }
 
   // 开单草稿：填到一半切走再回来，内容还在（机制见 lib/form-draft.ts）
+  // 从草稿箱点进来会带 ?draft=<id>，指定恢复哪一份；否则恢复最近那份
+  const urlDraftId = useSearchParams().get("draft") ?? undefined;
   const draftValue = useMemo(
     () => ({ rows, supplierId, remark: orderRemark }),
     [rows, supplierId, orderRemark]
   );
-  const { restoredAt, savedAt, discard, clearStored } = useFormDraft<PurchaseDraft>({
+  /** 草稿箱列表里显示的摘要（存草稿时一起写进去，列表页不用懂单据结构） */
+  const draftSummary = useMemo(
+    () => ({
+      partner: suppliers.find((s) => String(s.id) === supplierId)?.name ?? "",
+      lines: rows.filter((r) => !!r.productId).length,
+      amount: rows.reduce((s, r) => s + lineAmount(r), 0),
+      preview: rows.map((r) => r.productLabel).filter(Boolean).slice(0, 2).join("、"),
+    }),
+    [rows, supplierId, suppliers]
+  );
+  const { restoredAt, savedAt, discard, startNew, clearStored } = useFormDraft<PurchaseDraft>({
     scope: "purchase",
     userId: currentUserId,
+    draftId: urlDraftId,
+    summary: draftSummary,
     value: draftValue,
     // 选了厂家、写了备注、或某行选了商品，才算"有内容"；全空就把草稿删掉
     hasContent: !!supplierId || orderRemark.trim() !== "" || rows.some((r) => !!r.productId),
@@ -286,7 +301,7 @@ export function NewOrderForm({
 
   return (
     <form action={formAction} className="space-y-4" onSubmit={clearStored}>
-      <DraftBanner restoredAt={restoredAt} savedAt={savedAt} onDiscard={discard} />
+      <DraftBanner restoredAt={restoredAt} savedAt={savedAt} onDiscard={discard} onStartNew={startNew} />
       {/* 厂家信息（可折叠） */}
       <details open className="rounded-xl border border-gray-200 bg-white">
         <summary className="cursor-pointer rounded-t-xl px-5 py-3 text-sm font-medium text-gray-900 transition-colors hover:bg-gray-50">
