@@ -5,6 +5,7 @@ import { badgeMuted, btnSecondary, inputBase } from "@/lib/ui";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { initials } from "@/lib/pinyin";
+import { Pager } from "@/components/pager";
 import { EntityForm } from "@/components/entity-form";
 import { DateShortcuts } from "@/components/date-shortcuts";
 import { FilterForm } from "@/components/filter-form";
@@ -25,7 +26,7 @@ export default async function CustomerDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ from?: string; to?: string; q?: string }>;
+  searchParams: Promise<{ from?: string; to?: string; q?: string; opage?: string }>;
 }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
@@ -53,6 +54,22 @@ export default async function CustomerDetailPage({
   const orders = profile.orders
     .filter((o) => o.customerId === id)
     .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  /** 单据明细一页 10 张：每张都带商品明细，行高很大，一屏列不下 */
+  const ORDER_PAGE_SIZE = 10;
+  const orderTotalPages = Math.max(1, Math.ceil(orders.length / ORDER_PAGE_SIZE));
+  const orderPage = Math.min(Math.max(1, Number(query.opage) || 1), orderTotalPages);
+  const shownOrders = orders.slice((orderPage - 1) * ORDER_PAGE_SIZE, orderPage * ORDER_PAGE_SIZE);
+  /** 翻页时保留时间段与搜索词 */
+  const orderHref = (p: number) => {
+    const sp = new URLSearchParams();
+    if (query.from) sp.set("from", query.from);
+    if (query.to) sp.set("to", query.to);
+    if (query.q) sp.set("q", query.q);
+    if (p > 1) sp.set("opage", String(p));
+    const qs = sp.toString();
+    return qs ? `/customers/${id}?${qs}` : `/customers/${id}`;
+  };
+
   const periodLabel = query.from || query.to ? `${query.from || "最早"} ~ ${query.to || "今天"}` : "全部时间";
   /** 按品名 / 编码搜单的关键词（命中即整单带出，行里高亮命中的那几行） */
   const keyword = query.q?.trim() ?? "";
@@ -148,7 +165,7 @@ export default async function CustomerDetailPage({
         </div>
 
         <h3 className="mt-4 mb-2 text-xs font-medium text-gray-500">
-          单据明细（{orders.length} 张）
+          单据明细（共 {orders.length} 张）
         </h3>
         {orders.length === 0 ? (
           <p className="rounded-lg border border-dashed border-gray-200 px-3 py-6 text-center text-xs text-gray-400">
@@ -156,7 +173,7 @@ export default async function CustomerDetailPage({
           </p>
         ) : (
           <div className="scroll-thin max-h-[28rem] space-y-2 overflow-y-auto">
-            {orders.map((o) => {
+            {shownOrders.map((o) => {
               const cost = o.items.reduce((s, it) => s + Number(it.costAmount), 0);
               const profit = Number(o.totalAmount) - cost;
               return (
@@ -205,6 +222,8 @@ export default async function CustomerDetailPage({
             })}
           </div>
         )}
+
+        <Pager page={orderPage} totalPages={orderTotalPages} hrefFor={orderHref} className="mt-3" />
       </section>
 
       {isAdmin ? (

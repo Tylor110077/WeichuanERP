@@ -9,14 +9,18 @@ import { initials } from "@/lib/pinyin";
 import { DateShortcuts } from "@/components/date-shortcuts";
 import { SearchSelect } from "@/components/search-select";
 import { PAYMENT_METHOD_LABELS as METHOD_LABELS } from "@/lib/payment-labels";
+import { Pager } from "@/components/pager";
 
 export const metadata = { title: "厂家对账 - 玮川进销存" };
 
 /** 厂家进货对账：按厂家 + 期间 + 收付状态，每单含商品明细与付款记录。 */
+
+/** 单据卡片一页 20 单（每单可展开商品明细与付款记录，一屏列不下） */
+const PAGE_SIZE = 20;
 export default async function SupplierStatementPage({
   searchParams,
 }: {
-  searchParams: Promise<{ supplierId?: string; from?: string; to?: string; status?: string }>;
+  searchParams: Promise<{ supplierId?: string; from?: string; to?: string; status?: string; page?: string }>;
 }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
@@ -101,6 +105,22 @@ export default async function SupplierStatementPage({
   const totalPaid = rows.reduce((s, r) => s + r.paid, 0);
   const totalUnpaid = rows.reduce((s, r) => s + r.unpaid, 0);
 
+
+  /** 页码夹在有效范围内：地址栏乱填也不会看到空白页 */
+  const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+  const page = Math.min(Math.max(1, Number(params.page) || 1), totalPages);
+  const shownRows = rows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  /** 翻页时保留厂家、期间与收付状态 */
+  const pageHref = (p: number) => {
+    const sp = new URLSearchParams();
+    sp.set("supplierId", String(effectiveSupplierId));
+    if (params.from) sp.set("from", params.from);
+    if (params.to) sp.set("to", params.to);
+    if (params.status) sp.set("status", params.status);
+    if (p > 1) sp.set("page", String(p));
+    return `/supplier-statement?${sp.toString()}`;
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -152,7 +172,7 @@ export default async function SupplierStatementPage({
         </button>
         <span className="text-xs text-gray-500">
           共 {rows.length} 单 ｜ 应付 ¥{totalAmount.toFixed(2)} ｜ 已付 ¥{totalPaid.toFixed(2)} ｜ 未付 ¥{totalUnpaid.toFixed(2)}
-        {rows.length >= 500 && "（最多列示最近 500 单）"}
+        {rows.length > 0 && `（共 ${rows.length} 单${rows.length >= 500 ? "，最多列示最近 500 单" : ""}）`}
         </span>
       </FilterForm>
 
@@ -163,7 +183,7 @@ export default async function SupplierStatementPage({
             该期间无进货单
           </div>
         )}
-        {rows.map(({ o, returned, unpaid }) => (
+        {shownRows.map(({ o, returned, unpaid }) => (
           <details key={o.id} className="rounded-xl border border-gray-200 bg-white">
             <summary className="flex cursor-pointer flex-wrap items-center gap-4 px-4 py-3 text-sm">
               <span className="font-medium text-gray-900">{o.orderNo}</span>
@@ -215,6 +235,8 @@ export default async function SupplierStatementPage({
           </details>
         ))}
       </div>
+
+      <Pager page={page} totalPages={totalPages} hrefFor={pageHref} className="mt-3" />
     </div>
   );
 }

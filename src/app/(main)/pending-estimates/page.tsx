@@ -5,9 +5,13 @@ import { badgeDanger } from "@/lib/ui";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { initials } from "@/lib/pinyin";
+import { Pager } from "@/components/pager";
 import { FillForm } from "./fill-form";
 
 export const metadata = { title: "估价待补单 - 玮川进销存" };
+
+/** 待补行会随估价单越积越多：一页 20 行 */
+const PAGE_SIZE = 20;
 
 /**
  * 估价待补单：开售卖单时只填了售价、进价与货源还没定的行，都在这里等着补。
@@ -16,7 +20,11 @@ export const metadata = { title: "估价待补单 - 玮川进销存" };
  * 因为估价行不占库存、没参与移动加权成本，写回成本只影响那一张单自己的毛利，不会牵动别的单据。
  * 库存要等那张进货单「确认入库」才进——这一步仍走既有的入库逻辑。
  */
-export default async function PendingEstimatesPage() {
+export default async function PendingEstimatesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   if (user.role === "sales") {
@@ -24,11 +32,19 @@ export default async function PendingEstimatesPage() {
   }
   const canFill = user.role === "admin";
 
+  const params = await searchParams;
+  const where = { estimated: true, estimatedResolvedAt: null, saleOrder: { status: "confirmed" } } as const;
+  const total = await prisma.saleOrderItem.count({ where });
+  /** 页码夹在有效范围内：地址栏里乱填 page 也不会看到空白页 */
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const page = Math.min(Math.max(1, Number(params.page) || 1), totalPages);
+
   const [items, suppliers] = await Promise.all([
     prisma.saleOrderItem.findMany({
-      where: { estimated: true, estimatedResolvedAt: null, saleOrder: { status: "confirmed" } },
+      where,
       orderBy: { saleOrder: { createdAt: "desc" } },
-      take: 200,
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
       include: {
         product: { select: { code: true, name: true, manufacturer: true } },
         unit: { select: { name: true } },
@@ -51,7 +67,7 @@ export default async function PendingEstimatesPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-lg font-semibold text-gray-900">
           估价待补单
-          {items.length > 0 && <span className="ml-2 text-sm font-normal text-gray-500">{items.length} 行待补</span>}
+          {total > 0 && <span className="ml-2 text-sm font-normal text-gray-500">共 {total} 行待补</span>}
         </h1>
         <Link href="/sale-orders" className="text-xs text-gray-500 hover:underline">
           ← 返回售卖单
@@ -125,6 +141,9 @@ export default async function PendingEstimatesPage() {
           </table>
         </div>
       )}
+
+      {/* 只有一页时 Pager 自身会返回 null，不用在这里判断 */}
+      <Pager page={page} totalPages={totalPages} hrefFor={(p) => (p > 1 ? `/pending-estimates?page=${p}` : "/pending-estimates")} />
     </div>
   );
 }

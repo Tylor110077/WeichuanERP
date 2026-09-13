@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState, useSyncExternalStore } from "react";
 import { btnSmallPrimary } from "@/lib/ui";
+import { Pager } from "@/components/pager";
 import {
   DRAFT_SCOPE_LABEL,
   deleteDraft,
@@ -19,6 +20,9 @@ const NEW_HREF: Record<DraftScope, string> = {
   purchase: "/purchase-orders/new",
 };
 
+/** 每类草稿每页 8 份（一类最多存 20 份，一屏全列出来太长） */
+const DRAFT_PAGE_SIZE = 8;
+
 /** 进货单在前、售卖单在后：先看要买什么，再看要卖什么 */
 const SCOPE_ORDER: DraftScope[] = ["purchase", "sale"];
 
@@ -34,6 +38,8 @@ export function DraftBox({ userId }: { userId: number }) {
   );
   /** 删除要按两下：草稿是手打的内容，误删一次就白填了 */
   const [confirming, setConfirming] = useState<string | null>(null);
+  /** 两类各自翻页，互不影响 */
+  const [pages, setPages] = useState<Record<string, number>>({});
 
   if (drafts.length === 0) {
     return (
@@ -59,6 +65,10 @@ export function DraftBox({ userId }: { userId: number }) {
       {SCOPE_ORDER.map((scope) => {
         const group = drafts.filter((d) => d.scope === scope);
         if (group.length === 0) return null;
+        // 删掉草稿后当前页可能越界，这里夹一下，免得出现空白页
+        const totalPages = Math.max(1, Math.ceil(group.length / DRAFT_PAGE_SIZE));
+        const page = Math.min(pages[scope] ?? 1, totalPages);
+        const shown = group.slice((page - 1) * DRAFT_PAGE_SIZE, page * DRAFT_PAGE_SIZE);
         return (
           <section key={scope} className="space-y-2">
             <h2 className="flex items-center gap-2 text-sm font-semibold text-gray-700">
@@ -66,7 +76,7 @@ export function DraftBox({ userId }: { userId: number }) {
               <span className="text-xs font-normal text-gray-400">{group.length} 份</span>
             </h2>
             <ul className="rounded-xl border border-gray-200 bg-white">
-              {group.map((d) => (
+              {shown.map((d) => (
                 <li
                   key={d.id}
                   className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-gray-100 px-4 py-3 last:border-b-0"
@@ -121,6 +131,11 @@ export function DraftBox({ userId }: { userId: number }) {
                 </li>
               ))}
             </ul>
+            <Pager
+              page={page}
+              totalPages={totalPages}
+              onPageChange={(p) => setPages((prev) => ({ ...prev, [scope]: p }))}
+            />
           </section>
         );
       })}
