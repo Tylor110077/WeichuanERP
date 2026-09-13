@@ -115,6 +115,8 @@ export default async function NewPurchaseOrderPage({
         categories={categories.map((c) => ({ id: c.id, name: c.name, py: initials(c.name) }))}
         units={units.map((u) => ({ id: u.id, name: u.name, py: initials(u.name) }))}
         currentUserId={user.id}
+        canCreateProduct={user.role === "admin"}
+        canCreateSupplier={user.role === "admin"}
         prefill={
           source
             ? {

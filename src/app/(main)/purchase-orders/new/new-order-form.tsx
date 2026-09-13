@@ -8,6 +8,7 @@ import { useFormDraft } from "@/lib/form-draft";
 import { DraftBanner } from "@/components/draft-banner";
 import { btnPrimary, btnSmallPrimary, inputBase } from "@/lib/ui";
 import { SearchSelect } from "@/components/search-select";
+import { RowDivider, RowField, readOnlyValue } from "@/components/order-row";
 import { createPurchaseOrderAction, type FormState } from "../actions";
 import { FormStateAlert } from "@/components/form-alert";
 import { createQuickSupplierAction } from "../../suppliers/actions";
@@ -61,6 +62,8 @@ interface PurchaseDraft {
 }
 
 const inputCls = `w-full ${inputBase}`;
+/** 数字输入：等宽数字，同行上下对齐 */
+const inputNumCls = `${inputCls} tabular-nums`;
 
 export function NewOrderForm({
   suppliers,
@@ -68,6 +71,8 @@ export function NewOrderForm({
   categories,
   units,
   currentUserId,
+  canCreateProduct,
+  canCreateSupplier,
   prefill = null,
 }: {
   suppliers: SupplierOption[];
@@ -75,6 +80,9 @@ export function NewOrderForm({
   /** 商品可能上千：首屏只带"最近进过货的"，其余靠 onSearch 按需搜 */
   categories: CategoryOption[];
   units: UnitOption[];
+  /** 能否在开单时当场新建商品 / 厂家（与售卖单一致：仅管理员） */
+  canCreateProduct: boolean;
+  canCreateSupplier: boolean;
   /** 当前用户 id：草稿按人存，同一台电脑换人登录不会串 */
   currentUserId: number;
   /** 「改单」带进来的原单内容（原单此时应已作废）：用来预填表单 */
@@ -275,6 +283,32 @@ export function NewOrderForm({
     setProductMsg({ ok: `已新建商品「${r.name}」并选到第 ${creatingProductRow + 1} 行` });
   }
 
+  /**
+   * 「+ 新建商品」按钮：优先用还没选商品的空行，没有就新加一行（与售卖单同一套做法）。
+   * 没有它的话，新建入口只藏在下拉里、还得先打字才出现，容易以为"进货单不能新建商品"。
+   */
+  function openCreateProduct() {
+    if (creatingProductRow != null) {
+      setCreatingProductRow(null);
+      setProductMsg(null);
+      return;
+    }
+    const blank = rows.findIndex((r) => !r.productId);
+    if (blank >= 0) {
+      startCreateProduct(blank, "");
+      return;
+    }
+    const next = rows.length;
+    setRows((prev) => [...prev, emptyRow()]);
+    startCreateProduct(next, "");
+  }
+
+  /** 进价下方的提示：这个商品上次进价（没有就留空占位，保证列高一致） */
+  function refPriceHint(row: Row): string | undefined {
+    const opt = knownProducts[row.productId];
+    return opt && opt.refPrice > 0 ? `参考 ¥${opt.refPrice.toFixed(2)}` : undefined;
+  }
+
   function lineAmount(row: Row): number {
     const q = Number(row.quantity);
     const price = Number(row.unitPrice);
@@ -390,6 +424,24 @@ export function NewOrderForm({
             createLabel={(k) => `＋ 新建厂家：「${k}」`}
             onCreate={startCreateSupplier}
           />
+          {/* 显式入口：下拉里那一条要先把名字打进去才出现，光看搜索框会以为不能新建 */}
+          {canCreateSupplier && (
+            <button
+              type="button"
+              onClick={() => {
+                if (creatingSupplier) {
+                  setCreatingSupplier(false);
+                  setNewSupplierName("");
+                  setSupplierMsg(null);
+                  return;
+                }
+                startCreateSupplier("");
+              }}
+              className={`mt-1.5 ${btnSmallPrimary}`}
+            >
+              {creatingSupplier ? "取消新建厂家" : "+ 新建厂家"}
+            </button>
+          )}
           {creatingSupplier && (
             <div className="mt-2 flex flex-wrap items-center gap-2 rounded-md border border-blue-200 bg-blue-50/50 p-2">
               <span className="text-xs text-gray-600">新建厂家</span>
@@ -594,9 +646,10 @@ export function NewOrderForm({
 
             {row.productId ? (
               <>
-                {/* 数量 / 单位 / 进价 / 金额 */}
-                <div className="mt-2.5 grid grid-cols-2 gap-x-5 gap-y-2 lg:grid-cols-4">
-                  <InlineField label="数量" required>
+                {/* 与销售开单同一套行样式：横向排开不折行（窄屏横向滑动），
+                    每列「标签 / 值 / 提示」三层，只读值与输入框同高，列与列之间才对齐 */}
+                <div className="scroll-thin mt-3 flex items-start gap-x-3 overflow-x-auto pb-1.5">
+                  <RowField label="数量" required className="w-[7.5rem]">
                     <input
                       name={`item_${i}_quantity`}
                       type="number"
@@ -608,13 +661,20 @@ export function NewOrderForm({
                       onChange={(e) =>
                         setRows((prev) => prev.map((r, j) => (j === i ? { ...r, quantity: e.target.value } : r)))
                       }
-                      className={inputCls}
+                      className={inputNumCls}
                     />
-                  </InlineField>
-                  <InlineField label="单位">
-                    <span className="block py-1.5 text-sm text-gray-700">{row.unitName || "—"}</span>
-                  </InlineField>
-                  <InlineField label="进价" required>
+                  </RowField>
+                  <RowField
+                    label="单位"
+                    className="w-[5.5rem]"
+                    hint={row.unitName ? undefined : "选商品后带出"}
+                  >
+                    <span className={`${readOnlyValue} text-sm text-gray-700`}>{row.unitName || "—"}</span>
+                  </RowField>
+
+                  <RowDivider />
+
+                  <RowField label="进价" required className="w-[7.5rem]" hint={refPriceHint(row)}>
                     <input
                       name={`item_${i}_unitPrice`}
                       type="number"
@@ -625,19 +685,18 @@ export function NewOrderForm({
                       onChange={(e) =>
                         setRows((prev) => prev.map((r, j) => (j === i ? { ...r, unitPrice: e.target.value } : r)))
                       }
-                      className={inputCls}
+                      className={inputNumCls}
                     />
-                  </InlineField>
-                  <InlineField label="金额">
-                    <span className="block py-1.5 text-base font-semibold tabular-nums text-gray-900">
+                  </RowField>
+                  <RowField label="金额" className="w-[8rem]">
+                    <span className={`${readOnlyValue} text-base font-semibold text-gray-900`}>
                       ¥{lineAmount(row).toFixed(2)}
                     </span>
-                  </InlineField>
+                  </RowField>
                 </div>
-
                 {/* 行备注 */}
                 <div className="mt-2.5 flex items-center gap-2">
-                  <span className="w-16 shrink-0 text-xs text-gray-500">行备注</span>
+                  <span className="w-14 shrink-0 text-[11px] leading-4 text-gray-500">行备注</span>
                   <input
                     name={`item_${i}_remark`}
                     type="text"
@@ -660,13 +719,20 @@ export function NewOrderForm({
 
       {/* 底部操作与合计（去边框） */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <button
-          type="button"
-          onClick={() => setRows((prev) => [...prev, emptyRow()])}
-          className={btnSmallPrimary}
-        >
-          + 添加商品行
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setRows((prev) => [...prev, emptyRow()])}
+            className={btnSmallPrimary}
+          >
+            + 添加商品行
+          </button>
+          {canCreateProduct && (
+            <button type="button" onClick={openCreateProduct} className={btnSmallPrimary}>
+              {creatingProductRow != null ? "收起" : "+ 新建商品"}
+            </button>
+          )}
+        </div>
         <div className="text-sm text-gray-600">
           合计：
           <span className="text-lg font-semibold tabular-nums text-gray-900">¥{total.toFixed(2)}</span>
@@ -691,27 +757,5 @@ export function NewOrderForm({
         <FormStateAlert state={state} />
       </div>
     </form>
-  );
-}
-
-
-/** 内联字段：标签在左、内容在右，比"标签独占一行"更紧凑 */
-function InlineField({
-  label,
-  required,
-  children,
-}: {
-  label: string;
-  required?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex items-start gap-2">
-      <span className="w-14 shrink-0 py-1.5 text-xs text-gray-500">
-        {label}
-        {required && <span className="text-red-500"> *</span>}
-      </span>
-      <div className="min-w-0 flex-1">{children}</div>
-    </div>
   );
 }

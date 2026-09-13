@@ -8,6 +8,7 @@ import { initials, matchesSearch } from "@/lib/pinyin";
 import { useFormDraft } from "@/lib/form-draft";
 import { DraftBanner } from "@/components/draft-banner";
 import { SearchSelect } from "@/components/search-select";
+import { RowDivider, RowField, readOnlyValue } from "@/components/order-row";
 import { createSaleOrderAction, type FormState } from "../actions";
 import {
   createQuickCustomerAction,
@@ -118,8 +119,6 @@ interface SaleDraft {
 const inputCls = `w-full ${inputBase}`;
 /** 数字输入：等宽数字 + 右对齐，一列数字才扫得动 */
 const inputNumCls = `${inputCls} tabular-nums`;
-/** 只读数值：与输入框同高同内边距，保证同行里"能填的"和"只看的"数值基线一致 */
-const readOnlyValue = "flex h-9 items-center px-2 tabular-nums";
 
 export function NewSaleForm({
   customers,
@@ -1923,40 +1922,4 @@ export function NewSaleForm({
  * 提示层恒占一行高度（没有提示也留空）——之前整行数值对不齐就是这里：
  * 有的列把"均价"塞进数值同一行、有的列提示折成三行，相邻列的数值就被顶歪了。
  */
-function RowField({
-  label,
-  required,
-  hint,
-  hintTitle,
-  hintClass = "text-gray-400",
-  className = "",
-  children,
-}: {
-  label: string;
-  required?: boolean;
-  /** 值下方的一行小字（如均价、上次价）；不传也占位，保证各列高度一致 */
-  hint?: React.ReactNode;
-  hintTitle?: string;
-  hintClass?: string;
-  /** 列宽，如 w-[7rem] */
-  className?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div data-field={label} className={`shrink-0 ${className}`}>
-      <span className="block truncate text-[11px] leading-4 text-gray-500">
-        {label}
-        {required && <span className="text-red-500"> *</span>}
-      </span>
-      <div className="mt-1">{children}</div>
-      <div className={`mt-1 h-4 truncate text-[11px] leading-4 ${hintClass}`} title={hintTitle}>
-        {hint}
-      </div>
-    </div>
-  );
-}
 
-/** 字段分组之间的竖线：高度跟着整行自适应 */
-function RowDivider() {
-  return <div className="mx-1 w-px shrink-0 self-stretch bg-gray-200" />;
-}
