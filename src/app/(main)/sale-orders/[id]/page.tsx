@@ -38,7 +38,13 @@ export default async function SaleOrderDetailPage({
       customer: true,
       operator: true,
       items: { include: { product: true, unit: true } },
-      autoRestockOrders: { include: { supplier: { select: { name: true } } } },
+      autoRestockOrders: {
+        include: {
+          supplier: { select: { name: true } },
+          // 光有单号看不出补了什么，把商品行一起带出来
+          items: { include: { product: { select: { code: true, name: true } }, unit: { select: { name: true } } } },
+        },
+      },
       // 本单退货记录：连明细一起取，详情页要写清"退了哪些商品、退了多少"
       returns: {
         orderBy: { createdAt: "desc" },
@@ -235,20 +241,33 @@ export default async function SaleOrderDetailPage({
           <h2 className="mb-2 text-sm font-semibold text-gray-900">自动补货进货单（缺货即时入库）</h2>
           <div className="space-y-1.5 text-sm">
             {order.autoRestockOrders.map((po) => (
-              <div key={po.id} className="flex flex-wrap items-center gap-3">
-                <Link href={`/purchase-orders/${po.id}`} className="text-blue-600 hover:underline">
-                  {po.orderNo}
-                </Link>
-                <span className="text-gray-600">{po.supplier.name}</span>
-                <span
-                  className={
-                    po.status === "received"
-                      ? badgeOk
-                      : badgeMuted
-                  }
-                >
-                  {po.status === "received" ? "已入库" : "已作废"}
-                </span>
+              <div key={po.id} className="border-b border-gray-50 pb-1.5 last:border-b-0 last:pb-0">
+                <div className="flex flex-wrap items-center gap-3">
+                  <Link href={`/purchase-orders/${po.id}`} className="text-blue-600 hover:underline">
+                    {po.orderNo}
+                  </Link>
+                  <span className="text-gray-600">{po.supplier.name}</span>
+                  <span
+                    className={
+                      po.status === "received"
+                        ? badgeOk
+                        : badgeMuted
+                    }
+                  >
+                    {po.status === "received" ? "已入库" : "已作废"}
+                  </span>
+                </div>
+                {/* 具体补了哪些商品：只给单号看不出内容 */}
+                <div className="mt-0.5 text-xs text-gray-500">
+                  {po.items.length > 0
+                    ? po.items
+                        .map(
+                          (it) =>
+                            `${it.product.code} ${it.product.name} ×${Number(it.quantity).toFixed(3)} ${it.unit.name}`
+                        )
+                        .join("、")
+                    : "（无商品行）"}
+                </div>
               </div>
             ))}
           </div>
