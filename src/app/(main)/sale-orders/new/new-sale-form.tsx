@@ -1717,16 +1717,21 @@ export function NewSaleForm({
           >
             + 添加商品行
           </button>
-          {/* 估价商品：连商品都还没定，只给一个临时名先把单开出来 */}
+          {/* 估价商品：连商品都还没定，只给一个临时名先把单开出来（展开后是一组紧凑的输入+确认） */}
           <button
             type="button"
             onClick={() => setShowEstimate((v) => !v)}
-            className="rounded-full border border-dashed border-amber-300 px-2.5 py-1 text-xs font-medium text-amber-700 transition hover:bg-amber-50"
+            title="连商品都还没定：先记一个临时名把单开出来，厂家与进价以后到「估价待补单」里补"
+            className={`rounded-full border border-dashed px-2.5 py-1 text-xs font-medium transition ${
+              showEstimate
+                ? "border-amber-400 bg-amber-50 text-amber-700"
+                : "border-amber-300 text-amber-700 hover:bg-amber-50"
+            }`}
           >
-            ＋ 估价商品（临时名）
+            ＋ 估价商品
           </button>
           {showEstimate && (
-            <span className="flex flex-wrap items-center gap-2">
+            <span className="flex items-center">
               <input
                 value={estimateName}
                 onChange={(e) => setEstimateName(e.target.value)}
@@ -1736,18 +1741,18 @@ export function NewSaleForm({
                     quickAddEstimated();
                   }
                 }}
+                autoFocus
                 placeholder="临时品名，如 YJV 3*2.5 待定"
-                className="h-9 w-56 rounded-md border border-amber-300 px-2 text-sm"
+                className="h-9 w-52 rounded-l-md border border-r-0 border-amber-300 px-2 text-sm focus:outline-none"
               />
               <button
                 type="button"
                 onClick={quickAddEstimated}
                 disabled={estimatePending}
-                className={btnSmallPrimary}
+                className="h-9 rounded-r-md border border-amber-300 bg-amber-50 px-3 text-xs font-medium text-amber-700 transition hover:bg-amber-100 disabled:opacity-50"
               >
                 {estimatePending ? "添加中…" : "加这一行"}
               </button>
-              <span className="text-xs text-gray-400">商品、厂家、进价以后到「估价待补单」里补</span>
             </span>
           )}
           {canCreateProduct && (
