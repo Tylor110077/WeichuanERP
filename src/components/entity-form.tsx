@@ -119,7 +119,9 @@ export function EntityForm({
                   defaultValue={value}
                   className={inputCls}
                 >
-                  <option value="">{f.options[0]?.label ?? "请选择"}</option>
+                  {/* 占位项：调用方已经在选项里给了 value="" 的占位（如「请选择角色」）就不再补，
+                      否则下拉里会出现两条一模一样的「请选择角色」 */}
+                  {!f.options.some((o) => o.value === "") && <option value="">请选择</option>}
                   {f.options.map((o) => (
                     <option key={o.value} value={o.value}>
                       {o.label}
