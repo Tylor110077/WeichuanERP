@@ -45,7 +45,7 @@ export default async function ReceivablesPage({
   const counterId = params.counterId ? Number(params.counterId) : undefined;
   // 单据表按页展示（合计仍用 SQL 聚合，不受分页影响）
   const page = Math.max(1, Number(params.page) || 1);
-  const PAGE_SIZE = 50;
+  const PAGE_SIZE = 20;
   const mode: "order" | "item" = params.mode === "item" ? "item" : "order";
 
   const orders = isReceivable
@@ -216,6 +216,33 @@ export default async function ReceivablesPage({
     return `/receivables-payables?${sp.toString()}`;
   };
 
+  /**
+   * 翻页条。表格上下各放一条：单据多的时候（尤其点了"全部展开"）底部那条会被推到很远，
+   * 上面这条保证随时能翻页。
+   */
+  const renderPager = (count: number) =>
+    count > 1 ? (
+      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm">
+        <span className="text-gray-600">
+          第 {page} / {count} 页
+        </span>
+        {page > 1 ? (
+          <Link href={pageHref(page - 1)} className="text-blue-600 hover:underline">
+            上一页
+          </Link>
+        ) : (
+          <span className="text-gray-400">上一页</span>
+        )}
+        {page < count ? (
+          <Link href={pageHref(page + 1)} className="text-blue-600 hover:underline">
+            下一页
+          </Link>
+        ) : (
+          <span className="text-gray-400">下一页</span>
+        )}
+      </div>
+    ) : null;
+
   const viewHref = (v: string) => {
     const sp = new URLSearchParams({ view: v });
     if (params.from) sp.set("from", params.from);
@@ -291,6 +318,9 @@ export default async function ReceivablesPage({
           <Link href={`/receivables-payables?view=${view}`} className="whitespace-nowrap text-xs text-blue-600 hover:underline">清除条件</Link>
         )}
       </FilterForm>
+
+      {/* 表格上方的翻页条：展开明细后底部那条会被推很远 */}
+      {renderPager(mode === "item" ? itemPageCount : pageCount)}
 
       {/* 两种视角：按单据（行内可展开商品）/ 只看商品（平铺不分组） */}
       {mode === "item" ? (
@@ -369,21 +399,8 @@ export default async function ReceivablesPage({
         </>
       )}
 
-      {pageCount > 1 && (
-        <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm">
-          {page > 1 ? (
-            <Link href={pageHref(page - 1)} className="text-blue-600 hover:underline">上一页</Link>
-          ) : (
-            <span className="text-gray-400">上一页</span>
-          )}
-          <span className="text-gray-600">第 {page} / {pageCount} 页</span>
-          {page < pageCount ? (
-            <Link href={pageHref(page + 1)} className="text-blue-600 hover:underline">下一页</Link>
-          ) : (
-            <span className="text-gray-400">下一页</span>
-          )}
-        </div>
-      )}
+      {renderPager(pageCount)}
+
 
       {/* 合计：放在单据表下方，直观反映当前筛选条件下共多少未结清 */}
       <div className="rounded-xl border border-gray-200 bg-white p-5">

@@ -59,11 +59,13 @@ export function UnpaidOrderTable({
   const allOpen = rows.length > 0 && rows.every((r) => expanded.has(r.id));
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+    // 表格放进固定高度的滚动区：单据多、或点了「全部展开」时，明细不会把整页撑得很长
+    //（页下的合计卡与翻页条始终在手边），表头吸顶，滚动时还知道每列是什么。
+    <div className="scroll-thin max-h-[70vh] overflow-auto rounded-xl border border-gray-200 bg-white">
       {/* 列多（开关 + 8 列）：给最小宽度，宁可窄屏左右滑动，也不要把「展开」压成竖排、
             把商品概览挤成四行。加「客户/厂家」列后实测 68rem 时行高 41px、无竖排；商品列另外给了个最小宽度防止再被饿死。 */}
       <table className="w-full min-w-[68rem] divide-y divide-gray-200 text-sm [&_td]:align-top">
-        <thead className="bg-gray-50 text-left text-xs text-gray-500">
+        <thead className="sticky top-0 z-10 bg-gray-50 text-left text-xs text-gray-500">
           <tr>
             <th className="w-20 px-4 py-3">
               <button
