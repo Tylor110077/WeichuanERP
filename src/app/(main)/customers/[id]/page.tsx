@@ -9,7 +9,7 @@ import { Pager } from "@/components/pager";
 import { EntityForm } from "@/components/entity-form";
 import { DateShortcuts } from "@/components/date-shortcuts";
 import { FilterForm } from "@/components/filter-form";
-import { buildCustomerProfile } from "@/lib/customer-profile";
+import { buildCustomerProfile, getCustomerOrderPage } from "@/lib/customer-profile";
 import { saveCustomerAction } from "../actions";
 
 export const metadata = { title: "客户详情 - 玮川进销存" };
@@ -51,14 +51,15 @@ export default async function CustomerDetailPage({
   ]);
 
   const row = profile.profileRows.find((r) => r.id === id);
-  const orders = profile.orders
-    .filter((o) => o.customerId === id)
-    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-  /** 单据明细一页 10 张：每张都带商品明细，行高很大，一屏列不下 */
+  /** 单据明细一页 10 张：每张都带商品明细、行高很大，一屏列不下。
+   *  取数也按页走——只拉这一页的单，不再把该客户的单据连同商品行全部拉回来。 */
   const ORDER_PAGE_SIZE = 10;
-  const orderTotalPages = Math.max(1, Math.ceil(orders.length / ORDER_PAGE_SIZE));
-  const orderPage = Math.min(Math.max(1, Number(query.opage) || 1), orderTotalPages);
-  const shownOrders = orders.slice((orderPage - 1) * ORDER_PAGE_SIZE, orderPage * ORDER_PAGE_SIZE);
+  const {
+    rows: orders,
+    total: orderCount,
+    page: orderPage,
+    totalPages: orderTotalPages,
+  } = await getCustomerOrderPage(id, query.from, query.to, query.q, Number(query.opage) || 1, ORDER_PAGE_SIZE);
   /** 翻页时保留时间段与搜索词 */
   const orderHref = (p: number) => {
     const sp = new URLSearchParams();
@@ -149,7 +150,7 @@ export default async function CustomerDetailPage({
             清除筛选
           </Link>
           <span className="pb-2 text-xs text-gray-500">
-            命中 {orders.length} 张单
+            命中 {orderCount} 张单
             {keyword && "（含「" + keyword + "」的那几行在下面高亮）"}
           </span>
         </FilterForm>
@@ -165,15 +166,15 @@ export default async function CustomerDetailPage({
         </div>
 
         <h3 className="mt-4 mb-2 text-xs font-medium text-gray-500">
-          单据明细（共 {orders.length} 张）
+          单据明细（共 {orderCount} 张）
         </h3>
-        {orders.length === 0 ? (
+        {orderCount === 0 ? (
           <p className="rounded-lg border border-dashed border-gray-200 px-3 py-6 text-center text-xs text-gray-400">
             {keyword ? `这段时间没有含「${keyword}」的已开单售卖单` : "该期间没有已开单的售卖单"}
           </p>
         ) : (
           <div className="scroll-thin max-h-[28rem] space-y-2 overflow-y-auto">
-            {shownOrders.map((o) => {
+            {orders.map((o) => {
               const cost = o.items.reduce((s, it) => s + Number(it.costAmount), 0);
               const profit = Number(o.totalAmount) - cost;
               return (
