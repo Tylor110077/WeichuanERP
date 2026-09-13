@@ -266,7 +266,7 @@ export async function recentCustomersForOrder(): Promise<OrderCustomerOption[]> 
   }));
 }
 
-/** 输入关键词时搜索客户（名称 / 联系人 / 电话，最多 30 条） */
+/** 输入关键词时搜索客户（名称 / 电话，最多 30 条） */
 export async function searchCustomersForOrder(keyword: string): Promise<OrderCustomerOption[]> {
   await requireOrderUser();
   const kw = keyword.trim();
@@ -276,7 +276,6 @@ export async function searchCustomersForOrder(keyword: string): Promise<OrderCus
       status: 1,
       OR: [
         { name: { contains: kw } },
-        { contact: { contains: kw } },
         { phone: { contains: kw } },
         { searchPinyin: { contains: pinyinQuery(kw) } },
       ],

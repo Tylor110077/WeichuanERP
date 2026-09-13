@@ -22,7 +22,6 @@ export interface CustomerRowData {
   id: number;
   status: number;
   name: string;
-  contact: string;
   phone: string;
   address: string;
   remark: string;
@@ -60,7 +59,6 @@ export function CustomerManager({
   const [editing, setEditing] = useState<CustomerRowData | null>(null);
   const [form, setForm] = useState({
     name: "",
-    contact: "",
     phone: "",
     address: "",
     remark: "",
@@ -80,7 +78,6 @@ export function CustomerManager({
     setEditing(row);
     setForm({
       name: row?.name ?? "",
-      contact: row?.contact ?? "",
       phone: row?.phone ?? "",
       address: row?.address ?? "",
       remark: row?.remark ?? "",
@@ -134,7 +131,6 @@ export function CustomerManager({
         <thead className="bg-gray-50 text-left text-xs text-gray-500">
           <tr>
             <th className="whitespace-nowrap px-4 py-3 font-medium">名称</th>
-            <th className="whitespace-nowrap px-4 py-3 font-medium">联系人</th>
             <th className="whitespace-nowrap px-4 py-3 font-medium">电话</th>
             <th className="whitespace-nowrap px-4 py-3 font-medium">组织</th>
             <th className="whitespace-nowrap px-4 py-3 font-medium">标签</th>
@@ -145,7 +141,7 @@ export function CustomerManager({
         <tbody className="divide-y divide-gray-100 [&>tr]:transition-colors [&>tr:hover]:bg-gray-100/70">
           {customers.length === 0 && (
             <tr>
-              <td colSpan={7}>
+              <td colSpan={6}>
                 <EmptyState
                   title={emptyTitle ?? "还没有客户"}
                   hint={emptyHint ?? "点右上角「新建客户」添加"}
@@ -157,7 +153,6 @@ export function CustomerManager({
           {customers.map((c) => (
             <tr key={c.id}>
               <td className="min-w-[5.5rem] px-4 py-2.5 text-gray-900">{c.name}</td>
-              <td className="px-4 py-2.5 text-gray-600">{c.contact || "—"}</td>
               <td className="px-4 py-2.5 text-gray-600">{c.phone || "—"}</td>
               <td className="px-4 py-2.5">
                 {c.groupName ? (
@@ -257,11 +252,6 @@ export function CustomerManager({
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
               className={inputCls}
             />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-600">联系人</label>
-            <input name="contact" type="text" maxLength={50} value={form.contact}
-              onChange={(e) => setForm((f) => ({ ...f, contact: e.target.value }))} className={inputCls} />
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-600">电话</label>

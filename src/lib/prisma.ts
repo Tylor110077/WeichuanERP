@@ -7,7 +7,7 @@ import { searchPinyin } from "./pinyin";
  */
 const SEARCH_PINYIN_FIELDS: Record<string, string[]> = {
   // 键用小写；钩子传进来的是 PascalCase（"Customer"），比对时统一转小写（见 withSearchPinyin）
-  customer: ["name", "contact"],
+  customer: ["name"],
   supplier: ["name", "contact"],
   product: ["name", "code", "manufacturer"],
   user: ["displayName"],

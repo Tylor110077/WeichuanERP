@@ -23,11 +23,11 @@ async function main() {
   }
   console.log(`商品：${products.length} 条`);
 
-  const customers = await prisma.customer.findMany({ select: { id: true, name: true, contact: true } });
+  const customers = await prisma.customer.findMany({ select: { id: true, name: true } });
   for (const c of customers) {
     await prisma.customer.update({
       where: { id: c.id },
-      data: { searchPinyin: searchPinyin(c.name, c.contact) },
+      data: { searchPinyin: searchPinyin(c.name) },
     });
   }
   console.log(`客户：${customers.length} 条`);

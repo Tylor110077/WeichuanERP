@@ -35,7 +35,6 @@ export default async function NewCustomerPage() {
       <EntityForm
         fields={[
           { name: "name", label: "客户名称 *", required: true, maxLength: 100 },
-          { name: "contact", label: "联系人", maxLength: 50 },
           { name: "phone", label: "电话", maxLength: 30 },
           { name: "address", label: "地址", maxLength: 200 },
           { name: "remark", label: "备注", maxLength: 200 },

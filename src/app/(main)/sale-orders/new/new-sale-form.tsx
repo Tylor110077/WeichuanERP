@@ -264,7 +264,7 @@ export function NewSaleForm({
     null
   );
 
-  const [newCustomer, setNewCustomer] = useState({ name: "", contact: "", phone: "" });
+  const [newCustomer, setNewCustomer] = useState({ name: "", phone: "" });
   const [categoryOptions, setCategoryOptions] = useState(categories);
   const [unitOptions, setUnitOptions] = useState(units);
   const [showQuickCategory, setShowQuickCategory] = useState(false);
@@ -287,7 +287,6 @@ export function NewSaleForm({
     startCreateTransition(async () => {
       const result: QuickCustomerResult = await createQuickCustomerAction({
         name: newCustomer.name,
-        contact: newCustomer.contact,
         phone: newCustomer.phone,
         groupId: newCustomerGroupId ? Number(newCustomerGroupId) : null,
         tagIds: newCustomerTagIds,
@@ -308,7 +307,7 @@ export function NewSaleForm({
       );
       chooseCustomer(opt);
       setShowCreateCustomer(false);
-      setNewCustomer({ name: "", contact: "", phone: "" });
+      setNewCustomer({ name: "", phone: "" });
       setNewCustomerGroupId("");
       setNewCustomerTagIds([]);
       setCreateCustomerMsg({ ok: `客户「${result.name}」已创建并选中` });
@@ -387,7 +386,7 @@ export function NewSaleForm({
 
   /** 打开"新建客户"表单并把名字预填好（候选面板里的「＋ 新建客户：「xx」」与右上角按钮共用） */
   function startCreateCustomer(name: string) {
-    setNewCustomer({ name, contact: "", phone: "" });
+    setNewCustomer({ name, phone: "" });
     setNewCustomerGroupId("");
     setNewCustomerTagIds([]);
     setCreateCustomerMsg(null);
@@ -837,14 +836,6 @@ export function NewSaleForm({
                 className="block w-full rounded-md border border-blue-200 px-2 py-1.5 text-sm text-gray-900"
               />
               <div className="flex gap-2">
-                <input
-                  type="text"
-                  maxLength={50}
-                  placeholder="联系人"
-                  value={newCustomer.contact}
-                  onChange={(e) => setNewCustomer((p) => ({ ...p, contact: e.target.value }))}
-                  className="block w-full rounded-md border border-blue-200 px-2 py-1.5 text-sm text-gray-900"
-                />
                 <input
                   type="text"
                   maxLength={30}

@@ -9,7 +9,6 @@ import { writeAudit } from "@/lib/audit";
 
 const customerSchema = z.object({
   name: z.string().trim().min(1, "请填写客户名称").max(100),
-  contact: z.string().trim().max(50),
   phone: z.string().trim().max(30),
   address: z.string().trim().max(200),
   remark: z.string().trim().max(200),
@@ -26,7 +25,6 @@ export async function saveCustomerAction(_prev: FormState, formData: FormData): 
 
   const parsed = customerSchema.safeParse({
     name: formData.get("name") ?? "",
-    contact: formData.get("contact") ?? "",
     phone: formData.get("phone") ?? "",
     address: formData.get("address") ?? "",
     remark: formData.get("remark") ?? "",
@@ -123,7 +121,6 @@ export async function toggleCustomerStatusAction(_prev: FormState, formData: For
 
 const quickCustomerSchema = z.object({
   name: z.string().trim().min(1, "请填写客户名称").max(100),
-  contact: z.string().trim().max(50),
   phone: z.string().trim().max(30),
 });
 
@@ -132,7 +129,6 @@ export type QuickCustomerResult = { id: number; name: string } | { error: string
 /** 销售开单页内直接新建客户（仅管理员，符合权限矩阵：客户维护仅管理员）。 */
 export async function createQuickCustomerAction(data: {
   name: string;
-  contact?: string;
   phone?: string;
   groupId?: number | null; // 新客户所属组织（可空）
   tagIds?: number[]; // 新客户标签（可空）
@@ -142,7 +138,6 @@ export async function createQuickCustomerAction(data: {
 
   const parsed = quickCustomerSchema.safeParse({
     name: data.name ?? "",
-    contact: data.contact ?? "",
     phone: data.phone ?? "",
   });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "输入有误" };
@@ -162,7 +157,6 @@ export async function createQuickCustomerAction(data: {
     const created = await tx.customer.create({
       data: {
         name: parsed.data.name,
-        contact: parsed.data.contact || null,
         phone: parsed.data.phone || null,
         groupId,
       },
@@ -183,7 +177,6 @@ export async function createQuickCustomerAction(data: {
     entityId: customer.id,
     after: {
       name: customer.name,
-      contact: parsed.data.contact || null,
       phone: parsed.data.phone || null,
       groupId,
       tagIds,

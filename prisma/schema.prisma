@@ -251,7 +251,6 @@ model Customer {
   name        String       @db.VarChar(100)
   /** 拼音首字母串（由 lib/pinyin.ts 的 searchPinyin() 自动维护），供搜索用 */
   searchPinyin String?     @map("search_pinyin") @db.VarChar(255)
-  contact     String?      @db.VarChar(50)
   phone       String?      @db.VarChar(30)
   address     String?      @db.VarChar(200)
   remark      String?      @db.VarChar(200)

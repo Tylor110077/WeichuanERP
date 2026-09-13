@@ -94,7 +94,7 @@ const getServerLetterhead = () => LETTERHEAD_DEFAULTS;
 export interface PrintOrderData {
   orderNo: string;
   createdAt: string;
-  customer: { name: string; contact: string; phone: string; address: string };
+  customer: { name: string; phone: string; address: string };
   operatorName: string;
   /** 制单人：当前登录用户 */
   editorName: string;

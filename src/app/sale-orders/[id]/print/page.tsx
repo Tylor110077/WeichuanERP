@@ -34,7 +34,6 @@ export default async function SaleOrderPrintPage({
     createdAt: order.createdAt.toLocaleDateString("zh-CN"),
     customer: {
       name: order.customer.name,
-      contact: order.customer.contact ?? "",
       phone: order.customer.phone ?? "",
       address: order.customer.address ?? "",
     },

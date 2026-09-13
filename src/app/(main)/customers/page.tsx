@@ -70,7 +70,7 @@ export default async function CustomersPage({
   const newEntry = NEW_ENTRY[tab as keyof typeof NEW_ENTRY] ?? null;
   const page = Math.max(1, Number(params.page) || 1);
 
-  // 客户一多就没有别的办法找人了：名称 / 联系人 / 电话都能搜
+  // 客户一多就没有别的办法找人了：名称 / 电话都能搜
   const customerWhere = {
     ...(ungrouped ? { groupId: null } : groupId ? { groupId } : {}),
     ...(tagId ? { tagLinks: { some: { tagId } } } : {}),
@@ -78,7 +78,6 @@ export default async function CustomersPage({
       ? {
           OR: [
             { name: { contains: q } },
-            { contact: { contains: q } },
             { phone: { contains: q } },
             // 拼音首字母：q=zjw 命中「张敬玮」（见 lib/pinyin.ts）
             { searchPinyin: { contains: pinyinQuery(q) } },
@@ -118,7 +117,6 @@ export default async function CustomersPage({
     id: c.id,
     status: c.status,
     name: c.name,
-    contact: c.contact ?? "",
     phone: c.phone ?? "",
     address: c.address ?? "",
     remark: c.remark ?? "",
@@ -183,7 +181,7 @@ export default async function CustomersPage({
             label: "客户",
             count: allCustomerTotal,
             href: tabHref("customers"),
-            hint: "客户档案：左侧按组织筛选，右侧搜名称/联系人/电话",
+            hint: "客户档案：左侧按组织筛选，右侧搜名称/电话",
           },
           {
             key: "groups",
@@ -249,7 +247,7 @@ export default async function CustomersPage({
                     type="search"
                     name="q"
                     defaultValue={q ?? ""}
-                    placeholder="名称 / 联系人 / 电话"
+                    placeholder="名称 / 电话"
                     className={`${inputBase} mt-1 w-full`}
                   />
                 </div>
