@@ -71,14 +71,20 @@ export function SearchSelect({
 
   const keyword = query.trim();
   const exact = all.find((o) => o.label === keyword);
+  /**
+   * 真正的搜索词：框里显示的**就是当前选中项**时不算搜索（否则一打开就只剩它自己，
+   * 比如客户筛选显示「全部客户」，展开却只看到「全部客户」一项，想换别的还得先删字）。
+   */
+  const searchText = exact && exact.value === value ? "" : keyword;
   const filtered = useMemo(() => {
-    if (exact) return [exact];
-    if (!keyword) return all;
+    if (!searchText) return all;
+    const hit = all.find((o) => o.label === searchText);
+    if (hit) return [hit];
     // 远程模式：候选来自服务端搜索（关键词清空时回落到本地列表）
     if (onSearch && remote) return remote;
     // 中文原样匹配 + 拼音首字母匹配（matchesSearch 同时管两种）
-    return all.filter((o) => matchesSearch(o.label, o.py ?? "", keyword));
-  }, [all, keyword, exact, onSearch, remote]);
+    return all.filter((o) => matchesSearch(o.label, o.py ?? "", searchText));
+  }, [all, searchText, onSearch, remote]);
 
   // 输入即搜（防抖 250ms）：只在远程模式下生效；在定时器回调里 setState，避免级联渲染
   useEffect(() => {
@@ -88,11 +94,11 @@ export function SearchSelect({
     const timer = setTimeout(
       () => {
         if (cancelled) return;
-        if (!keyword) {
+        if (!searchText) {
           setRemote(null);
           return;
         }
-        onSearch(keyword)
+        onSearch(searchText)
           .then((list) => {
             if (!cancelled) setRemote(list);
           })
@@ -100,28 +106,66 @@ export function SearchSelect({
             if (!cancelled) setRemote([]);
           });
       },
-      keyword ? 250 : 0
+      searchText ? 250 : 0
     );
     return () => {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [keyword, onSearch]);
+  }, [searchText, onSearch]);
 
-  const pending = value === "" && keyword !== "" && !all.some((o) => o.label === keyword);
+  const pending = value === "" && searchText !== "" && !all.some((o) => o.label === searchText);
+
+  /** 键盘高亮：候选项很多时用 ↑/↓ 选、回车确认（-1 = 没高亮） */
+  const [active, setActive] = useState(-1);
+  /** 置顶的「就地新建」也参与键盘选择，占第 0 位；后面的候选要相应偏移 */
+  const hasCreate = !!(onCreate && createLabel && searchText && !exact);
+  const optionOffset = hasCreate ? 1 : 0;
+  const navCount = filtered.length + optionOffset;
 
   function onChange2(text: string) {
     setQuery(text);
     const hit = all.find((o) => o.label === text.trim());
     setValue(hit ? hit.value : "");
     setOpen(true);
+    setActive(-1); // 换了关键词，原来的高亮就不作数了
   }
 
   function pick(o: SearchSelectOption) {
     setValue(o.value);
     setQuery(o.label);
     setOpen(false);
+    setActive(-1);
     onChange?.(o.value);
+  }
+
+  /** ↑/↓ 移动高亮；回车没高亮时不动（筛选栏靠回车查询，别抢） */
+  function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      if (navCount === 0) return;
+      e.preventDefault();
+      setOpen(true);
+      setActive((cur) => (e.key === "ArrowDown" ? (cur + 1) % navCount : cur <= 0 ? navCount - 1 : cur - 1));
+      return;
+    }
+    if (e.key === "Enter") {
+      if (!open || active < 0) return; // 交给表单提交
+      e.preventDefault();
+      if (hasCreate && active === 0) {
+        onCreate?.(keyword);
+        setOpen(false);
+        setActive(-1);
+        return;
+      }
+      const opt = filtered[active - optionOffset];
+      if (opt) pick(opt);
+      return;
+    }
+    if (e.key === "Escape" && open) {
+      e.preventDefault();
+      setOpen(false);
+      setActive(-1);
+    }
   }
 
   return (
@@ -140,20 +184,26 @@ export function SearchSelect({
           setOpen(true);
         }}
         onClick={selectAllOnClick}
+        onKeyDown={onKeyDown}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
         className={`${inputBase} w-full`}
       />
       {open && (
         <div className="absolute z-30 mt-1 max-h-56 w-full overflow-auto rounded-md border border-gray-200 bg-white shadow-lg">
           {/* 就地新建：输入了关键词就置顶显示，点了把名字交给调用方（不必先去别的页面建） */}
-          {onCreate && createLabel && keyword && !exact && (
+          {hasCreate && (
             <button
               type="button"
               onMouseDown={(e) => e.preventDefault()}
-              onClick={() => onCreate(keyword)}
-              className="block w-full border-b border-gray-100 px-3 py-2 text-left text-sm text-blue-600 hover:bg-blue-50"
+              onClick={() => onCreate?.(keyword)}
+              ref={(el) => {
+                if (el && active === 0) el.scrollIntoView({ block: "nearest" });
+              }}
+              className={`block w-full border-b border-gray-100 px-3 py-2 text-left text-sm text-blue-600 ${
+                active === 0 ? "bg-blue-50" : "hover:bg-blue-50"
+              }`}
             >
-              {createLabel(keyword)}
+              {createLabel?.(keyword)}
             </button>
           )}
           {/* 「已输入但未选中」的提示放在面板里，而不是输入框下面：
@@ -167,16 +217,21 @@ export function SearchSelect({
           {filtered.length === 0 && (
             <div className="px-3 py-2 text-xs text-gray-400">{emptyHint}</div>
           )}
-          {filtered.map((o) => (
+          {filtered.map((o, i) => (
             <button
               key={o.value || "__none__"}
               type="button"
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => pick(o)}
+              ref={(el) => {
+                if (el && active === i + optionOffset) el.scrollIntoView({ block: "nearest" });
+              }}
               className={`block w-full px-3 py-2 text-left text-sm hover:bg-blue-50 ${
-                o.value === value && (o.value !== "" || !keyword)
+                o.value === value && (o.value !== "" || !searchText)
                   ? "bg-blue-50 font-medium text-blue-700"
-                  : "text-gray-900"
+                  : active === i + optionOffset
+                    ? "bg-blue-50 text-gray-900"
+                    : "text-gray-900"
               }`}
             >
               {o.label}

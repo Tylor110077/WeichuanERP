@@ -155,7 +155,9 @@ export function NewSaleForm({
 
   const selectedCustomer = customerOptions.find((c) => String(c.id) === customerId);
   const candidates = (() => {
-    const kw = customerQuery.trim();
+    // 框里显示的就是当前选中的客户名时，不算搜索词——否则一打开就只剩他一个人
+    const raw = customerQuery.trim();
+    const kw = raw === (selectedCustomer?.name ?? "") ? "" : raw;
     const local = kw
       ? customerOptions.filter((c) => matchesSearch(c.name, c.py ?? "", kw) || c.id === Number(customerId))
       : customerOptions;
@@ -233,6 +235,7 @@ export function NewSaleForm({
     // 输入与当前选中名不一致即视为重新搜索，清空选中
     if (value !== selectedCustomer?.name) setCustomerId("");
     setShowCandidates(true);
+    setCandActive(-1); // 换了关键词，原来的键盘高亮不作数
   }
 
   function chooseCustomer(c: CustomerOption) {
@@ -426,6 +429,9 @@ export function NewSaleForm({
 
   // 商品候选弹层（fixed 定位，避免被表格 overflow 裁剪）
   const [productPanel, setProductPanel] = useState<{ index: number; top: number; left: number; width: number } | null>(null);
+  /** 搜索面板的键盘高亮：候选项多时用 ↑/↓ 选、回车确认（-1 = 没高亮） */
+  const [panelActive, setPanelActive] = useState(-1);
+  const [candActive, setCandActive] = useState(-1);
 
   /** 候选 = 本地（已加载的"最近往来"）命中 + 服务端搜索结果，按 id 去重 */
   function searchProducts(row: Row | undefined): ProductOption[] {
@@ -453,9 +459,11 @@ export function NewSaleForm({
   function openProductPanel(e: React.FocusEvent<HTMLInputElement>, index: number) {
     const rect = e.currentTarget.getBoundingClientRect();
     setProductPanel({ index, top: rect.bottom + 4, left: rect.left, width: Math.max(rect.width, 320) });
+    setPanelActive(-1);
   }
 
   function onProductInputChange(index: number, field: "code" | "name", value: string) {
+    setPanelActive(-1); // 换了关键词，原来的键盘高亮不作数
     setRows((prev) =>
       prev.map((row, i) => {
         if (i !== index) return row;
@@ -740,8 +748,37 @@ export function NewSaleForm({
                   selectAllOnFocus(e);
                   setShowCandidates(true);
                 }}
-                onClick={selectAllOnClick}
-                onBlur={() => setShowCandidates(false)}
+                  onClick={selectAllOnClick}
+                  onKeyDown={(e) => {
+                    // 与商品搜索同一套：↑/↓ 移动、回车选中、Esc 收起（回车不提交整张单）
+                    const total = candidates.length + (canCreateCustomer && customerQuery.trim() ? 1 : 0);
+                    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+                      if (total === 0) return;
+                      e.preventDefault();
+                      setShowCandidates(true);
+                      setCandActive((cur) => (e.key === "ArrowDown" ? (cur + 1) % total : cur <= 0 ? total - 1 : cur - 1));
+                      return;
+                    }
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      if (!showCandidates || candActive < 0) return;
+                      const offset = canCreateCustomer && customerQuery.trim() ? 1 : 0;
+                      if (offset === 1 && candActive === 0) {
+                        startCreateCustomer(customerQuery.trim());
+                        setCandActive(-1);
+                        return;
+                      }
+                      const c = candidates[candActive - offset];
+                      if (c) chooseCustomer(c);
+                      return;
+                    }
+                    if (e.key === "Escape") {
+                      e.preventDefault();
+                      setShowCandidates(false);
+                      setCandActive(-1);
+                    }
+                  }}
+                  onBlur={() => setShowCandidates(false)}
                 className={`w-full ${inputCls} pr-32`}
               />
           {customerId && selectedCustomer && (
@@ -777,18 +814,27 @@ export function NewSaleForm({
                       type="button"
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => startCreateCustomer(customerQuery.trim())}
-                      className="block w-full border-b border-gray-100 px-3 py-2 text-left text-sm text-blue-600 hover:bg-blue-50"
+                      className={`block w-full border-b border-gray-100 px-3 py-2 text-left text-sm text-blue-600 ${
+                        candActive === 0 ? "bg-blue-50" : "hover:bg-blue-50"
+                      }`}
                     >
                       ＋ 新建客户：「{customerQuery.trim()}」
                     </button>
                   )}
-                  {candidates.map((c) => (
+                  {candidates.map((c, i) => {
+                    const idx = i + (canCreateCustomer && customerQuery.trim() ? 1 : 0);
+                    return (
                     <button
                       type="button"
                       key={c.id}
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => chooseCustomer(c)}
-                      className="block w-full px-3 py-2 text-left text-sm text-gray-900 hover:bg-blue-50"
+                      ref={(el) => {
+                        if (el && candActive === idx) el.scrollIntoView({ block: "nearest" });
+                      }}
+                      className={`block w-full px-3 py-2 text-left text-sm text-gray-900 ${
+                        candActive === idx ? "bg-blue-50" : "hover:bg-blue-50"
+                      }`}
                     >
                       <span className="font-medium">{c.name}</span>
                       {c.groupName && (
@@ -798,7 +844,8 @@ export function NewSaleForm({
                         <span key={t} className="ml-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">{t}</span>
                       ))}
                     </button>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -1246,6 +1293,36 @@ export function NewSaleForm({
                     openProductPanel(e, i);
                   }}
                   onClick={selectAllOnClick}
+                  onKeyDown={(e) => {
+                    // 开单页里回车不该提交整张单；↑/↓ 在候选里移动，回车选中
+                    const hits = searchProducts(row);
+                    const total = hits.length + (canCreateProduct && row.productQuery.trim() ? 1 : 0);
+                    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+                      if (total === 0) return;
+                      e.preventDefault();
+                      setPanelActive((cur) => (e.key === "ArrowDown" ? (cur + 1) % total : cur <= 0 ? total - 1 : cur - 1));
+                      return;
+                    }
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      if (panelActive < 0) return;
+                      if (canCreateProduct && row.productQuery.trim() && panelActive === 0) {
+                        setNewProduct((prev) => ({ ...prev, name: (row.productCode.trim() + " " + row.productQuery.trim()).trim() }));
+                        setShowCreateProduct(true);
+                        setProductPanel(null);
+                        setPanelActive(-1);
+                        return;
+                      }
+                      const p = hits[panelActive - (canCreateProduct && row.productQuery.trim() ? 1 : 0)];
+                      if (p) chooseProduct(i, p);
+                      return;
+                    }
+                    if (e.key === "Escape") {
+                      e.preventDefault();
+                      setProductPanel(null);
+                      setPanelActive(-1);
+                    }
+                  }}
                   onBlur={() => setProductPanel(null)}
                   className={`${inputCls} min-w-0 flex-1`}
                 />
@@ -1501,6 +1578,8 @@ export function NewSaleForm({
       {productPanel && (() => {
         const row = rows[productPanel.index];
         const hits = searchProducts(row);
+        /** 置顶的「＋ 新建商品」也参与键盘选择，占第 0 位 */
+        const hasCreate = !!(canCreateProduct && row && row.productQuery.trim());
         return (
           <div
             style={{ position: "fixed", top: productPanel.top, left: productPanel.left, width: productPanel.width }}
@@ -1521,18 +1600,25 @@ export function NewSaleForm({
                   setShowCreateProduct(true);
                   setProductPanel(null);
                 }}
-                className="block w-full border-t border-gray-100 px-3 py-2 text-left text-sm text-blue-600 hover:bg-blue-50"
+                className={`block w-full border-t border-gray-100 px-3 py-2 text-left text-sm text-blue-600 ${
+                  panelActive === 0 ? "bg-blue-50" : "hover:bg-blue-50"
+                }`}
               >
                 ＋ 新建商品：「{row.productQuery.trim()}」
               </button>
             )}
-            {hits.map((p) => (
+            {hits.map((p, i) => (
               <button
                 type="button"
                 key={p.id}
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => chooseProduct(productPanel.index, p)}
-                className="block w-full px-3 py-2 text-left text-sm text-gray-900 hover:bg-blue-50"
+                ref={(el) => {
+                  if (el && panelActive === i + (hasCreate ? 1 : 0)) el.scrollIntoView({ block: "nearest" });
+                }}
+                className={`block w-full px-3 py-2 text-left text-sm text-gray-900 ${
+                  panelActive === i + (hasCreate ? 1 : 0) ? "bg-blue-50" : "hover:bg-blue-50"
+                }`}
               >
                 <span className="flex flex-wrap items-center gap-1.5">
                   <span className="font-medium">
