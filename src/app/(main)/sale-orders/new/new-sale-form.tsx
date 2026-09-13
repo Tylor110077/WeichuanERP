@@ -1524,7 +1524,7 @@ export function NewSaleForm({
                       每列都是「标签 / 值 / 提示」三层，提示层恒占一行高度，
                       所以某列有没有提示都不会把相邻列的数值顶得参差不齐。 */}
                   <div className="scroll-thin mt-3 flex items-start gap-x-3 overflow-x-auto pb-1.5">
-                    {/* 第一组：估价（先定这一行是否待补）→ 售价 → 金额（售价×数量，紧跟它） */}
+                    {/* 第一组：估价（先定这一行是否待补）→ 售价 */}
                     <RowField label="估价" className="w-[3.5rem]">
                       <button
                         type="button"
@@ -1561,11 +1561,6 @@ export function NewSaleForm({
                         }
                         className={inputNumCls}
                       />
-                    </RowField>
-                    <RowField label="金额" className="w-[7rem]">
-                      <span className={`${readOnlyValue} text-base font-semibold text-gray-900`}>
-                        ¥{lineAmount(row).toFixed(2)}
-                      </span>
                     </RowField>
 
                     <RowDivider />
@@ -1737,6 +1732,12 @@ export function NewSaleForm({
                       />
                     </RowField>
 
+                    {/* 金额放整行最末：它是售价×数量的结果，跟最后的合计对着看 */}
+                    <RowField label="金额" className="w-[7rem]">
+                      <span className={`${readOnlyValue} text-base font-semibold text-gray-900`}>
+                        ¥{lineAmount(row).toFixed(2)}
+                      </span>
+                    </RowField>
                   </div>
 
                   {/* 行备注 */}
