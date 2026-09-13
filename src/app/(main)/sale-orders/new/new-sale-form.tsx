@@ -1806,40 +1806,36 @@ const SaleRow = memo(function SaleRow({
                     {/* 第一组：估价（先定这一行是否待补）→ 售价 */}
                     <RowField
                       label="估价"
-                      className="w-[4.5rem]"
+                      className="w-[5rem]"
                       hint={row.estimated ? "待补中" : undefined}
                       hintClass="font-medium text-amber-600"
                     >
-                      {/* 开关，而不是整块填色的按钮：窄列里色块太扎眼，开关一眼看出开没开；
-                          这一列管什么由列头「估价」说明，不必在按钮上再写一遍 */}
-                      <button
-                        type="button"
-                        role="switch"
-                        aria-checked={row.estimated}
-                        onClick={() =>
-                          setRows((prev) =>
-                            prev.map((r, j) => (j === i ? { ...r, estimated: !r.estimated } : r))
-                          )
-                        }
-                        title={
-                          row.estimated
-                            ? "估价待补：只记售价，不占库存、不自动进货；到「估价待补单」里补进价与货源"
-                            : "标为估价待补（价格/货源还没定，先把单开出来）"
-                        }
-                        className="flex h-9 w-full items-center"
-                      >
+                      {row.estimated ? (
+                        /* 已经是估价行：只显示状态，不给"取消"。
+                           这一行没有对应的真实商品，改回普通行会让库存与成本说不通
+                           （没有商品，就没法把它正确地当成一行普通商品去参与库存/成本）。
+                           要调整就删掉这一行重开。 */
                         <span
-                          className={`relative inline-flex h-[18px] w-8 items-center rounded-full border transition-colors ${
-                            row.estimated ? "border-amber-400 bg-amber-400" : "border-gray-300 bg-gray-100"
-                          }`}
+                          className="flex h-9 items-center"
+                          title="估价待补：只记售价，不占库存、不自动进货；到「估价待补单」里补进价与货源。要改成普通行请删掉这一行重开。"
                         >
-                          <span
-                            className={`absolute h-3 w-3 rounded-full bg-white shadow-sm transition-all ${
-                              row.estimated ? "left-[16px]" : "left-[2px]"
-                            }`}
-                          />
+                          <span className="rounded-full border border-amber-400 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">
+                            估价待补
+                          </span>
                         </span>
-                      </button>
+                      ) : (
+                        /* 普通行可以标为估价（单向）：标上即进入待补状态，不给改回来 */
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setRows((prev) => prev.map((r, j) => (j === i ? { ...r, estimated: true } : r)))
+                          }
+                          title="标为估价待补：价格或货源还没定，先记下来把单开出来；之后到「估价待补单」补进价与货源"
+                          className="flex h-9 w-full items-center rounded-full border border-dashed border-amber-300 px-2 text-[11px] font-medium text-amber-700 transition hover:bg-amber-50"
+                        >
+                          标为估价
+                        </button>
+                      )}
                     </RowField>
                     <RowField label="售价" required className="w-[8rem]" hint={priceHint}>
                       <input
