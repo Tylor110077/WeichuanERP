@@ -237,6 +237,7 @@ export function useFormDraft<T>({
   summary,
   apply,
   onDiscard,
+  skipRestore,
 }: {
   scope: DraftScope;
   userId: number | string;
@@ -246,6 +247,8 @@ export function useFormDraft<T>({
   summary: DraftSummary;
   apply: (data: T) => void;
   onDiscard: () => void;
+  /** 带着原单来"改单"时不要恢复草稿：草稿会盖掉原单内容 */
+  skipRestore?: boolean;
 }): {
   /** 恢复的草稿的保存时间（没恢复就是 null） */
   restoredAt: number | null;
@@ -278,23 +281,28 @@ export function useFormDraft<T>({
 
   useEffect(() => {
     hydrated.current = false;
-    const target = draftId ? findDraft(userId, draftId) : newestDraft(userId, scope);
     /*
      * 服务端渲染的是空表单，草稿只能等挂载后在客户端恢复——放 effect 里就必然要 setState；
      * 改成 useState 初始化器会与 SSR 结果不一致、触发 hydration 报错，所以这里豁免该规则。
      */
     /* eslint-disable react-hooks/set-state-in-effect */
-    if (target) {
-      applyRef.current(target.data as T);
-      setCurrentId(target.id);
-      setRestoredAt(target.savedAt);
-      setSavedAt(target.savedAt);
-    } else {
+    if (skipRestore) {
+      // 改单来的：表单已被原单内容预填，草稿不再参与
       setCurrentId(draftId ?? null);
+    } else {
+      const target = draftId ? findDraft(userId, draftId) : newestDraft(userId, scope);
+      if (target) {
+        applyRef.current(target.data as T);
+        setCurrentId(target.id);
+        setRestoredAt(target.savedAt);
+        setSavedAt(target.savedAt);
+      } else {
+        setCurrentId(draftId ?? null);
+      }
     }
     /* eslint-enable react-hooks/set-state-in-effect */
     hydrated.current = true;
-  }, [userId, scope, draftId]);
+  }, [userId, scope, draftId, skipRestore]);
 
   useEffect(() => {
     if (!hydrated.current) return;

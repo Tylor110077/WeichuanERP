@@ -9,7 +9,11 @@ import { NewOrderForm } from "./new-order-form";
 
 export const metadata = { title: "进货开单 - 玮川进销存" };
 
-export default async function NewPurchaseOrderPage() {
+export default async function NewPurchaseOrderPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ fromOrder?: string }>;
+}) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   if (user.role === "boss") {
@@ -17,6 +21,23 @@ export default async function NewPurchaseOrderPage() {
       <NoPermission text="无权限开进货单（管理员/业务员）" />
     );
   }
+
+  const params = await searchParams;
+  const fromOrderId = Number(params.fromOrder) || 0;
+  /** 「改单」：带着原单进来时把原单内容预填出来（原单此时应已作废） */
+  const source = fromOrderId
+    ? await prisma.purchaseOrder.findUnique({
+        where: { id: fromOrderId },
+        include: {
+          items: {
+            include: {
+              product: { select: { id: true, code: true, name: true } },
+              unit: { select: { name: true } },
+            },
+          },
+        },
+      })
+    : null;
 
   // 首屏只带"最近往来"（最近进过货的厂家/商品，不足用最新建档补齐）：
   // 厂家与商品目录都可能上千，全量塞进页面会让开单页越来越重（与销售开单页同一套做法）。
@@ -94,6 +115,26 @@ export default async function NewPurchaseOrderPage() {
         categories={categories.map((c) => ({ id: c.id, name: c.name, py: initials(c.name) }))}
         units={units.map((u) => ({ id: u.id, name: u.name, py: initials(u.name) }))}
         currentUserId={user.id}
+        prefill={
+          source
+            ? {
+                orderId: source.id,
+                orderNo: source.orderNo,
+                voided: source.status === "voided",
+                supplierId: String(source.supplierId),
+                remark: source.remark ?? "",
+                starred: source.starred,
+                rows: source.items.map((it) => ({
+                  productId: String(it.productId),
+                  productLabel: `${it.product.code} ${it.product.name}`,
+                  unitName: it.unit.name,
+                  quantity: String(Number(it.quantity)),
+                  unitPrice: String(Number(it.unitPrice)),
+                  remark: it.remark ?? "",
+                })),
+              }
+            : null
+        }
       />
     </div>
   );

@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useMemo, useState, useTransition } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { badgeInfo, btnPrimary, btnSmallPrimary, btnSmallSolid, inputBase, tagInfo, tagPending } from "@/lib/ui";
 import { initials, matchesSearch } from "@/lib/pinyin";
 import { useFormDraft } from "@/lib/form-draft";
@@ -121,6 +122,7 @@ export function NewSaleForm({
   canCreateProduct,
   canSeeCost,
   currentUserId,
+  prefill = null,
 }: {
   customers: CustomerOption[];
   suppliers: SupplierOption[];
@@ -136,8 +138,58 @@ export function NewSaleForm({
   canSeeCost: boolean;
   /** 当前用户 id：草稿按人存，同一台电脑换人登录不会串 */
   currentUserId: number;
+  /** 「改单」带进来的原单内容（原单此时应已作废）：用来预填表单 */
+  prefill?: {
+    orderId: number;
+    orderNo: string;
+    /** 原单是否已作废（正常流程里是；没作废就提示一下） */
+    voided: boolean;
+    customerId: string;
+    customerName: string;
+    remark: string;
+    starred: boolean;
+    rows: {
+      productId: string;
+      productCode: string;
+      productQuery: string;
+      manufacturer: string;
+      unitName: string;
+      stockQty: number;
+      avgCost: number;
+      quantity: string;
+      unitPrice: string;
+      stockUsed: string;
+      supplyPrice: string;
+      supplierId: string;
+      extraQty: string;
+      remark: string;
+    }[];
+  } | null;
 }) {
-  const [rows, setRows] = useState<Row[]>([emptyRow()]);
+  const [rows, setRows] = useState<Row[]>(() =>
+    prefill
+      ? prefill.rows.map((r) => ({
+          productId: r.productId,
+          productLabel: `${r.productCode} ${r.productQuery}`,
+          productCode: r.productCode,
+          productQuery: r.productQuery,
+          manufacturer: r.manufacturer,
+          unitName: r.unitName,
+          stockQty: r.stockQty,
+          avgCost: r.avgCost,
+          quantity: r.quantity,
+          unitPrice: r.unitPrice,
+          lastGlobalSalePrice: 0,
+          lastCustomerPrice: null,
+          supplierId: r.supplierId,
+          supplyPrice: r.supplyPrice,
+          extraQty: r.extraQty,
+          stockUsed: r.stockUsed,
+          remark: r.remark,
+          hasLastSupplier: !!r.supplierId,
+        }))
+      : [emptyRow()]
+  );
   const [productOptions, setProductOptions] = useState<ProductOption[]>(products);
   const [customerOptions, setCustomerOptions] = useState<CustomerOption[]>(customers);
   // 服务端搜索结果（商品/客户目录可能上千，首屏只带"最近往来"，输入时按需搜索）
@@ -145,12 +197,12 @@ export function NewSaleForm({
   const [remoteCustomers, setRemoteCustomers] = useState<OrderCustomerOption[]>([]);
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
-  const [customerId, setCustomerId] = useState("");
-  const [customerQuery, setCustomerQuery] = useState("");
+  const [customerId, setCustomerId] = useState(prefill?.customerId ?? "");
+  const [customerQuery, setCustomerQuery] = useState(prefill?.customerName ?? "");
   /** 单据备注：原先是不受控输入，做草稿必须能取到值，改成受控 */
-  const [saleRemark, setSaleRemark] = useState("");
+  const [saleRemark, setSaleRemark] = useState(prefill?.remark ?? "");
   /** 星标：开单时就标记"重要单据"，随表单提交 */
-  const [starred, setStarred] = useState(false);
+  const [starred, setStarred] = useState(prefill?.starred ?? false);
   const [showCandidates, setShowCandidates] = useState(false);
 
   const selectedCustomer = customerOptions.find((c) => String(c.id) === customerId);
@@ -694,6 +746,8 @@ export function NewSaleForm({
     scope: "sale",
     userId: currentUserId,
     draftId: urlDraftId,
+    // 改单来的：表单已被原单内容预填，别让旧草稿盖掉
+    skipRestore: !!prefill,
     summary: draftSummary,
     value: draftValue,
     // 选了客户、写了备注、或某行开始填了，才算"有内容"；全空就把草稿删掉
@@ -720,6 +774,20 @@ export function NewSaleForm({
   return (
     <form action={formAction} className="space-y-4" onSubmit={clearStored}>
       <DraftBanner restoredAt={restoredAt} savedAt={savedAt} onDiscard={discard} onStartNew={startNew} />
+      {prefill && (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+          <span className="font-medium">
+            正在改单：原单 {prefill.orderNo}
+            {prefill.voided ? "（已作废）" : "（注意：原单尚未作废）"}
+          </span>
+          <span className="text-amber-700/90">
+            内容已从原单带出；改好提交会生成一张新单并重新计算库存与成本，原单不会恢复。
+          </span>
+          <Link href={`/sale-orders/${prefill.orderId}`} className="text-amber-700 underline decoration-dotted underline-offset-2 hover:decoration-solid">
+            看原单
+          </Link>
+        </div>
+      )}
       {/* 客户信息（可折叠） */}
       <details open className="rounded-xl border border-gray-200 bg-white">
         <summary className="cursor-pointer rounded-t-xl px-5 py-3 text-sm font-medium text-gray-900 transition-colors hover:bg-gray-50">

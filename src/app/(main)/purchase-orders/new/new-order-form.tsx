@@ -2,6 +2,7 @@
 
 import { useActionState, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { initials } from "@/lib/pinyin";
 import { useFormDraft } from "@/lib/form-draft";
 import { DraftBanner } from "@/components/draft-banner";
@@ -67,6 +68,7 @@ export function NewOrderForm({
   categories,
   units,
   currentUserId,
+  prefill = null,
 }: {
   suppliers: SupplierOption[];
   products: ProductOption[];
@@ -75,19 +77,51 @@ export function NewOrderForm({
   units: UnitOption[];
   /** 当前用户 id：草稿按人存，同一台电脑换人登录不会串 */
   currentUserId: number;
+  /** 「改单」带进来的原单内容（原单此时应已作废）：用来预填表单 */
+  prefill?: {
+    orderId: number;
+    orderNo: string;
+    voided: boolean;
+    supplierId: string;
+    remark: string;
+    starred: boolean;
+    rows: {
+      productId: string;
+      productLabel: string;
+      unitName: string;
+      quantity: string;
+      unitPrice: string;
+      remark: string;
+    }[];
+  } | null;
 }) {
-  const [rows, setRows] = useState<Row[]>([emptyRow()]);
-  const [supplierId, setSupplierId] = useState("");
+  const [rows, setRows] = useState<Row[]>(() =>
+    prefill ? prefill.rows.map((r) => ({ ...r })) : [emptyRow()]
+  );
+  const [supplierId, setSupplierId] = useState(prefill?.supplierId ?? "");
   /** 单据备注：原先是不受控输入，做草稿必须能取到值，改成受控 */
-  const [orderRemark, setOrderRemark] = useState("");
+  const [orderRemark, setOrderRemark] = useState(prefill?.remark ?? "");
   /** 星标：开单时就标记"重要单据"，随表单提交 */
-  const [starred, setStarred] = useState(false);
+  const [starred, setStarred] = useState(prefill?.starred ?? false);
   // 现场新建的厂家/商品并入候选（远程搜到的也记下来，选中时才能取到单位与默认价）
   const [extraSuppliers, setExtraSuppliers] = useState<SupplierOption[]>([]);
   const [knownProducts, setKnownProducts] = useState<Record<string, ProductOption>>(() =>
     Object.fromEntries(products.map((p) => [String(p.id), p]))
   );
-  const [extraProducts, setExtraProducts] = useState<ProductOption[]>([]);
+  // 改单预填的商品可能不在首屏候选里，补进候选，否则下拉只显示空白
+  const [extraProducts, setExtraProducts] = useState<ProductOption[]>(() =>
+    prefill
+      ? prefill.rows
+          .filter((r) => !products.some((p) => String(p.id) === r.productId))
+          .map((r) => ({
+            id: Number(r.productId),
+            label: r.productLabel,
+            unitId: 0,
+            unitName: r.unitName,
+            refPrice: Number(r.unitPrice) || 0,
+          }))
+      : []
+  );
   // 现场新建厂家 / 商品（商品记录是哪一行触发的）
   const [creatingSupplier, setCreatingSupplier] = useState(false);
   const [newSupplierName, setNewSupplierName] = useState("");
@@ -268,6 +302,8 @@ export function NewOrderForm({
     scope: "purchase",
     userId: currentUserId,
     draftId: urlDraftId,
+    // 改单来的：表单已被原单内容预填，别让旧草稿盖掉
+    skipRestore: !!prefill,
     summary: draftSummary,
     value: draftValue,
     // 选了厂家、写了备注、或某行选了商品，才算"有内容"；全空就把草稿删掉
@@ -307,6 +343,23 @@ export function NewOrderForm({
   return (
     <form action={formAction} className="space-y-4" onSubmit={clearStored}>
       <DraftBanner restoredAt={restoredAt} savedAt={savedAt} onDiscard={discard} onStartNew={startNew} />
+      {prefill && (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+          <span className="font-medium">
+            正在改单：原单 {prefill.orderNo}
+            {prefill.voided ? "（已作废）" : "（注意：原单尚未作废）"}
+          </span>
+          <span className="text-amber-700/90">
+            内容已从原单带出；改好提交会生成一张新单并重新计算库存与成本，原单不会恢复。
+          </span>
+          <Link
+            href={`/purchase-orders/${prefill.orderId}`}
+            className="text-amber-700 underline decoration-dotted underline-offset-2 hover:decoration-solid"
+          >
+            看原单
+          </Link>
+        </div>
+      )}
       {/* 厂家信息（可折叠） */}
       <details open className="rounded-xl border border-gray-200 bg-white">
         <summary className="cursor-pointer rounded-t-xl px-5 py-3 text-sm font-medium text-gray-900 transition-colors hover:bg-gray-50">
