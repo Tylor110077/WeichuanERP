@@ -16,7 +16,11 @@ import {
   type QuickCustomerResult,
   type QuickResult,
 } from "../../customers/actions";
-import { createQuickProductAction, type QuickProductResult } from "../../products/actions";
+import {
+  createPlaceholderProductAction,
+  createQuickProductAction,
+  type QuickProductResult,
+} from "../../products/actions";
 import { createQuickCategoryAction, type QuickCategoryResult } from "../../categories/actions";
 import { createQuickUnitAction, type QuickUnitResult } from "../../units/actions";
 import { createQuickSupplierAction } from "../../suppliers/actions";
@@ -312,6 +316,59 @@ export function NewSaleForm({
     minStock: "1",
   });
   const [productMsg, setProductMsg] = useState<{ ok?: string; error?: string } | null>(null);
+  /** 估价商品：连商品都还没定，只给一个临时名先把单开出来 */
+  const [showEstimate, setShowEstimate] = useState(false);
+  const [estimateName, setEstimateName] = useState("");
+  const [estimatePending, startEstimate] = useTransition();
+
+  function quickAddEstimated() {
+    const name = estimateName.trim();
+    if (!name) {
+      setProductMsg({ error: "请填写临时品名" });
+      return;
+    }
+    startEstimate(async () => {
+      const r = await createPlaceholderProductAction(name);
+      if ("error" in r) {
+        setProductMsg({ error: r.error });
+        return;
+      }
+      const opt: ProductOption = {
+        id: r.id,
+        label: r.code + " " + r.name,
+        code: r.code,
+        name: r.name,
+        manufacturer: "",
+        unitName: r.unitName,
+        stockQty: 0,
+        avgCost: 0,
+        refSalePrice: 0,
+        lastSupplierId: null,
+        lastSupplyPrice: 0,
+      };
+      setProductOptions((prev) => [...prev, opt]);
+      setRows((prev) => {
+        // 丢掉还没填的空行，再把估价行接上
+        const kept = prev.filter((r) => r.productId || r.productQuery.trim());
+        return [
+          ...kept,
+          {
+            ...emptyRow(),
+            productId: String(r.id),
+            productLabel: opt.label,
+            productCode: r.code,
+            productQuery: r.name,
+            unitName: r.unitName,
+            estimated: true,
+          },
+        ];
+      });
+      setEstimateName("");
+      setShowEstimate(false);
+      setProductMsg({ ok: "已加一行估价商品（临时名），填数量与售价即可提交" });
+      setTimeout(() => setProductMsg(null), 6000);
+    });
+  }
   const [mfrQuery, setMfrQuery] = useState("");
   const [mfrOpen, setMfrOpen] = useState(false);
   const mfrHits = (() => {
@@ -1660,6 +1717,39 @@ export function NewSaleForm({
           >
             + 添加商品行
           </button>
+          {/* 估价商品：连商品都还没定，只给一个临时名先把单开出来 */}
+          <button
+            type="button"
+            onClick={() => setShowEstimate((v) => !v)}
+            className="rounded-full border border-dashed border-amber-300 px-2.5 py-1 text-xs font-medium text-amber-700 transition hover:bg-amber-50"
+          >
+            ＋ 估价商品（临时名）
+          </button>
+          {showEstimate && (
+            <span className="flex flex-wrap items-center gap-2">
+              <input
+                value={estimateName}
+                onChange={(e) => setEstimateName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    quickAddEstimated();
+                  }
+                }}
+                placeholder="临时品名，如 YJV 3*2.5 待定"
+                className="h-9 w-56 rounded-md border border-amber-300 px-2 text-sm"
+              />
+              <button
+                type="button"
+                onClick={quickAddEstimated}
+                disabled={estimatePending}
+                className={btnSmallPrimary}
+              >
+                {estimatePending ? "添加中…" : "加这一行"}
+              </button>
+              <span className="text-xs text-gray-400">商品、厂家、进价以后到「估价待补单」里补</span>
+            </span>
+          )}
           {canCreateProduct && (
             <button
               type="button"

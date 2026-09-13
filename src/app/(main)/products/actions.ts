@@ -51,6 +51,41 @@ async function generateUniqueCode(): Promise<string> {
   throw new Error("商品编码生成失败，请重试");
 }
 
+/**
+ * 估价行的占位商品：开单时连商品是什么都还没定，只给一个临时名字先把单开出来。
+ * 建的是普通商品（编码照常生成、单位取第一个启用的），
+ * 补单时在「估价待补单」里把名字与厂家改成真实的即可。
+ */
+export async function createPlaceholderProductAction(
+  name: string
+): Promise<{ id: number; code: string; name: string; unitName: string } | { error: string }> {
+  const user = await requireMasterDataWrite().catch(() => null);
+  if (!user) return { error: "无权限新建商品" };
+  const trimmed = name.trim().slice(0, 100);
+  if (!trimmed) return { error: "请填写临时品名" };
+
+  const unit = await prisma.unit.findFirst({
+    where: { status: 1 },
+    orderBy: { id: "asc" },
+    select: { id: true, name: true },
+  });
+  if (!unit) return { error: "还没有计量单位，请先到「计量单位」里建一个" };
+
+  const created = await prisma.product.create({
+    data: { code: await generateUniqueCode(), name: trimmed, unitId: unit.id, refPurchasePrice: 0, refSalePrice: 0, status: 1 },
+    select: { id: true, code: true, name: true },
+  });
+  await writeAudit({
+    userId: user.id,
+    action: "create",
+    entityType: "product",
+    entityId: created.id,
+    after: { code: created.code, name: trimmed, placeholder: true },
+  });
+  revalidatePath("/products");
+  return { id: created.id, code: created.code, name: created.name, unitName: unit.name };
+}
+
 async function guardAdmin() {
   return requireMasterDataWrite().catch(() => {
     throw new Error("无权限执行此操作");
