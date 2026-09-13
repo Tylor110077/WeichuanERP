@@ -104,6 +104,7 @@ model User {
   purchaseReturns PurchaseReturn[]
   saleReturns     SaleReturn[]
   payments        Payment[]
+  printTemplates  PrintTemplate[]
 
   @@map("users")
 }
@@ -542,6 +543,28 @@ model Payment {
   @@index([operatorId])
   @@index([createdAt])
   @@map("payments")
+}
+
+// ---------------------------------------------------------------------------
+// 打印模板（一套版式设置存库共用，打开打印页时自动套用默认模板）
+// ---------------------------------------------------------------------------
+
+model PrintTemplate {
+  id         Int      @id @default(autoincrement())
+  name       String   @db.VarChar(50)
+  /** 适用单据类型：目前只有售卖单（进货单将来可复用同一张表） */
+  kind       String   @default("sale") @db.VarChar(20)
+  /** 版式配置 JSON：打印方式 / 列显隐 / 显示选项 / 收款账户 / 抬头与页脚 */
+  config     Json
+  /** 同类里只能有一个默认；设默认时会把同类的其它模板取消 */
+  isDefault  Boolean  @default(false) @map("is_default")
+  operatorId Int      @map("operator_id")
+  operator   User     @relation(fields: [operatorId], references: [id])
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@index([kind])
+  @@map("print_templates")
 }
 
 // ---------------------------------------------------------------------------

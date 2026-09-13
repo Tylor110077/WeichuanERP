@@ -2,6 +2,7 @@ import { redirect, notFound } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { PrintEditor } from "./print-editor";
+import { PRINT_TEMPLATE_KIND, parsePrintTemplateConfig } from "@/lib/print-template";
 
 export const metadata = { title: "打印预览（可编辑） - 玮川进销存" };
 
@@ -53,5 +54,23 @@ export default async function SaleOrderPrintPage({
     })),
   };
 
-  return <PrintEditor data={data} />;
+  const templates = await prisma.printTemplate.findMany({
+    where: { kind: PRINT_TEMPLATE_KIND },
+    // 默认模板排最前，打印页打开时套用的就是它
+    orderBy: [{ isDefault: "desc" }, { updatedAt: "desc" }],
+    select: { id: true, name: true, isDefault: true, config: true },
+  });
+
+  return (
+    <PrintEditor
+      data={data}
+      canManage={user.role === "admin"}
+      templates={templates.map((t) => ({
+        id: t.id,
+        name: t.name,
+        isDefault: t.isDefault,
+        config: parsePrintTemplateConfig(t.config),
+      }))}
+    />
+  );
 }

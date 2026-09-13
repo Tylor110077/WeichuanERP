@@ -1,8 +1,15 @@
 "use client";
 
-import { useState, useSyncExternalStore, type ReactNode } from "react";
-import { btnPrimary, btnSecondary } from "@/lib/ui";
+import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
+import { btnPrimary, btnSecondary, selectCls } from "@/lib/ui";
 import { rmbUpper } from "@/lib/rmb";
+import type { PrintModeKey, PrintTemplateConfig, PrintTemplateDTO } from "@/lib/print-template";
+import {
+  deletePrintTemplateAction,
+  savePrintTemplateAction,
+  setDefaultPrintTemplateAction,
+} from "./template-actions";
 
 /**
  * 销售单打印（可编辑预览）。
@@ -128,9 +135,7 @@ const PRINT_MODES = [
   { key: "carbon", label: "三联复写纸（打一遍）" },
   { key: "a4-three", label: "A4 三联同页" },
   { key: "a4-pages", label: "A4 每联一页" },
-] as const;
-
-type PrintModeKey = (typeof PRINT_MODES)[number]["key"];
+] as const satisfies readonly { key: PrintModeKey; label: string }[];
 
 /**
  * 打印稿里的输入框样式。
@@ -141,7 +146,17 @@ type PrintModeKey = (typeof PRINT_MODES)[number]["key"];
 const inputBase = "bg-transparent outline-none focus:bg-blue-50 rounded px-1 text-inherit";
 const inputFill = `${inputBase} w-full`;
 
-export function PrintEditor({ data }: { data: PrintOrderData }) {
+export function PrintEditor({
+  data,
+  templates,
+  canManage,
+}: {
+  data: PrintOrderData;
+  /** 已保存的打印模板（服务端按"默认优先"排好序） */
+  templates: PrintTemplateDTO[];
+  /** 只有管理员能存/删/设默认；其它角色照样能选模板套用 */
+  canManage: boolean;
+}) {
   // 抬头三件套存浏览器本地（不落库、不回写订单）：只需填一次
   const letterhead = useSyncExternalStore(
     subscribeLetterhead,
@@ -180,6 +195,102 @@ export function PrintEditor({ data }: { data: PrintOrderData }) {
   const [printMode, setPrintMode] = useState<PrintModeKey>("carbon");
 
   const visibleCols = ALL_COLS.filter((c) => !hiddenCols.includes(c.key));
+
+  // ---- 打印模板：存的是版式（打印方式/列/显示选项/收款账户/抬头页脚），不含单据内容 ----
+  const router = useRouter();
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [tplName, setTplName] = useState("");
+  const [tplMsg, setTplMsg] = useState<string | null>(null);
+  const [tplBusy, setTplBusy] = useState(false);
+  const [tplConfirmDelete, setTplConfirmDelete] = useState(false);
+
+  /** 当前界面上的设置 → 模板配置 */
+  function configFromState(): PrintTemplateConfig {
+    return {
+      printMode,
+      hiddenCols,
+      showRmb,
+      showSign,
+      account,
+      title,
+      company: letterhead.company,
+      address: letterhead.address,
+      phone: letterhead.phone,
+    };
+  }
+
+  function applyTemplate(t: PrintTemplateDTO) {
+    const c = t.config;
+    setPrintMode(c.printMode);
+    setHiddenCols(c.hiddenCols);
+    setShowRmb(c.showRmb);
+    setShowSign(c.showSign);
+    setAccount(c.account);
+    setTitle(c.title);
+    // 抬头为空时不动本地已记住的值，免得空模板把之前填好的地址电话抹掉
+    const patch: Partial<Letterhead> = { company: c.company };
+    if (c.address) patch.address = c.address;
+    if (c.phone) patch.phone = c.phone;
+    writeLetterhead(patch);
+    setTplName(t.name);
+    setTplConfirmDelete(false);
+  }
+
+  // 打开打印页时套用默认模板（列表已按 isDefault 优先排序）；只套一次，之后用户改的不覆盖
+  useEffect(() => {
+    if (templates.length === 0) return;
+    const first = templates.find((t) => t.isDefault) ?? templates[0];
+    // 套用模板要等挂载后才能做（服务端渲染时还不知道用哪套），这里必然 setState，豁免该规则
+    /* eslint-disable-next-line react-hooks/set-state-in-effect */
+    applyTemplate(first);
+    setSelectedId(first.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function saveTemplate(overwrite: boolean) {
+    const current = selectedId != null ? templates.find((t) => t.id === selectedId) : undefined;
+    const name = (overwrite ? (current?.name ?? tplName) : tplName).trim();
+    if (!name) {
+      setTplMsg("请先填写模板名称");
+      return;
+    }
+    setTplBusy(true);
+    setTplMsg(null);
+    const r = await savePrintTemplateAction({
+      id: overwrite ? current?.id : undefined,
+      name,
+      config: configFromState(),
+      isDefault: overwrite ? !!current?.isDefault : false,
+    });
+    setTplBusy(false);
+    setTplMsg(r?.error ?? r?.ok ?? null);
+    if (r?.id) setSelectedId(r.id);
+    if (r?.ok) router.refresh();
+  }
+
+  async function makeDefault() {
+    if (selectedId == null) return;
+    setTplBusy(true);
+    setTplMsg(null);
+    const r = await setDefaultPrintTemplateAction(selectedId);
+    setTplBusy(false);
+    setTplMsg(r?.error ?? r?.ok ?? null);
+    if (r?.ok) router.refresh();
+  }
+
+  async function removeTemplate() {
+    if (selectedId == null) return;
+    setTplBusy(true);
+    setTplMsg(null);
+    const r = await deletePrintTemplateAction(selectedId);
+    setTplBusy(false);
+    setTplMsg(r?.error ?? r?.ok ?? null);
+    if (r?.ok) {
+      setSelectedId(null);
+      setTplConfirmDelete(false);
+      router.refresh();
+    }
+  }
 
   function rowAmount(row: (typeof rows)[number]): number {
     const q = Number(row.qty);
@@ -453,6 +564,100 @@ export function PrintEditor({ data }: { data: PrintOrderData }) {
           </div>
         </div>
 
+        {/* 打印模板：选一套即套用上面的打印方式/列/显示选项 + 收款账户与抬头页脚 */}
+        <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-gray-100 pt-3">
+          <span className="text-xs font-medium text-gray-500">打印模板</span>
+          <select
+            value={selectedId ?? ""}
+            onChange={(e) => {
+              const id = Number(e.target.value);
+              setSelectedId(id > 0 ? id : null);
+              setTplConfirmDelete(false);
+              const t = templates.find((x) => x.id === id);
+              if (t) applyTemplate(t);
+            }}
+            className={`${selectCls} w-48 py-1 text-xs`}
+          >
+            <option value="">（不套用模板）</option>
+            {templates.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+                {t.isDefault ? "（默认）" : ""}
+              </option>
+            ))}
+          </select>
+          {canManage ? (
+            <>
+              <input
+                value={tplName}
+                onChange={(e) => setTplName(e.target.value)}
+                maxLength={50}
+                placeholder="模板名称"
+                className="w-32 rounded-md border border-gray-300 px-2 py-1 text-xs"
+              />
+              <button
+                type="button"
+                onClick={() => void saveTemplate(false)}
+                disabled={tplBusy}
+                className="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs text-gray-700 transition hover:border-blue-300 hover:text-blue-600 disabled:opacity-50"
+              >
+                另存为新模板
+              </button>
+              {selectedId != null && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => void saveTemplate(true)}
+                    disabled={tplBusy}
+                    className="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs text-gray-700 transition hover:border-blue-300 hover:text-blue-600 disabled:opacity-50"
+                  >
+                    保存到该模板
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void makeDefault()}
+                    disabled={tplBusy}
+                    className="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs text-gray-700 transition hover:border-blue-300 hover:text-blue-600 disabled:opacity-50"
+                  >
+                    设为默认
+                  </button>
+                  {tplConfirmDelete ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => void removeTemplate()}
+                        disabled={tplBusy}
+                        className="rounded-md border border-red-200 bg-red-50 px-2 py-1 text-xs font-medium text-red-600 disabled:opacity-50"
+                      >
+                        确认删除
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setTplConfirmDelete(false)}
+                        className="text-xs text-gray-500 hover:underline"
+                      >
+                        取消
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setTplConfirmDelete(true)}
+                      disabled={tplBusy}
+                      className="text-xs text-gray-400 transition hover:text-red-600 hover:underline disabled:opacity-50"
+                    >
+                      删除模板
+                    </button>
+                  )}
+                </>
+              )}
+            </>
+          ) : (
+            <span className="text-xs text-gray-400">模板由管理员维护，你选一套用即可</span>
+          )}
+          {tplMsg && <span className="text-xs text-gray-500">{tplMsg}</span>}
+        </div>
+
         <div className="mt-3 space-y-2 border-t border-gray-100 pt-3">
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="mr-1.5 text-xs font-medium text-gray-500">打印列</span>
@@ -488,6 +693,10 @@ export function PrintEditor({ data }: { data: PrintOrderData }) {
           </span>
           <span className="ml-1 font-medium text-amber-600">
             这里的修改只作用于本次打印稿，不会保存到订单；如需修改订单请用「作废后重开」或退货。
+          </span>
+          <span className="ml-1 text-gray-600">
+            「打印模板」能把打印方式、打印列、显示选项连同收款账户与抬头页脚存成一套，下次直接选用
+            （存的是版式，不含单据内容）。
           </span>
         </p>
       </div>
