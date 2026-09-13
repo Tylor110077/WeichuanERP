@@ -17,6 +17,8 @@ const itemSchema = z.object({
   productId: z.coerce.number().int().positive("请选择商品"),
   /** 估价待补：只填售价，进价与货源后补 */
   estimated: z.boolean().optional(),
+  /** 行内单位（估价行可选/可就地新建）；不传就用商品的单位 */
+  unitId: z.coerce.number().int().positive().optional(),
   quantity: requiredNumber({
     invalid: "请填写数量",
     min: 0.001,
@@ -100,6 +102,7 @@ function parseCreatePayload(formData: FormData) {
       stockUsed: formData.get(`item_${i}_stockUsed`) ?? undefined,
       // 估价待补：这一行只知道售价，进价与货源后补（不消耗库存、不自动补货）
       estimated: formData.get(`item_${i}_estimated`) === "1",
+      unitId: formData.get(`item_${i}_unitId`) || undefined,
     });
     i++;
   }
@@ -297,7 +300,7 @@ export async function createSaleOrderAction(
             restockTotal,
             estimated,
             supplyPrice: round2(it.supplyPrice),
-            unitId: product.unitId,
+            unitId: it.unitId ?? product.unitId,
             remark: it.remark ?? "",
             stockCost: 0,
             purchaseCost: 0,

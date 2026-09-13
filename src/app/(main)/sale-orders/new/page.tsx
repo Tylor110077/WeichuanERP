@@ -106,6 +106,8 @@ export default async function NewSaleOrderPage({
             productQuery: it.product.name,
             manufacturer: it.product.manufacturer ?? "",
             unitName: it.unit.name,
+            unitId: String(it.unitId),
+            estimated: it.estimated,
             stockQty: Number(it.product.stockQty),
             avgCost: Number(it.product.avgCost),
             quantity: String(Number(it.quantity)),

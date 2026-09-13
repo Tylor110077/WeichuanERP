@@ -80,6 +80,8 @@ interface Row {
   productQuery: string; // 名称输入框（搜索用）
   manufacturer: string; // 选中商品的厂家（用于"自动补货：厂家"提示）
   unitName: string;
+  /** 单位 id：正常行由商品决定（留空即可），估价行由用户选或当场新建 */
+  unitId: string;
   stockQty: number;
   /** 选中商品时的移动加权均价（参考展示） */
   avgCost: number;
@@ -163,6 +165,9 @@ export function NewSaleForm({
       productQuery: string;
       manufacturer: string;
       unitName: string;
+      unitId: string;
+      /** 原行是否为估价待补（改单后仍应是估价行，不能变成占库存的普通行） */
+      estimated: boolean;
       stockQty: number;
       avgCost: number;
       quantity: string;
@@ -184,6 +189,7 @@ export function NewSaleForm({
           productQuery: r.productQuery,
           manufacturer: r.manufacturer,
           unitName: r.unitName,
+          unitId: r.unitId,
           stockQty: r.stockQty,
           avgCost: r.avgCost,
           quantity: r.quantity,
@@ -196,7 +202,7 @@ export function NewSaleForm({
           stockUsed: r.stockUsed,
           remark: r.remark,
           hasLastSupplier: !!r.supplierId,
-          estimated: false,
+          estimated: r.estimated,
         }))
       : [emptyRow()]
   );
@@ -369,6 +375,23 @@ export function NewSaleForm({
       setTimeout(() => setProductMsg(null), 6000);
     });
   }
+
+  /** 估价行的单位：可就地新建（与「新建商品」的单位字段同一套做法），建完直接选到该行 */
+  function quickUnitForRow(index: number, name: string) {
+    startCreateTransition(async () => {
+      const r = await createQuickUnitAction({ name });
+      if ("error" in r) {
+        setProductMsg({ error: r.error });
+        return;
+      }
+      setUnitOptions((prev) => [...prev, { id: r.id, name: r.name }]);
+      setRows((prev) =>
+        prev.map((row, j) => (j === index ? { ...row, unitId: String(r.id), unitName: r.name } : row))
+      );
+      setProductMsg({ ok: "已新建单位「" + r.name + "」并选到该行" });
+      setTimeout(() => setProductMsg(null), 5000);
+    });
+  }
   const [mfrQuery, setMfrQuery] = useState("");
   const [mfrOpen, setMfrOpen] = useState(false);
   const mfrHits = (() => {
@@ -524,6 +547,7 @@ export function NewSaleForm({
       productQuery: "",
       manufacturer: "",
       unitName: "",
+      unitId: "",
       stockQty: 0,
 
       avgCost: 0,
@@ -773,7 +797,8 @@ export function NewSaleForm({
 
           remark: "",
           hasLastSupplier: false,
-        estimated: false,
+          estimated: false,
+          unitId: "",
         };
         // 未选中的行视为空行（即便输入过搜索词），替换为新商品行
         const emptyIdx = prev.findIndex((r) => !r.productId);
@@ -1537,8 +1562,37 @@ export function NewSaleForm({
                         className={inputNumCls}
                       />
                     </RowField>
-                    <RowField label="单位" className="w-[4.5rem]">
-                      <span className={`${readOnlyValue} text-sm text-gray-700`}>{row.unitName || "—"}</span>
+                    <RowField
+                      label="单位"
+                      className={row.estimated ? "w-[7rem]" : "w-[4.5rem]"}
+                      hint={row.estimated && !row.unitId ? "可搜索，也可输入新单位" : undefined}
+                    >
+                      {row.estimated ? (
+                        /* 估价行：单位可改、也能当场新建——与「新建商品」里的单位字段同一套做法 */
+                        <SearchSelect
+                          key={`est-unit-${i}-${row.unitId}-${unitOptions.length}`}
+                          name={`item_${i}_unitId`}
+                          options={unitOptions.map((u) => ({ value: String(u.id), label: u.name, py: initials(u.name) }))}
+                          defaultValue={row.unitId}
+                          noneLabel="选择单位"
+                          placeholder="单位（可搜索 / 可新建）"
+                          className="w-full"
+                          createLabel={(k) => `＋ 新建单位：「${k}」`}
+                          onCreate={(k) => quickUnitForRow(i, k)}
+                          onChange={(v) =>
+                            setRows((prev) =>
+                              prev.map((r, j) =>
+                                j === i ? { ...r, unitId: v, unitName: unitOptions.find((u) => String(u.id) === v)?.name ?? "" } : r
+                              )
+                            )
+                          }
+                        />
+                      ) : (
+                        <>
+                          <input type="hidden" name={`item_${i}_unitId`} value={row.unitId} />
+                          <span className={`${readOnlyValue} text-sm text-gray-700`}>{row.unitName || "—"}</span>
+                        </>
+                      )}
                     </RowField>
                     <RowField
                       label="库存"
