@@ -1524,27 +1524,41 @@ export function NewSaleForm({
                       所以某列有没有提示都不会把相邻列的数值顶得参差不齐。 */}
                   <div className="scroll-thin mt-3 flex items-start gap-x-3 overflow-x-auto pb-1.5">
                     {/* 第一组：估价（先定这一行是否待补）→ 售价 */}
-                    <RowField label="估价" className="w-[3.5rem]">
+                    <RowField
+                      label="估价"
+                      className="w-[4.5rem]"
+                      hint={row.estimated ? "待补中" : undefined}
+                      hintClass="font-medium text-amber-600"
+                    >
+                      {/* 开关，而不是整块填色的按钮：窄列里色块太扎眼，开关一眼看出开没开；
+                          这一列管什么由列头「估价」说明，不必在按钮上再写一遍 */}
                       <button
                         type="button"
+                        role="switch"
+                        aria-checked={row.estimated}
                         onClick={() =>
                           setRows((prev) =>
                             prev.map((r, j) => (j === i ? { ...r, estimated: !r.estimated } : r))
                           )
                         }
-                        aria-pressed={row.estimated}
                         title={
                           row.estimated
                             ? "估价待补：只记售价，不占库存、不自动进货；到「估价待补单」里补进价与货源"
                             : "标为估价待补（价格/货源还没定，先把单开出来）"
                         }
-                        className={`h-9 w-full rounded-md border px-1 text-xs transition ${
-                          row.estimated
-                            ? "border-amber-300 bg-amber-50 font-medium text-amber-700"
-                            : "border-gray-300 bg-white text-gray-400 hover:border-amber-300 hover:text-amber-600"
-                        }`}
+                        className="flex h-9 w-full items-center"
                       >
-                        {row.estimated ? "估价" : "—"}
+                        <span
+                          className={`relative inline-flex h-[18px] w-8 items-center rounded-full border transition-colors ${
+                            row.estimated ? "border-amber-400 bg-amber-400" : "border-gray-300 bg-gray-100"
+                          }`}
+                        >
+                          <span
+                            className={`absolute h-3 w-3 rounded-full bg-white shadow-sm transition-all ${
+                              row.estimated ? "left-[16px]" : "left-[2px]"
+                            }`}
+                          />
+                        </span>
                       </button>
                     </RowField>
                     <RowField label="售价" required className="w-[8rem]" hint={priceHint}>
