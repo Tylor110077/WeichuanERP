@@ -8,14 +8,7 @@ import {
   type FormState,
 } from "@/app/(main)/receivables-payables/actions";
 import { FormAlert } from "@/components/form-alert";
-
-const METHOD_LABELS: Record<string, string> = {
-  cash: "现金",
-  bank: "银行转账",
-  wechat: "微信",
-  alipay: "支付宝",
-  other: "其他",
-};
+import { PAYMENT_METHOD_LABELS as METHOD_LABELS } from "@/lib/payment-labels";
 
 export interface PaymentRow {
   id: number;

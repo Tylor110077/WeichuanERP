@@ -8,16 +8,9 @@ import { prisma } from "@/lib/prisma";
 import { initials } from "@/lib/pinyin";
 import { DateShortcuts } from "@/components/date-shortcuts";
 import { SearchSelect } from "@/components/search-select";
+import { PAYMENT_METHOD_LABELS as METHOD_LABELS } from "@/lib/payment-labels";
 
 export const metadata = { title: "厂家对账 - 玮川进销存" };
-
-const METHOD_LABELS: Record<string, string> = {
-  cash: "现金",
-  bank: "银行转账",
-  wechat: "微信",
-  alipay: "支付宝",
-  other: "其他",
-};
 
 /** 厂家进货对账：按厂家 + 期间 + 收付状态，每单含商品明细与付款记录。 */
 export default async function SupplierStatementPage({

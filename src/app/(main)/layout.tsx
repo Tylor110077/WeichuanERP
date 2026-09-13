@@ -40,6 +40,8 @@ const NAV_GROUPS: {
     label: "财务分析",
     items: [
       { href: "/receivables-payables", label: "应收应付", roles: ["admin", "boss"] },
+      // 收客户的钱、付厂家的钱，同源汇总在一页
+      { href: "/payments", label: "财务流水", roles: ["admin", "boss"] },
       { href: "/sales-analysis", label: "销售分析", roles: ["admin", "boss"] },
       { href: "/price-analysis", label: "价格分析", roles: ["admin", "boss"] },
       { href: "/reports", label: "报表中心", roles: ["admin", "boss"] },
