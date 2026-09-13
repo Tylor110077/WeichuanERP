@@ -12,6 +12,8 @@ import { initials } from "@/lib/pinyin";
 import { DateShortcuts } from "@/components/date-shortcuts";
 import { SearchSelect } from "@/components/search-select";
 import { ROLE_LABELS } from "@/lib/auth/roles";
+import { StarToggle } from "@/components/star-toggle";
+import { togglePurchaseOrderStarAction } from "./actions";
 
 export const metadata = { title: "进货单 - 玮川进销存" };
 
@@ -25,7 +27,7 @@ const STATUS_LABELS: Record<string, string> = {
 export default async function PurchaseOrdersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; status?: string; from?: string; to?: string; supplierId?: string; q?: string; settle?: string }>;
+  searchParams: Promise<{ page?: string; status?: string; from?: string; to?: string; supplierId?: string; q?: string; settle?: string; star?: string }>;
 }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
@@ -38,6 +40,8 @@ export default async function PurchaseOrdersPage({
   const settle =
     params.settle === "settled" || params.settle === "unsettled" ? params.settle : undefined;
   const range = dateRange(params.from, params.to);
+  /** 只看星标：星标是"重要/待跟进"的标记，列表要能一键筛出来 */
+  const starredOnly = params.star === "1";
 
   // 付款结清筛选：未结清 = 应付 − 已付 − 未作废退货冲减 > 0（不含已作废单）
   let settleIds: number[] | null = null;
@@ -77,6 +81,7 @@ export default async function PurchaseOrdersPage({
         }
       : {}),
     ...(settleIds ? { id: { in: settleIds } } : {}),
+    ...(starredOnly ? { starred: true } : {}),
     createdAt: { gte: range.gte, lte: range.lte },
     // 矩阵：业务员只能看自己开的单
     ...(user.role === "sales" ? { operatorId: user.id } : {}),
@@ -130,6 +135,7 @@ export default async function PurchaseOrdersPage({
           q: q ?? "",
           status: status ?? "",
           settle: settle ?? "",
+          star: starredOnly ? "1" : "",
         }}
       />
 
@@ -162,6 +168,10 @@ export default async function PurchaseOrdersPage({
           <option value="">全部款项</option>
           <option value="unsettled">未结清</option>
           <option value="settled">已结清</option>
+        </select>
+        <select name="star" defaultValue={starredOnly ? "1" : ""} className={`${inputBase}`}>
+          <option value="">全部单据</option>
+          <option value="1">只看星标</option>
         </select>
         <button
           type="submit"
@@ -203,7 +213,12 @@ export default async function PurchaseOrdersPage({
               const outstanding = Number(o.totalAmount) - Number(o.paidAmount) - returned;
               return (
               <tr key={o.id}>
-                <td className="whitespace-nowrap px-4 py-2.5 font-medium text-gray-900">{o.orderNo}</td>
+                <td className="whitespace-nowrap px-4 py-2.5">
+                  <span className="inline-flex items-center gap-1.5">
+                    <StarToggle id={o.id} starred={o.starred} toggle={togglePurchaseOrderStarAction} />
+                    <span className="font-medium text-gray-900">{o.orderNo}</span>
+                  </span>
+                </td>
                 <td className="px-4 py-2.5 text-gray-900">{o.supplier.name}</td>
                 <td className="px-4 py-2.5">
                   <span

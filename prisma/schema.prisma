@@ -320,6 +320,8 @@ model PurchaseOrder {
   sourceSaleOrder   SaleOrder?          @relation("AutoRestock", fields: [sourceSaleOrderId], references: [id])
   sourceType        SourceType          @default(manual) @map("source_type")
   remark            String?             @db.VarChar(200)
+  /** 星标：开单时或开单后在列表/详情上标记，用于"重要的单"一眼找到（可随时取消） */
+  starred           Boolean             @default(false)
   operatorId        Int                 @map("operator_id")
   operator          User                @relation(fields: [operatorId], references: [id])
   createdAt         DateTime            @default(now()) @map("created_at")
@@ -377,6 +379,8 @@ model SaleOrder {
   totalAmount    Decimal         @map("total_amount") @db.Decimal(14, 2)
   receivedAmount Decimal         @default(0) @map("received_amount") @db.Decimal(14, 2)
   remark         String?         @db.VarChar(200)
+  /** 星标：开单时或开单后在列表/详情上标记，用于"重要的单"一眼找到（可随时取消） */
+  starred        Boolean         @default(false)
   operatorId     Int             @map("operator_id")
   operator       User            @relation(fields: [operatorId], references: [id])
   createdAt      DateTime        @default(now()) @map("created_at")

@@ -139,6 +139,8 @@ export async function createSaleOrderAction(
     return { error: firstIssueMessage(parsed.error, ITEM_LABELS) };
   }
   const { customerId, remark, items } = parsed.data;
+  // 开单时就能标星（表单客户信息区里那个星按钮）
+  const starred = formData.get("starred") === "1";
 
   const customer = await prisma.customer.findUnique({ where: { id: customerId } });
   if (!customer || customer.status !== 1) return { error: "客户不存在或已停用" };
@@ -296,6 +298,7 @@ export async function createSaleOrderAction(
             orderNo: saleOrderNo,
             customerId,
             status: "confirmed",
+            starred,
             totalAmount: 0, // 占位，后更新
             operatorId: user.id,
             remark: remark || null,
@@ -605,4 +608,35 @@ export async function voidSaleOrderAction(
     console.error("[sale] 作废失败:", err);
     return { error: err instanceof Error ? err.message : "作废失败，请重试" };
   }
+}
+
+/**
+ * 星标开关（列表行与详情页共用）。
+ * 不是财务操作，不做二次确认；业务员只能标自己开的单（与退货同口径）。
+ */
+export async function toggleSaleOrderStarAction(formData: FormData): Promise<void> {
+  const user = await getCurrentUser();
+  if (!user) return;
+  const id = Number(formData.get("id"));
+  const starred = formData.get("starred") === "1";
+  if (!Number.isInteger(id) || id <= 0) return;
+
+  const order = await prisma.saleOrder.findUnique({
+    where: { id },
+    select: { id: true, operatorId: true, starred: true },
+  });
+  if (!order || order.starred === starred) return;
+  if (user.role === "sales" && order.operatorId !== user.id) return;
+
+  await prisma.saleOrder.update({ where: { id }, data: { starred } });
+  await writeAudit({
+    userId: user.id,
+    action: "update",
+    entityType: "sale_order",
+    entityId: id,
+    before: { starred: order.starred },
+    after: { starred },
+  });
+  revalidatePath("/sale-orders");
+  revalidatePath(`/sale-orders/${id}`);
 }

@@ -56,6 +56,7 @@ interface PurchaseDraft {
   rows: Row[];
   supplierId: string;
   remark: string;
+  starred: boolean;
 }
 
 const inputCls = `w-full ${inputBase}`;
@@ -79,6 +80,8 @@ export function NewOrderForm({
   const [supplierId, setSupplierId] = useState("");
   /** 单据备注：原先是不受控输入，做草稿必须能取到值，改成受控 */
   const [orderRemark, setOrderRemark] = useState("");
+  /** 星标：开单时就标记"重要单据"，随表单提交 */
+  const [starred, setStarred] = useState(false);
   // 现场新建的厂家/商品并入候选（远程搜到的也记下来，选中时才能取到单位与默认价）
   const [extraSuppliers, setExtraSuppliers] = useState<SupplierOption[]>([]);
   const [knownProducts, setKnownProducts] = useState<Record<string, ProductOption>>(() =>
@@ -248,8 +251,8 @@ export function NewOrderForm({
   // 从草稿箱点进来会带 ?draft=<id>，指定恢复哪一份；否则恢复最近那份
   const urlDraftId = useSearchParams().get("draft") ?? undefined;
   const draftValue = useMemo(
-    () => ({ rows, supplierId, remark: orderRemark }),
-    [rows, supplierId, orderRemark]
+    () => ({ rows, supplierId, remark: orderRemark, starred }),
+    [rows, supplierId, orderRemark, starred]
   );
   /** 草稿箱列表里显示的摘要（存草稿时一起写进去，列表页不用懂单据结构） */
   const draftSummary = useMemo(
@@ -274,6 +277,7 @@ export function NewOrderForm({
       setRows(restoredRows);
       setSupplierId(typeof d.supplierId === "string" ? d.supplierId : "");
       setOrderRemark(typeof d.remark === "string" ? d.remark : "");
+      setStarred(!!d.starred);
       // 草稿里的商品可能不在首屏候选里（首屏只带"最近进过货的"）：
       // 不补进候选，下拉会显示空白、看着像没选中
       setExtraProducts((prev) => {
@@ -294,6 +298,7 @@ export function NewOrderForm({
       setRows([emptyRow()]);
       setSupplierId("");
       setOrderRemark("");
+      setStarred(false);
     },
   });
 
@@ -387,6 +392,21 @@ export function NewOrderForm({
           placeholder="选填，如交货方式、包装要求（作用于整张单据）"
           className={`${inputBase} min-w-64 flex-1`}
         />
+        {/* 星标：开单时就能标记，开单后在列表/详情也能改 */}
+        <input type="hidden" name="starred" value={starred ? "1" : ""} />
+        <button
+          type="button"
+          onClick={() => setStarred((v) => !v)}
+          aria-pressed={starred}
+          title={starred ? "已标星，点击取消" : "标为重要单据（列表里可只看星标）"}
+          className={`shrink-0 rounded-md border px-2.5 py-1.5 text-xs transition ${
+            starred
+              ? "border-amber-300 bg-amber-50 font-medium text-amber-700 hover:bg-amber-100"
+              : "border-gray-300 bg-white text-gray-500 hover:border-amber-300 hover:text-amber-600"
+          }`}
+        >
+          {starred ? "★ 已星标" : "☆ 星标"}
+        </button>
       </div>
 
       {/* 就地新建商品：在商品行下拉里点「＋ 新建商品：「名字」」后出现，建完自动选到那一行 */}

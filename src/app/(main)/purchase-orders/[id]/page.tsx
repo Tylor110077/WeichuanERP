@@ -6,6 +6,8 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { DetailActions } from "./detail-actions";
 import { PaymentBlock } from "@/components/payment-block";
+import { StarToggle } from "@/components/star-toggle";
+import { togglePurchaseOrderStarAction } from "../actions";
 
 export const metadata = { title: "进货单详情 - 玮川进销存" };
 
@@ -89,15 +91,17 @@ export default async function PurchaseOrderDetailPage({
     <div className="space-y-6">
       {/* 标题与操作：按钮各自独立，集中在右上角 */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-lg font-semibold text-gray-900">
+        <h1 className="flex flex-wrap items-center gap-2 text-lg font-semibold text-gray-900">
           进货单 {order.orderNo}
+          {/* 星标：开单后也能在这里加/取消（列表里也能点） */}
+          <StarToggle id={order.id} starred={order.starred} toggle={togglePurchaseOrderStarAction} className="text-lg" />
           <span
             className={
               order.status === "received"
-                ? `ml-3 ${badgeOk}`
+                ? badgeOk
                 : order.status === "voided"
-                  ? `ml-3 ${badgeMuted}`
-                  : `ml-3 ${badgePending}`
+                  ? badgeMuted
+                  : badgePending
             }
           >
             {STATUS_LABELS[order.status]}

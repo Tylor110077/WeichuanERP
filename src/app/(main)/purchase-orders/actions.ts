@@ -96,6 +96,8 @@ export async function createPurchaseOrderAction(
     return { error: firstIssueMessage(parsed.error, { unitPrice: "进价" }) };
   }
   const { supplierId, remark, items } = parsed.data;
+  // 开单时就能标星（表单厂家信息区里那个星按钮）
+  const starred = formData.get("starred") === "1";
 
   const supplier = await prisma.supplier.findUnique({ where: { id: supplierId } });
   if (!supplier || supplier.status !== 1) return { error: "厂家不存在或已停用" };
@@ -137,6 +139,7 @@ export async function createPurchaseOrderAction(
             supplierId,
             status: "pending",
             sourceType: "manual",
+            starred,
             totalAmount: round2(itemsWithAmount.reduce((s, it) => s + it.amount, 0)),
             remark: remark || null,
             operatorId: user.id,
@@ -354,4 +357,35 @@ export async function voidPurchaseOrderAction(
     console.error("[purchase] 作废失败:", err);
     return { error: err instanceof Error ? err.message : "作废失败，请重试" };
   }
+}
+
+/**
+ * 星标开关（列表行与详情页共用）。
+ * 不是财务操作，不做二次确认；业务员只能标自己开的单（与退货同口径）。
+ */
+export async function togglePurchaseOrderStarAction(formData: FormData): Promise<void> {
+  const user = await getCurrentUser();
+  if (!user) return;
+  const id = Number(formData.get("id"));
+  const starred = formData.get("starred") === "1";
+  if (!Number.isInteger(id) || id <= 0) return;
+
+  const order = await prisma.purchaseOrder.findUnique({
+    where: { id },
+    select: { id: true, operatorId: true, starred: true },
+  });
+  if (!order || order.starred === starred) return;
+  if (user.role === "sales" && order.operatorId !== user.id) return;
+
+  await prisma.purchaseOrder.update({ where: { id }, data: { starred } });
+  await writeAudit({
+    userId: user.id,
+    action: "update",
+    entityType: "purchase_order",
+    entityId: id,
+    before: { starred: order.starred },
+    after: { starred },
+  });
+  revalidatePath("/purchase-orders");
+  revalidatePath(`/purchase-orders/${id}`);
 }
