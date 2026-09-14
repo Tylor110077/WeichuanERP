@@ -77,6 +77,49 @@ const COMMANDS: Record<string, Command> = {
       "wc-cli query inventory --q zjw --table       # 拼音首字母也能搜",
     ],
   },
+  "query.products": {
+    op: "query.products",
+    summary: "查商品档案（开单前用它把商品名换成 id）",
+    usage: [
+      "wc-cli query products [--q 关键词] [--page N] [--page-size N]",
+      "                      [--category N|none] [--manufacturer 名|none] [--enabled-only] [--table]",
+    ],
+    examples: [
+      "wc-cli query products --q dxtx --table        # 拼音首字母搜「单芯铜线」",
+      "wc-cli query products --manufacturer none --table   # 还没填厂家的商品",
+      "wc-cli query products --category none --table       # 还没分类的商品",
+    ],
+  },
+  "query.customers": {
+    op: "query.customers",
+    summary: "查客户（名称/电话/分组/标签）",
+    usage: [
+      "wc-cli query customers [--q 关键词] [--page N] [--page-size N]",
+      "                       [--group-id N|none] [--tag-id N] [--table]",
+    ],
+    examples: [
+      "wc-cli query customers --q zjw --table",
+      "wc-cli query customers --group-id none --table   # 还没分组的客户",
+    ],
+  },
+  "query.suppliers": {
+    op: "query.suppliers",
+    summary: "查厂家（含该厂家名下商品数）",
+    usage: ["wc-cli query suppliers [--q 关键词] [--status 1|0] [--page N] [--table]"],
+    examples: ["wc-cli query suppliers --table", "wc-cli query suppliers --q yddl --table"],
+  },
+  "query.units": {
+    op: "query.units",
+    summary: "查单位（开单要填 unitId）",
+    usage: ["wc-cli query units [--q 关键词] [--table]"],
+    examples: ["wc-cli query units --table"],
+  },
+  "query.categories": {
+    op: "query.categories",
+    summary: "查商品分类（补单/建档要填 categoryId）",
+    usage: ["wc-cli query categories [--q 关键词] [--table]"],
+    examples: ["wc-cli query categories --table"],
+  },
 };
 
 const VERSION = "0.1.0";

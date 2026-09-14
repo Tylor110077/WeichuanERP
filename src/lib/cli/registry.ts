@@ -2,6 +2,16 @@ import { fail, ok, SCOPES, type Actor, type CliResult } from "./types";
 import { listSaleOrders, type ListSaleOrdersInput } from "@/lib/services/sale-orders";
 import { listPurchaseOrders, type ListPurchaseOrdersInput } from "@/lib/services/purchase-orders";
 import { listInventory, type ListInventoryInput } from "@/lib/services/inventory";
+import {
+  listCategories,
+  listCustomers,
+  listProducts,
+  listSuppliers,
+  listUnits,
+  type ListCustomersInput,
+  type ListProductsInput,
+  type ListSuppliersInput,
+} from "@/lib/services/master-data";
 
 /**
  * 命令注册表：**唯一**声明"这个 op 需要什么权限"的地方。
@@ -61,6 +71,33 @@ export const OPS: Record<string, OpDef> = {
     requiredScope: SCOPES.read,
     summary: "查库存（--warn-only 只看跌破预警线的；含全局预警数）",
     handler: async (actor, input) => listInventory(actor, input as ListInventoryInput),
+  },
+
+  /* 主数据：开单前把「名字」换成「id」用 */
+  "query.products": {
+    requiredScope: SCOPES.read,
+    summary: "查商品档案（编码/名称/厂家/分类/参考价/库存）",
+    handler: async (actor, input) => listProducts(actor, input as ListProductsInput),
+  },
+  "query.customers": {
+    requiredScope: SCOPES.read,
+    summary: "查客户（名称/电话/分组/标签）",
+    handler: async (actor, input) => listCustomers(actor, input as ListCustomersInput),
+  },
+  "query.suppliers": {
+    requiredScope: SCOPES.read,
+    summary: "查厂家（含该厂家名下商品数）",
+    handler: async (actor, input) => listSuppliers(actor, input as ListSuppliersInput),
+  },
+  "query.units": {
+    requiredScope: SCOPES.read,
+    summary: "查单位（开单要填 unitId）",
+    handler: listUnits,
+  },
+  "query.categories": {
+    requiredScope: SCOPES.read,
+    summary: "查商品分类（补单/建档要填 categoryId）",
+    handler: listCategories,
   },
 };
 
