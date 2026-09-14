@@ -11,6 +11,7 @@ import { saveCustomer, saveSupplier, type SaveCustomerInput, type SaveSupplierIn
 import { createPayment, voidPayment, type CreatePaymentInput } from "@/lib/services/payments-write";
 import { createSaleOrder, type CreateSaleOrderInput } from "@/lib/services/orders/sale-create";
 import { createPurchaseOrder, type CreatePurchaseOrderInput } from "@/lib/services/orders/purchase-create";
+import { receivePurchaseOrder } from "@/lib/services/orders/purchase-receive";
 import { saveCategory, saveUnit, setTaxonomyStatus, type SaveTaxonomyInput } from "@/lib/services/master/taxonomy";
 import {
   listCategories,
@@ -232,6 +233,17 @@ export const OPS: Record<string, OpDef> = {
     write: true,
     summary: "开进货单（默认预演；创建不等于入库，不碰库存）",
     handler: async (actor, input, opts) => createPurchaseOrder(actor, input as CreatePurchaseOrderInput, opts),
+  },
+
+  /**
+   * 确认入库：库存真正进来的唯一入口，会按本单进价重算移动加权均价。
+   * dry-run 会逐行列出"入库前后的数量/金额/均价"。
+   */
+  "order.purchase.receive": {
+    requiredScope: SCOPES.writeOrder,
+    write: true,
+    summary: "确认入库（默认预演；按本单进价重算移动加权均价）",
+    handler: async (actor, input, opts) => receivePurchaseOrder(actor, input as { id: number }, opts),
   },
 
   /* 收付款：动钱的操作，写操作声明照旧 → 默认预演 */

@@ -276,6 +276,15 @@ const COMMANDS: Record<string, Command> = {
       "wc-cli order purchase create --supplier-id 1 --items @/tmp/po.json --yes",
     ],
   },
+  "order.purchase.receive": {
+    op: "order.purchase.receive",
+    summary: "确认入库（**预演会列出入库前后的数量/金额/均价**）",
+    usage: ["wc-cli order purchase receive --id N [--yes]"],
+    examples: [
+      "wc-cli order purchase receive --id 21          # 先看均价会变成多少",
+      "wc-cli order purchase receive --id 21 --yes    # 真入库",
+    ],
+  },
   "payment.create": {
     op: "payment.create",
     summary: "登记收付款（**默认预演**；一单一笔）",

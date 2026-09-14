@@ -10,6 +10,7 @@ import { applyStockChange } from "@/lib/stock-cost";
 import { firstIssueMessage, requiredNumber } from "@/lib/form-number";
 import { createPurchaseOrder } from "@/lib/services/orders/purchase-create";
 import { humanActor } from "@/lib/cli/types";
+import { receivePurchaseOrder } from "@/lib/services/orders/purchase-receive";
 
 export type FormState = { error?: string; ok?: string } | null;
 
@@ -99,74 +100,15 @@ export async function receivePurchaseOrderAction(
 ): Promise<FormState> {
   const user = await getCurrentUser();
   if (!user) return { error: "未登录" };
-  if (user.role === "boss") return { error: "无确认入库权限" };
+
+  // 薄壳：逻辑在 lib/services/orders/purchase-receive.ts，与 CLI 共用同一份
+  const result = await receivePurchaseOrder(humanActor(user), { id: Number(formData.get("id")) }, { dryRun: false });
+  if (!result.ok) return { error: result.error.message };
 
   const id = Number(formData.get("id"));
-  const order = await prisma.purchaseOrder.findUnique({
-    where: { id },
-    include: { items: { include: { product: true } } },
-  });
-  if (!order) return { error: "进货单不存在" };
-  if (order.status !== "pending") return { error: "仅待收货单据可入库" };
-  if (user.role === "sales" && order.operatorId !== user.id) {
-    return { error: "只能操作自己开的进货单" };
-  }
-
-  try {
-    await prisma.$transaction(async (tx) => {
-      for (const item of order.items) {
-        const product = await tx.product.findUnique({
-          where: { id: item.productId },
-          select: { stockQty: true, stockAmount: true, avgCost: true },
-        });
-        if (!product) throw new Error(`商品 #${item.productId} 不存在`);
-        const before = {
-          qty: Number(product.stockQty),
-          amount: Number(product.stockAmount),
-          avgCost: Number(product.avgCost),
-        };
-        const next = applyStockChange(before, Number(item.quantity), Number(item.unitPrice));
-        await tx.product.update({
-          where: { id: item.productId },
-          data: {
-            stockQty: next.qty,
-            stockAmount: next.amount,
-            avgCost: next.avgCost,
-          },
-        });
-        await tx.stockMovement.create({
-          data: {
-            productId: item.productId,
-            changeQty: Number(item.quantity),
-            beforeQty: before.qty,
-            afterQty: next.qty,
-            unitCost: Number(item.unitPrice),
-            bizType: "purchase_in",
-            bizOrderNo: order.orderNo,
-            operatorId: user.id,
-          },
-        });
-      }
-      await tx.purchaseOrder.update({
-        where: { id },
-        data: { status: "received", receivedAt: new Date() },
-      });
-    });
-    await writeAudit({
-      userId: user.id,
-      action: "receive",
-      entityType: "purchase_order",
-      entityId: id,
-      before: { orderNo: order.orderNo, status: order.status },
-      after: { orderNo: order.orderNo, status: "received" },
-    });
-    revalidatePath(`/purchase-orders/${id}`);
-    revalidatePath("/purchase-orders");
-    return { ok: "已确认入库，库存已增加" };
-  } catch (err) {
-    console.error("[purchase] 入库失败:", err);
-    return { error: err instanceof Error ? err.message : "入库失败，请重试" };
-  }
+  revalidatePath(`/purchase-orders/${id}`);
+  revalidatePath("/purchase-orders");
+  return { ok: "已确认入库，库存已增加" };
 }
 
 export async function voidPurchaseOrderAction(
