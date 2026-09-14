@@ -532,10 +532,23 @@ export async function voidSaleOrderAction(
 
   const order = await prisma.saleOrder.findUnique({
     where: { id },
-    include: { items: true, autoRestockOrders: { include: { items: true } } },
+    include: {
+      items: true,
+      autoRestockOrders: { include: { items: true } },
+      returns: { where: { status: "confirmed" }, select: { orderNo: true, totalAmount: true } },
+    },
   });
   if (!order) return { error: "售卖单不存在" };
   if (order.status === "voided") return { error: "单据已作废" };
+
+  // 已有确认退货的单不许直接作废：退货已经把货补回库存一次，作废再按整单补一遍就是**多补**。
+  // 与其静默把库存补错，不如让操作者先处理退货（作废退货单或改单），把决定权交回给人。
+  if (order.returns.length > 0) {
+    const nos = order.returns.map((r) => r.orderNo).join("、");
+    return {
+      error: `本单已有 ${order.returns.length} 张退货单（${nos}），不能直接作废——否则库存会被重复补回。请先作废那些退货单，或改用「改单」。`,
+    };
+  }
 
   try {
     await prisma.$transaction(async (tx) => {
