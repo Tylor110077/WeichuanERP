@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { call, CliFailure, exitCodeOf, loadConfig, type CliConfig } from "./client";
 
 /**
@@ -246,6 +247,22 @@ const COMMANDS: Record<string, Command> = {
     usage: ["wc-cli master supplier update --id N --name <厂家名> [--contact ...] [--yes]"],
     examples: ["wc-cli master supplier update --id 2 --name 远东电缆 --contact 王经理 --yes"],
   },
+  "order.sale.create": {
+    op: "order.sale.create",
+    summary: "开售卖单（**默认预演**；扣库存 + 成本快照，现场进货会自动生成进货单）",
+    usage: [
+      "wc-cli order sale create --customer-id N --items '<JSON 数组>' [--remark ...] [--starred] [--yes]",
+      "  --items 每行的字段：productId / quantity / unitPrice 必填；",
+      "           supplyPrice（现场进货进价）、stockUsed（用多少库存，留空=尽量用）、",
+      "           extraQty（多补）、supplierId（缺货行指定厂家）、unitId、estimated（估价待补行）",
+      "  --items @items.json  也可以从文件读（Agent 生成大数组时更稳）",
+    ],
+    examples: [
+      "wc-cli order sale create --customer-id 1 --items '[{\"productId\":3,\"quantity\":10,\"unitPrice\":25,\"supplyPrice\":18}]'",
+      "  ↑ 预演：打印将扣多少库存、成本快照多少、会不会自动生成进货单",
+      "wc-cli order sale create --customer-id 1 --items @/tmp/items.json --yes   # 真落库",
+    ],
+  },
   "payment.create": {
     op: "payment.create",
     summary: "登记收付款（**默认预演**；一单一笔）",
@@ -379,7 +396,19 @@ function valueOf(args: string[], flag: string): string | undefined {
 }
 
 /** 需要转成数字的入参（其余按字符串）；与 registry 里各命令的 zod 校验对应 */
-const NUMERIC_KEYS = new Set(["page", "pageSize", "customerId"]);
+const NUMERIC_KEYS = new Set(["page", "pageSize", "customerId", "orderId", "counterId", "productId"]);
+
+/** 结构化入参（数组/对象）用 JSON 传；值以 @ 开头则读文件，便于 Agent 生成大数组 */
+const JSON_KEYS = new Set(["items"]);
+
+function parseJsonArg(key: string, raw: string): unknown {
+  const text = raw.startsWith("@") ? readFileSync(raw.slice(1), "utf8") : raw;
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    throw new CliFailure("INVALID", `--${key} 不是合法 JSON：${e instanceof Error ? e.message : String(e)}`);
+  }
+}
 
 /**
  * 把 `--page-size 50` / `--starred` 这串参数转成 op 的 input。
@@ -400,7 +429,8 @@ function buildInput(args: string[]): Record<string, unknown> {
     }
     // 显式写 true/false 就按布尔传（否则服务端拿到的是字符串）；
     // 注意 z.coerce.boolean() 那条坑：字符串 "false" 在 JS 里是真值，见 lib/form-bool.ts
-    if (next === "true" || next === "false") input[key] = next === "true";
+    if (JSON_KEYS.has(key)) input[key] = parseJsonArg(key, next);
+    else if (next === "true" || next === "false") input[key] = next === "true";
     else input[key] = NUMERIC_KEYS.has(key) ? Number(next) : next;
     i++;
   }

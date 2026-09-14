@@ -9,6 +9,7 @@ import { listAuditLogs, runReport, type ListAuditLogsInput, type ReportInput } f
 import { createProduct, setProductStatus, type CreateProductInput } from "@/lib/services/master/product";
 import { saveCustomer, saveSupplier, type SaveCustomerInput, type SaveSupplierInput } from "@/lib/services/master/partner";
 import { createPayment, voidPayment, type CreatePaymentInput } from "@/lib/services/payments-write";
+import { createSaleOrder, type CreateSaleOrderInput } from "@/lib/services/orders/sale-create";
 import { saveCategory, saveUnit, setTaxonomyStatus, type SaveTaxonomyInput } from "@/lib/services/master/taxonomy";
 import {
   listCategories,
@@ -208,6 +209,17 @@ export const OPS: Record<string, OpDef> = {
       if ((input as { id?: unknown }).id == null) return fail("INVALID", "更新必须给 --id（要新建请用 create）");
       return saveSupplier(actor, input as SaveSupplierInput, opts);
     },
+  },
+
+  /**
+   * 开售卖单。这是最重的一条写命令：会扣库存、按移动加权记成本快照、
+   * 现场进货时还会自动生成并当场入库一张进货单。默认预演，`--yes` 才落库。
+   */
+  "order.sale.create": {
+    requiredScope: SCOPES.writeOrder,
+    write: true,
+    summary: "开售卖单（默认预演；会扣库存与成本快照，现场进货还会自动生成进货单）",
+    handler: async (actor, input, opts) => createSaleOrder(actor, input as CreateSaleOrderInput, opts),
   },
 
   /* 收付款：动钱的操作，写操作声明照旧 → 默认预演 */
