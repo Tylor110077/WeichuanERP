@@ -541,6 +541,9 @@ export async function voidSaleOrderAction(
     await prisma.$transaction(async (tx) => {
       // ① 售卖行库存回补（按当前移动加权成本）
       for (const item of order.items) {
+        // 估价行跳过：开单时它不占库存（stockQtyUsed / purchaseQty 都是 0），
+        // 也没有对应的自动补货单。按 quantity 加回去等于凭空造库存。
+        if (item.estimated) continue;
         const product = await tx.product.findUnique({
           where: { id: item.productId },
           select: { stockQty: true, stockAmount: true, avgCost: true },

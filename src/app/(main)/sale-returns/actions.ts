@@ -88,6 +88,8 @@ export async function createSaleReturnAction(
     productId: number;
     unitId: number;
     costSnapshotPrice: number; // 按原单成本快照回补
+    /** 估价行：开单时**没有从库存出过货**（不占库存），所以退货也不再入库 */
+    estimated: boolean;
   }
   const rows: Row[] = [];
   for (const it of parsed.data.items) {
@@ -103,6 +105,7 @@ export async function createSaleReturnAction(
       productId: row.productId,
       unitId: row.unitId,
       costSnapshotPrice: Number(row.costAmount) / Number(row.quantity), // 快照均价
+      estimated: row.estimated,
     });
   }
 
@@ -132,30 +135,36 @@ export async function createSaleReturnAction(
         });
         let total = 0;
         for (const row of rows) {
-          const product = await tx.product.findUnique({
-            where: { id: row.productId },
-            select: { stockQty: true, stockAmount: true, avgCost: true },
-          });
-          if (!product) throw new Error(`商品 #${row.productId} 不存在`);
-          const before = { qty: Number(product.stockQty), amount: Number(product.stockAmount), avgCost: Number(product.avgCost) };
-          // 退货入库：成本按原单成本快照均价回补（文档 3.5）
-          const next = applyStockChange(before, row.quantity, row.costSnapshotPrice);
-          await tx.product.update({
-            where: { id: row.productId },
-            data: { stockQty: next.qty, stockAmount: next.amount, avgCost: next.avgCost },
-          });
-          await tx.stockMovement.create({
-            data: {
-              productId: row.productId,
-              changeQty: row.quantity,
-              beforeQty: before.qty,
-              afterQty: next.qty,
-              unitCost: row.costSnapshotPrice,
-              bizType: "sale_return_in",
-              bizOrderNo: orderNo,
-              operatorId: user.id,
-            },
-          });
+          // 估价行跳过全部库存写入：它的货**从没出过库**（开单时不占库存），
+          // 退回来自然也不该入库。否则会凭空多出库存并按 0 成本把移动加权均价拉低；
+          // 已补单的估价行更糟——货是进货单进来的，退货会再计一遍，同一批货算两次。
+          // 应收与毛利照常冲减（下面 saleReturnItem 的 amount / costAmount 不受影响）。
+          if (!row.estimated) {
+            const product = await tx.product.findUnique({
+              where: { id: row.productId },
+              select: { stockQty: true, stockAmount: true, avgCost: true },
+            });
+            if (!product) throw new Error(`商品 #${row.productId} 不存在`);
+            const before = { qty: Number(product.stockQty), amount: Number(product.stockAmount), avgCost: Number(product.avgCost) };
+            // 退货入库：成本按原单成本快照均价回补（文档 3.5）
+            const next = applyStockChange(before, row.quantity, row.costSnapshotPrice);
+            await tx.product.update({
+              where: { id: row.productId },
+              data: { stockQty: next.qty, stockAmount: next.amount, avgCost: next.avgCost },
+            });
+            await tx.stockMovement.create({
+              data: {
+                productId: row.productId,
+                changeQty: row.quantity,
+                beforeQty: before.qty,
+                afterQty: next.qty,
+                unitCost: row.costSnapshotPrice,
+                bizType: "sale_return_in",
+                bizOrderNo: orderNo,
+                operatorId: user.id,
+              },
+            });
+          }
           const amount = round2(row.quantity * row.unitPrice);
           total += amount;
           await tx.saleReturnItem.create({
@@ -211,9 +220,18 @@ export async function voidSaleReturnAction(
   if (!ret) return { error: "退货单不存在" };
   if (ret.status === "voided") return { error: "退货单已作废" };
 
+  let stockReversed = false;
   try {
     await prisma.$transaction(async (tx) => {
+      // 哪些原单行是估价行——它们的退货当初没有入库，作废时也不能减库存（与创建时对称）
+      const originItems = await tx.saleOrderItem.findMany({
+        where: { id: { in: ret.items.map((i) => i.saleOrderItemId) } },
+        select: { id: true, estimated: true },
+      });
+      const estimatedItemIds = new Set(originItems.filter((i) => i.estimated).map((i) => i.id));
+
       for (const item of ret.items) {
+        if (estimatedItemIds.has(item.saleOrderItemId)) continue;
         const product = await tx.product.findUnique({
           where: { id: item.productId },
           select: { stockQty: true, stockAmount: true, avgCost: true },
@@ -224,6 +242,7 @@ export async function voidSaleReturnAction(
           throw new Error(`商品 #${item.productId} 库存不足（${before.qty} < ${Number(item.quantity)}），无法撤销退货`);
         }
         const next = applyStockChange(before, -Number(item.quantity), before.avgCost);
+        stockReversed = true;
         await tx.product.update({
           where: { id: item.productId },
           data: { stockQty: next.qty, stockAmount: next.amount, avgCost: next.avgCost },
@@ -255,7 +274,7 @@ export async function voidSaleReturnAction(
       after: { orderNo: ret.orderNo, status: "voided", voidReason: reason },
     });
     revalidatePath("/sale-returns");
-    return { ok: "已作废，库存已减回" };
+    return { ok: stockReversed ? "已作废，库存已减回" : "已作废（估价行退货本就不涉及库存）" };
   } catch (err) {
     console.error("[sale-return] 作废失败:", err);
     return { error: err instanceof Error ? err.message : "作废失败，请重试" };

@@ -35,10 +35,13 @@ export default async function DashboardPage() {
       : Promise.resolve({ _sum: { costAmount: null } }),
   ]);
 
-  // 应收/应付合计（与应收应付页同口径：单额 − 已收付 − 未作废退货冲减）
+  // 应收/应付合计：与应收应付页**同一套逐单公式**，只有时间范围不同——
+  // 这里是"当前未结清存量"（全部时间），页面是"区间内未结清"（见卡片上的备注）。
+  // GREATEST(..., 0) 不能省：超收/超退的单据会算出负的未结清，那是"我们欠对方"的预收/预付，
+  // 不是应收。少了它会把负值减进总额，导致应收**少算**（dev 数据里就有一张 -2500 的单）。
   const [receivableRows, payableRows] = await Promise.all([
     prisma.$queryRaw<{ total: number | null }[]>`
-      SELECT COALESCE(SUM(so.total_amount - so.received_amount - COALESCE(sr.total, 0)), 0) AS total
+      SELECT COALESCE(SUM(GREATEST(so.total_amount - so.received_amount - COALESCE(sr.total, 0), 0)), 0) AS total
       FROM sale_orders so
       LEFT JOIN (
         SELECT sale_order_id, SUM(total_amount) AS total
@@ -46,7 +49,7 @@ export default async function DashboardPage() {
       ) sr ON sr.sale_order_id = so.id
       WHERE so.status = 'confirmed'`,
     prisma.$queryRaw<{ total: number | null }[]>`
-      SELECT COALESCE(SUM(po.total_amount - po.paid_amount - COALESCE(pr.total, 0)), 0) AS total
+      SELECT COALESCE(SUM(GREATEST(po.total_amount - po.paid_amount - COALESCE(pr.total, 0), 0)), 0) AS total
       FROM purchase_orders po
       LEFT JOIN (
         SELECT purchase_order_id, SUM(total_amount) AS total
