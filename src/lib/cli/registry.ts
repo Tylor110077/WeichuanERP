@@ -13,6 +13,7 @@ import { createSaleOrder, type CreateSaleOrderInput } from "@/lib/services/order
 import { createPurchaseOrder, type CreatePurchaseOrderInput } from "@/lib/services/orders/purchase-create";
 import { receivePurchaseOrder } from "@/lib/services/orders/purchase-receive";
 import { createSaleReturn, voidSaleReturn, type CreateSaleReturnInput } from "@/lib/services/orders/sale-return";
+import { createPurchaseReturn, voidPurchaseReturn, type CreatePurchaseReturnInput } from "@/lib/services/orders/purchase-return";
 import { saveCategory, saveUnit, setTaxonomyStatus, type SaveTaxonomyInput } from "@/lib/services/master/taxonomy";
 import {
   listCategories,
@@ -268,6 +269,26 @@ export const OPS: Record<string, OpDef> = {
     handler: async (actor, input, opts) => {
       const { id, reason } = input as { id: number; reason: string };
       return voidSaleReturn(actor, { id, reason }, opts);
+    },
+  },
+
+  /** 进货退货：货退回厂家，库存减少，按**当前移动加权均价**出库（进货侧没有快照价） */
+  "order.return.purchase.create": {
+    requiredScope: SCOPES.writeOrder,
+    write: true,
+    summary: "开进货退货单（默认预演；按当前均价出库，需库存充足）",
+    handler: async (actor, input, opts) => {
+      const { orderId, items } = input as { orderId?: number; items?: unknown };
+      return createPurchaseReturn(actor, { purchaseOrderId: orderId, items } as CreatePurchaseReturnInput, opts);
+    },
+  },
+  "order.return.purchase.void": {
+    requiredScope: SCOPES.writeOrder,
+    write: true,
+    summary: "作废进货退货单（库存加回）",
+    handler: async (actor, input, opts) => {
+      const { id, reason } = input as { id: number; reason: string };
+      return voidPurchaseReturn(actor, { id, reason }, opts);
     },
   },
 

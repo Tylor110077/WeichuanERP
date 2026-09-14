@@ -304,6 +304,24 @@ const COMMANDS: Record<string, Command> = {
     usage: ["wc-cli order return sale void --id N --reason <原因> [--yes]"],
     examples: ["wc-cli order return sale void --id 5 --reason '退错商品' --yes"],
   },
+  "order.return.purchase.create": {
+    op: "order.return.purchase.create",
+    summary: "开进货退货单（**默认预演**；按当前均价出库，需库存充足）",
+    usage: [
+      "wc-cli order return purchase create --order-id N --items '<JSON 数组>' [--yes]",
+      "  --items 每行：orderItemId / quantity / unitPrice；只能退已入库（received）的单",
+    ],
+    examples: [
+      "wc-cli order return purchase create --order-id 27 --items '[{\"orderItemId\":30,\"quantity\":10,\"unitPrice\":18}]'",
+      "wc-cli order return purchase create --order-id 27 --items @/tmp/pr.json --yes",
+    ],
+  },
+  "order.return.purchase.void": {
+    op: "order.return.purchase.void",
+    summary: "作废进货退货单（库存加回）",
+    usage: ["wc-cli order return purchase void --id N --reason <原因> [--yes]"],
+    examples: ["wc-cli order return purchase void --id 3 --reason '退错批' --yes"],
+  },
   "payment.create": {
     op: "payment.create",
     summary: "登记收付款（**默认预演**；一单一笔）",
