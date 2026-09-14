@@ -120,6 +120,27 @@ const COMMANDS: Record<string, Command> = {
     usage: ["wc-cli query categories [--q 关键词] [--table]"],
     examples: ["wc-cli query categories --table"],
   },
+  "query.receivables": {
+    op: "query.receivables",
+    summary: "查应收（两个合计口径都在返回里：区间合计 / 当前存量）",
+    usage: [
+      "wc-cli query receivables [--counter-id N] [--from YYYY-MM-DD] [--to YYYY-MM-DD]",
+      "                      [--page N] [--page-size N] [--table]",
+    ],
+    examples: [
+      "wc-cli query receivables --table",
+      "wc-cli query receivables --counter-id 1 --table   # 只看某个客户的",
+    ],
+  },
+  "query.payables": {
+    op: "query.payables",
+    summary: "查应付（还欠厂家多少钱）",
+    usage: [
+      "wc-cli query payables [--counter-id N] [--from YYYY-MM-DD] [--to YYYY-MM-DD]",
+      "                     [--page N] [--page-size N] [--table]",
+    ],
+    examples: ["wc-cli query payables --table", "wc-cli query payables --counter-id 2 --table"],
+  },
 };
 
 const VERSION = "0.1.0";
@@ -213,21 +234,35 @@ function flatten(data: Record<string, unknown>, prefix = ""): [string, string][]
   for (const [k, v] of Object.entries(data)) {
     const key = prefix ? `${prefix}.${k}` : k;
     if (v == null) continue;
-    if (Array.isArray(v)) out.push([key, v.map((x) => String(x)).join(", ")]);
-    else if (typeof v === "object") out.push(...flatten(v as Record<string, unknown>, key));
-    else out.push([key, String(v)]);
+    if (Array.isArray(v)) {
+      // 数组：基元直接列出，对象只报个数（明细在 --json 里，表格塞不下）
+      out.push([key, v.length === 0 ? "（空）" : typeof v[0] === "object" ? `${v.length} 项` : v.map((x) => String(x)).join(", ")]);
+    } else if (typeof v === "object") {
+      out.push(...flatten(v as Record<string, unknown>, key));
+    } else {
+      out.push([key, String(v)]);
+    }
   }
   return out;
 }
 
-/** 列表数据按列对齐输出（`--table` 遇到数组时用这个，一行一条记录） */
+/**
+ * 列表数据按列对齐输出（`--table` 遇到数组时用这个，一行一条记录）。
+ * 只把基元字段当列：嵌套的对象/数组（明细行、按对方汇总）在表格里塞不下，
+ * 想看全用 `--json` —— 总比显示一排 [object Object] 强。
+ */
 function renderRows(rows: Record<string, unknown>[]): string {
   if (rows.length === 0) return "  （没有符合条件的记录）";
-  const cols = Object.keys(rows[0]);
+  const cols = Object.keys(rows[0]).filter((c) => {
+    const v = rows[0][c];
+    return v == null || typeof v !== "object";
+  });
   const cells = rows.map((r) => cols.map((c) => (r[c] == null ? "" : String(r[c]))));
   const width = cols.map((c, i) => Math.max(c.length, ...cells.map((row) => row[i].length)));
   const line = (vals: string[]) => "  " + vals.map((v, i) => v.padEnd(width[i])).join("  ");
-  return [line(cols), line(width.map((w) => "─".repeat(w))), ...cells.map(line)].join("\n");
+  const body = [line(cols), line(width.map((w) => "─".repeat(w))), ...cells.map(line)].join("\n");
+  const hidden = Object.keys(rows[0]).length - cols.length;
+  return hidden > 0 ? `${body}\n  （另有 ${hidden} 个字段是明细/汇总，用 --json 查看）` : body;
 }
 
 /** 排成两列给人看（标量数据用） */

@@ -2,6 +2,7 @@ import { fail, ok, SCOPES, type Actor, type CliResult } from "./types";
 import { listSaleOrders, type ListSaleOrdersInput } from "@/lib/services/sale-orders";
 import { listPurchaseOrders, type ListPurchaseOrdersInput } from "@/lib/services/purchase-orders";
 import { listInventory, type ListInventoryInput } from "@/lib/services/inventory";
+import { listOutstanding } from "@/lib/services/outstanding";
 import {
   listCategories,
   listCustomers,
@@ -98,6 +99,21 @@ export const OPS: Record<string, OpDef> = {
     requiredScope: SCOPES.read,
     summary: "查商品分类（补单/建档要填 categoryId）",
     handler: listCategories,
+  },
+
+  /**
+   * 应收 / 应付。**两个数不要混用**（口径裁决见 §13.8 #1）：
+   * outstandingTotalInRange 是区间合计（页面口径），outstandingTotalAllTime 是当前存量（工作台口径）。
+   */
+  "query.receivables": {
+    requiredScope: SCOPES.read,
+    summary: "查应收（两个合计口径都在返回里；未结清谓词已下推 SQL）",
+    handler: async (actor, input) => listOutstanding(actor, { ...input, direction: "receivable" }),
+  },
+  "query.payables": {
+    requiredScope: SCOPES.read,
+    summary: "查应付（同应收，方向相反）",
+    handler: async (actor, input) => listOutstanding(actor, { ...input, direction: "payable" }),
   },
 };
 
