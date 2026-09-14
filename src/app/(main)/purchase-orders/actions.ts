@@ -152,6 +152,8 @@ export async function createPurchaseOrderAction(
           action: "create",
           entityType: "purchase_order",
           entityId: created.id,
+          // tx：与建单同事务。以前走全局 prisma，P2002 重试时同一次创建会写多条审计
+          tx,
           after: { orderNo: created.orderNo, supplierId, totalAmount: Number(created.totalAmount) },
         });
         return created;

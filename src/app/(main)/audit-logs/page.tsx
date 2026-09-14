@@ -122,7 +122,8 @@ export default async function AuditLogsPage({
                 </td>
                 <td className="px-4 py-2.5 text-gray-600">
                   {log.entityType}
-                  {log.entityId != null ? ` #${log.entityId}` : ""}
+                  {/* 数字主键显示 #id；非数字标识（如 backup-config）直接显示原值 */}
+                  {log.entityId != null ? ` #${log.entityId}` : log.entityKey ? ` ${log.entityKey}` : ""}
                 </td>
                 <td className="px-4 py-2.5 text-gray-600">{log.ip ?? "—"}</td>
                 <td className="px-4 py-2.5">
