@@ -351,6 +351,20 @@ const COMMANDS: Record<string, Command> = {
       "wc-cli order reopen --type sale --from-id 20028 --items '[{\"productId\":3,\"quantity\":8,\"unitPrice\":26,\"supplyPrice\":18}]' --yes",
     ],
   },
+  "order.estimate.fill": {
+    op: "order.estimate.fill",
+    summary: "估价补单（**默认预演**；生成待收货进货单 + 成本写回原行 + 补正商品档案）",
+    usage: [
+      "wc-cli order estimate fill --item-id N --supplier-id N --unit-price 18.00",
+      "                          [--product-name 真名] [--category-id N] [--ref-purchase-price 18.00] [--yes]",
+      "  --item-id 是估价行 id（query pending-estimates 能看到）",
+    ],
+    examples: [
+      "wc-cli order estimate fill --item-id 20032 --supplier-id 1 --unit-price 18",
+      "  ↑ 预演：列出将生成哪张进货单、成本写回多少、商品档案改什么",
+      "wc-cli order estimate fill --item-id 20032 --supplier-id 1 --unit-price 18 --product-name 'YJV 5*6' --yes",
+    ],
+  },
   "payment.create": {
     op: "payment.create",
     summary: "登记收付款（**默认预演**；一单一笔）",

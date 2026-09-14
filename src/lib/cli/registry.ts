@@ -15,6 +15,7 @@ import { receivePurchaseOrder } from "@/lib/services/orders/purchase-receive";
 import { createSaleReturn, voidSaleReturn, type CreateSaleReturnInput } from "@/lib/services/orders/sale-return";
 import { createPurchaseReturn, voidPurchaseReturn, type CreatePurchaseReturnInput } from "@/lib/services/orders/purchase-return";
 import { reopenOrder, voidPurchaseOrder, voidSaleOrder } from "@/lib/services/orders/void-and-reopen";
+import { fillEstimate, type FillEstimateInput } from "@/lib/services/orders/estimate-fill";
 import { saveCategory, saveUnit, setTaxonomyStatus, type SaveTaxonomyInput } from "@/lib/services/master/taxonomy";
 import {
   listCategories,
@@ -329,6 +330,17 @@ export const OPS: Record<string, OpDef> = {
         input as { type: "sale" | "purchase"; fromId: number; reason?: string; remark?: string | null; customerId?: number; supplierId?: number; items?: unknown },
         opts
       ),
+  },
+
+  /**
+   * 估价补单：补上估价行的进价与货源。事务里生成待收货进货单、把成本写回原行、
+   * 顺手补正临时商品的档案（品名/厂家/分类/参考进价）。
+   */
+  "order.estimate.fill": {
+    requiredScope: SCOPES.writeOrder,
+    write: true,
+    summary: "估价补单（默认预演；生成待收货进货单并把成本写回原行）",
+    handler: async (actor, input, opts) => fillEstimate(actor, input as FillEstimateInput, opts),
   },
 
   /* 收付款：动钱的操作，写操作声明照旧 → 默认预演 */
