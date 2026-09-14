@@ -1,4 +1,5 @@
-import { fail, ok, type Actor, type CliResult } from "./types";
+import { fail, ok, SCOPES, type Actor, type CliResult } from "./types";
+import { listSaleOrders, type ListSaleOrdersInput } from "@/lib/services/sale-orders";
 
 /**
  * 命令注册表：**唯一**声明"这个 op 需要什么权限"的地方。
@@ -37,6 +38,13 @@ export const OPS: Record<string, OpDef> = {
     summary: "自检用：人类专属操作，Agent 令牌调用必被拒绝",
     handler: async (actor) =>
       actor.kind === "human" ? ok({ allowed: true }) : fail("FORBIDDEN", "Agent 令牌无权审核"),
+  },
+
+  /** 售卖单列表：与网页列表页同一套查询与口径（抽在 lib/services/sale-orders.ts） */
+  "query.orders": {
+    requiredScope: SCOPES.read,
+    summary: "查售卖单列表（默认本月 1 日至今；与网页列表同口径）",
+    handler: async (actor, input) => listSaleOrders(actor, input as ListSaleOrdersInput),
   },
 };
 

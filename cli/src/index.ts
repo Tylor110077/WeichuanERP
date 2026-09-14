@@ -34,6 +34,21 @@ const COMMANDS: Record<string, Command> = {
     usage: ["wc-cli auth check-review"],
     examples: ["wc-cli auth check-review   # Agent 令牌应得到退出码 3"],
   },
+  "query.orders": {
+    op: "query.orders",
+    summary: "查售卖单列表（默认本月 1 日至今，与网页列表同口径）",
+    usage: [
+      "wc-cli query orders [--page N] [--page-size N] [--from YYYY-MM-DD] [--to YYYY-MM-DD]",
+      "                    [--status confirmed|voided] [--settle settled|unsettled]",
+      "                    [--customer-id N] [--q 关键词] [--starred] [--table]",
+    ],
+    examples: [
+      "wc-cli query orders --table",
+      "wc-cli query orders --settle unsettled --table   # 只看未结清",
+      "wc-cli query orders --q zjw --from 2026-09-01 --to 2026-09-30",
+      "wc-cli query orders --page 2 --page-size 50",
+    ],
+  },
 };
 
 const VERSION = "0.1.0";
@@ -95,6 +110,32 @@ function valueOf(args: string[], flag: string): string | undefined {
   return i >= 0 ? args[i + 1] : undefined;
 }
 
+/** 需要转成数字的入参（其余按字符串）；与 registry 里各命令的 zod 校验对应 */
+const NUMERIC_KEYS = new Set(["page", "pageSize", "customerId"]);
+
+/**
+ * 把 `--page-size 50` / `--starred` 这串参数转成 op 的 input。
+ * kebab-case → camelCase（--page-size → pageSize）；
+ * 后面紧跟 `--` 开头或已到末尾的，视为布尔 true。
+ */
+function buildInput(args: string[]): Record<string, unknown> {
+  const input: Record<string, unknown> = {};
+  for (let i = 0; i < args.length; i++) {
+    if (!args[i].startsWith("--")) continue;
+    const key = args[i].slice(2).replace(/-([a-z])/g, (_, c: string) => c.toUpperCase());
+    // --json / --table / --help / --run 由 CLI 自己消费，不进 input
+    if (key === "json" || key === "table" || key === "help" || key === "run") continue;
+    const next = args[i + 1];
+    if (next === undefined || next.startsWith("--")) {
+      input[key] = true;
+      continue;
+    }
+    input[key] = NUMERIC_KEYS.has(key) ? Number(next) : next;
+    i++;
+  }
+  return input;
+}
+
 /** 把嵌套对象摊平成"点号路径 → 值"，便于两列对齐 */
 function flatten(data: Record<string, unknown>, prefix = ""): [string, string][] {
   const out: [string, string][] = [];
@@ -108,12 +149,32 @@ function flatten(data: Record<string, unknown>, prefix = ""): [string, string][]
   return out;
 }
 
-/** 排成两列给人看（`--table`） */
+/** 列表数据按列对齐输出（`--table` 遇到数组时用这个，一行一条记录） */
+function renderRows(rows: Record<string, unknown>[]): string {
+  if (rows.length === 0) return "  （没有符合条件的记录）";
+  const cols = Object.keys(rows[0]);
+  const cells = rows.map((r) => cols.map((c) => (r[c] == null ? "" : String(r[c]))));
+  const width = cols.map((c, i) => Math.max(c.length, ...cells.map((row) => row[i].length)));
+  const line = (vals: string[]) => "  " + vals.map((v, i) => v.padEnd(width[i])).join("  ");
+  return [line(cols), line(width.map((w) => "─".repeat(w))), ...cells.map(line)].join("\n");
+}
+
+/** 排成两列给人看（标量数据用） */
 function renderTable(data: Record<string, unknown>): string {
-  const rows = flatten(data);
-  if (rows.length === 0) return "  （无数据）";
-  const width = Math.max(...rows.map(([k]) => k.length));
-  return rows.map(([k, v]) => `  ${k.padEnd(width)}  ${v}`).join("\n");
+  // 列表命令：data.rows 是记录数组 → 逐行成表
+  const rows = (data as { rows?: unknown }).rows;
+  if (Array.isArray(rows) && rows.length > 0 && typeof rows[0] === "object") {
+    const head = flatten(
+      Object.fromEntries(Object.entries(data).filter(([k]) => k !== "rows" && k !== "applied"))
+    );
+    const summary = head.length > 0 ? head.map(([k, v]) => `  ${k.padEnd(12)}  ${v}`).join("\n") + "\n\n" : "";
+    const applied = data.applied != null ? "\n\n  生效条件：" + JSON.stringify(data.applied) : "";
+    return summary + renderRows(rows as Record<string, unknown>[]) + applied;
+  }
+  const flat = flatten(data);
+  if (flat.length === 0) return "  （无数据）";
+  const width = Math.max(...flat.map(([k]) => k.length));
+  return flat.map(([k, v]) => `  ${k.padEnd(width)}  ${v}`).join("\n");
 }
 
 async function run(argv: string[]): Promise<number> {
@@ -142,6 +203,7 @@ async function run(argv: string[]): Promise<number> {
   const asTable = hasFlag(rest, "table");
   const data = await call<Record<string, unknown>>(cfg, {
     op: cmd.op,
+    input: buildInput(rest),
     runId: valueOf(rest, "run"),
     dryRun: hasFlag(rest, "dry-run") ? true : undefined,
   });
