@@ -30,10 +30,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   } catch {
     return reply(fail("INVALID", "请求体不是合法 JSON"));
   }
-  const { op, input, runId } = (body ?? {}) as {
+  const { op, input, runId, commit } = (body ?? {}) as {
     op?: unknown;
     input?: Record<string, unknown>;
     runId?: unknown;
+    /** 只有显式 true 才允许写操作落库（CLI 的 --yes 传它） */
+    commit?: unknown;
   };
   if (typeof op !== "string" || op === "") return reply(fail("INVALID", "缺少 op"));
 
@@ -50,8 +52,19 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return reply(fail("FORBIDDEN", `令牌缺少权限「${def.requiredScope}」`));
   }
 
+  /**
+   * 写操作默认预演：dryRun 由**服务端**决定，不是客户端说了算——
+   * 只有 `commit: true`（CLI 的 `--yes`）才落库。这样即使有人拿 curl 直接打端点，
+   * 也不会因为漏传参数而误写；想绕过只能显式传 commit。
+   */
+  const dryRun = def.write ? commit !== true : false;
+
   try {
-    const result = await def.handler({ ...actor, runId: typeof runId === "string" ? runId : null }, input ?? {});
+    const result = await def.handler(
+      { ...actor, runId: typeof runId === "string" ? runId : null },
+      input ?? {},
+      { dryRun }
+    );
     // 记录最近使用时间：失败不影响本次调用（不能因为写时间戳失败就让命令失败）
     if (actor.tokenId != null) {
       void prisma.apiToken

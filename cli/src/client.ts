@@ -54,7 +54,8 @@ export interface CallOptions {
   op: string;
   input?: Record<string, unknown>;
   runId?: string;
-  dryRun?: boolean;
+  /** 写操作要显式传 true（CLI 的 --yes）才会落库；不传＝服务端按预演处理 */
+  commit?: boolean;
 }
 
 /** 调一次端点。业务失败（ok:false）抛 CliFailure，由入口统一转成退出码。 */
@@ -64,7 +65,7 @@ export async function call<T>(cfg: CliConfig, opts: CallOptions): Promise<T> {
     res = await fetch(`${cfg.baseUrl}/api/cli/v1`, {
       method: "POST",
       headers: { "content-type": "application/json", authorization: `Bearer ${cfg.token}` },
-      body: JSON.stringify({ op: opts.op, input: opts.input ?? {}, runId: opts.runId, dryRun: opts.dryRun }),
+      body: JSON.stringify({ op: opts.op, input: opts.input ?? {}, runId: opts.runId, commit: opts.commit }),
     });
   } catch (e) {
     throw new CliFailure(

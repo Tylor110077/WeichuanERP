@@ -6,6 +6,7 @@ import { listOutstanding } from "@/lib/services/outstanding";
 import { listPayments, type ListPaymentsInput } from "@/lib/services/payments";
 import { listStockMovements, type ListStockMovementsInput } from "@/lib/services/stock-movements";
 import { listAuditLogs, runReport, type ListAuditLogsInput, type ReportInput } from "@/lib/services/audit-and-reports";
+import { createProduct, setProductStatus, type CreateProductInput } from "@/lib/services/master/product";
 import {
   listCategories,
   listCustomers,
@@ -33,7 +34,12 @@ export interface OpDef {
   write?: boolean;
   /** 一句话说明，供 --help / 未知命令提示使用 */
   summary: string;
-  handler: (actor: Actor, input: Record<string, unknown>) => Promise<CliResult<unknown>>;
+  /** 第三个参数只对写操作有意义：dryRun 由端点层按 `commit` 决定（默认 true） */
+  handler: (
+    actor: Actor,
+    input: Record<string, unknown>,
+    opts: { dryRun: boolean }
+  ) => Promise<CliResult<unknown>>;
 }
 
 export const OPS: Record<string, OpDef> = {
@@ -145,6 +151,25 @@ export const OPS: Record<string, OpDef> = {
     requiredScope: SCOPES.read,
     summary: "查审计日志（仅管理员；可按实体/用户/动作筛）",
     handler: async (actor, input) => listAuditLogs(actor, input as ListAuditLogsInput),
+  },
+
+  /* ── 主数据写操作（Phase 3 第一片）──
+     写操作一律声明 write: true：端点层据此把"没带 commit"的调用变成预演。 */
+
+  "master.product.create": {
+    requiredScope: SCOPES.writeMaster,
+    write: true,
+    summary: "新建商品（默认预演，--yes 才落库）",
+    handler: async (actor, input, opts) => createProduct(actor, input as CreateProductInput, opts),
+  },
+  "master.product.set-status": {
+    requiredScope: SCOPES.writeMaster,
+    write: true,
+    summary: "启用/停用商品（软删，保留历史单据引用）",
+    handler: async (actor, input, opts) => {
+      const { productId, enabled } = input as { productId: number; enabled: boolean };
+      return setProductStatus(actor, { productId, enabled }, opts);
+    },
   },
 };
 

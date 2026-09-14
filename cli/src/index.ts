@@ -181,6 +181,29 @@ const COMMANDS: Record<string, Command> = {
       "wc-cli query report --tab summary --from 2026-09-01 --to 2026-09-30 --table",
     ],
   },
+  "master.product.create": {
+    op: "master.product.create",
+    summary: "新建商品（**默认预演**，加 --yes 才真落库）",
+    usage: [
+      "wc-cli master product create --name <名称> --manufacturer <厂家> --unit-id <N>",
+      "                               [--category-id N] [--ref-purchase-price 0.00]",
+      "                               [--ref-sale-price 0.00] [--min-stock 1] [--yes]",
+    ],
+    examples: [
+      "wc-cli master product create --name 'BV 2.5平方 单芯铜线' --manufacturer 远东电缆 --unit-id 1",
+      "  ↑ 这是预演：只打印将要写入的内容，什么都不落库",
+      "wc-cli master product create --name '...' --manufacturer '...' --unit-id 1 --yes   # 真落库",
+    ],
+  },
+  "master.product.set-status": {
+    op: "master.product.set-status",
+    summary: "启用/停用商品（软删，保留历史单据引用）",
+    usage: ["wc-cli master product set-status --product-id N --enabled true|false [--yes]"],
+    examples: [
+      "wc-cli master product set-status --product-id 3 --enabled false          # 预演停用",
+      "wc-cli master product set-status --product-id 3 --enabled false --yes    # 真停用",
+    ],
+  },
   "query.audit-logs": {
     op: "query.audit-logs",
     summary: "查审计日志（仅管理员；可按实体/用户/动作筛）",
@@ -235,14 +258,15 @@ function commandHelp(name: string, cmd: Command): string {
   ].join("\n");
 }
 
-/** 找出命令名：先试"两段式"（auth whoami），再试一段式 */
+/**
+ * 找出命令名：按"段数从多到少"匹配，这样 `master product create`（三段）
+ * 与 `query orders`（两段）、`auth.whoami`（一段）都能落到同一张表上。
+ */
 function resolveCommand(argv: string[]): { key: string; rest: string[] } | null {
-  if (argv.length === 0) return null;
-  if (argv.length >= 2) {
-    const two = `${argv[0]}.${argv[1]}`;
-    if (two in COMMANDS) return { key: two, rest: argv.slice(2) };
+  for (let n = Math.min(3, argv.length); n >= 1; n--) {
+    const key = argv.slice(0, n).join(".");
+    if (key in COMMANDS) return { key, rest: argv.slice(n) };
   }
-  if (argv[0] in COMMANDS) return { key: argv[0], rest: argv.slice(1) };
   return null;
 }
 
@@ -269,7 +293,7 @@ function buildInput(args: string[]): Record<string, unknown> {
     if (!args[i].startsWith("--")) continue;
     const key = args[i].slice(2).replace(/-([a-z])/g, (_, c: string) => c.toUpperCase());
     // --json / --table / --help / --run 由 CLI 自己消费，不进 input
-    if (key === "json" || key === "table" || key === "help" || key === "run") continue;
+    if (key === "json" || key === "table" || key === "help" || key === "run" || key === "yes") continue;
     const next = args[i + 1];
     if (next === undefined || next.startsWith("--")) {
       input[key] = true;
@@ -364,7 +388,8 @@ async function run(argv: string[]): Promise<number> {
     op: cmd.op,
     input: buildInput(rest),
     runId: valueOf(rest, "run"),
-    dryRun: hasFlag(rest, "dry-run") ? true : undefined,
+    // 写操作默认预演；只有 --yes 才让服务端真落库（服务端也会自己兜一层）
+    commit: hasFlag(rest, "yes") ? true : undefined,
   });
 
   if (asTable) {
