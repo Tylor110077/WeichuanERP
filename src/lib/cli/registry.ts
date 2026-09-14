@@ -5,6 +5,7 @@ import { listInventory, type ListInventoryInput } from "@/lib/services/inventory
 import { listOutstanding } from "@/lib/services/outstanding";
 import { listPayments, type ListPaymentsInput } from "@/lib/services/payments";
 import { listStockMovements, type ListStockMovementsInput } from "@/lib/services/stock-movements";
+import { listAuditLogs, runReport, type ListAuditLogsInput, type ReportInput } from "@/lib/services/audit-and-reports";
 import {
   listCategories,
   listCustomers,
@@ -130,6 +131,20 @@ export const OPS: Record<string, OpDef> = {
     requiredScope: SCOPES.read,
     summary: "查库存流水（进货入库/销售出库/退货/作废冲回）",
     handler: async (actor, input) => listStockMovements(actor, input as ListStockMovementsInput),
+  },
+
+  /** 报表：复用 lib/reports.ts，页面 / Excel 导出 / CLI 三处同一份口径 */
+  "query.report": {
+    requiredScope: SCOPES.read,
+    summary: "跑一张报表（汇总里同时给毛额与净额，并标注估价待补行）",
+    handler: async (actor, input) => runReport(actor, input as ReportInput),
+  },
+
+  /** 审计日志：仅管理员，可按实体/用户/动作筛 */
+  "query.audit-logs": {
+    requiredScope: SCOPES.read,
+    summary: "查审计日志（仅管理员；可按实体/用户/动作筛）",
+    handler: async (actor, input) => listAuditLogs(actor, input as ListAuditLogsInput),
   },
 };
 

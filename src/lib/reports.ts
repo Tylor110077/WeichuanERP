@@ -90,7 +90,7 @@ export async function inventoryReport(): Promise<ReportResult> {
 
 export async function summaryReport(from?: string, to?: string): Promise<ReportResult> {
   const { gte, lte } = dateRange(from, to);
-  const [purchases, sales, saleItems] = await Promise.all([
+  const [purchases, sales, saleItems, saleReturns] = await Promise.all([
     prisma.purchaseOrder.findMany({
       where: { status: "received", receivedAt: { gte, lte } },
       select: { totalAmount: true },
@@ -101,12 +101,27 @@ export async function summaryReport(from?: string, to?: string): Promise<ReportR
     }),
     prisma.saleOrderItem.findMany({
       where: { saleOrder: { status: "confirmed", createdAt: { gte, lte } } },
-      select: { costAmount: true },
+      select: { costAmount: true, estimated: true },
+    }),
+    prisma.saleReturn.findMany({
+      where: { status: "confirmed", createdAt: { gte, lte } },
+      // 必须看原售卖单是否还有效：原单作废后，这张退货单已无销售额可冲减，
+      // 计进来会把净额压成负数（dev 数据里就有一张：原单作废、退货 ¥119,760 仍在）
+      select: { totalAmount: true, saleOrder: { select: { status: true } } },
     }),
   ]);
   const purchaseAmount = purchases.reduce((s, o) => s + Number(o.totalAmount), 0);
   const saleAmount = sales.reduce((s, o) => s + Number(o.totalAmount), 0);
   const costAmount = saleItems.reduce((s, i) => s + Number(i.costAmount), 0);
+  /** 只冲减"原单仍有效"的退货 */
+  const returnedAmount = saleReturns
+    .filter((r) => r.saleOrder.status === "confirmed")
+    .reduce((s, o) => s + Number(o.totalAmount), 0);
+  /** 原单已作废、因而被排除的退货（金额与张数都标出来，避免让人以为退货被漏算） */
+  const orphanReturns = saleReturns.filter((r) => r.saleOrder.status !== "confirmed");
+  const orphanAmount = orphanReturns.reduce((s, o) => s + Number(o.totalAmount), 0);
+  /** 估价待补且成本未补的行：成本记 0，所以成本/毛利会失真（下面显式标注，不静默扣减） */
+  const estimatedOpen = saleItems.filter((i) => i.estimated && Number(i.costAmount) === 0).length;
 
   return {
     title: "进销存汇总",
@@ -116,9 +131,29 @@ export async function summaryReport(from?: string, to?: string): Promise<ReportR
     ],
     rows: [
       { metric: `采购额（已入库进货单，期间 ${fmt(gte)} ~ ${fmt(lte)}）`, value: purchaseAmount },
-      { metric: "销售额（非作废售卖单）", value: saleAmount },
+      // 口径说明见 docs/agent-cli-plan.md §13.8 #3：毛额是既有口径（与页面历史一致），净额是补充，
+      // 两个都摆出来、名字写清楚，而不是悄悄换掉其中一个
+      { metric: "销售额（毛额，非作废售卖单）", value: saleAmount },
+      { metric: "销售退货（本期确认，且原单仍有效）", value: returnedAmount },
+      { metric: "销售额（净额 = 毛额 − 退货）", value: saleAmount - returnedAmount },
       { metric: "成本（销售成本快照）", value: costAmount },
-      { metric: "毛利润（销售额 − 成本快照）", value: saleAmount - costAmount },
+      { metric: "毛利润（毛额 − 成本快照）", value: saleAmount - costAmount },
+      { metric: "毛利润（净额口径 = 净额 − 成本快照）", value: saleAmount - returnedAmount - costAmount },
+      // 原单作废后仍挂着的退货单：不计入冲减，但要说出来（否则人会以为退货被漏算）
+      ...(orphanReturns.length > 0
+        ? [
+            {
+              metric: `⚠ ${orphanReturns.length} 张退货单的原售卖单已作废，未计入冲减（¥${orphanAmount.toFixed(2)}）`,
+              value: "",
+            },
+          ]
+        : []),
+      // §13.8 #4：估价行的成本还没补（记 0），毛利会偏高。标注出来让人看得见，
+      // 而不是静默排除它——静默排除会让"报表销售额"和"单据总额"对不上。
+      {
+        metric: estimatedOpen > 0 ? `⚠ 其中 ${estimatedOpen} 行估价待补（成本未计，毛利偏高）` : "估价待补行：无",
+        value: "",
+      },
     ],
   };
 }

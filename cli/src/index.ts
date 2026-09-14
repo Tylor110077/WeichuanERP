@@ -168,6 +168,32 @@ const COMMANDS: Record<string, Command> = {
       "wc-cli query movements --biz-type sale_return_in --table          # 只看销售退货",
     ],
   },
+  "query.report": {
+    op: "query.report",
+    summary: "跑报表（汇总同时给毛额与净额；估价待补行会标注成本未计）",
+    usage: [
+      "wc-cli query report [--tab inventory|summary|payables|receivables|sales-rank|operator-perf]",
+      "                    [--from YYYY-MM-DD] [--to YYYY-MM-DD] [--table]",
+    ],
+    examples: [
+      "wc-cli query report --tab summary --table",
+      "wc-cli query report --tab sales-rank --table",
+      "wc-cli query report --tab summary --from 2026-09-01 --to 2026-09-30 --table",
+    ],
+  },
+  "query.audit-logs": {
+    op: "query.audit-logs",
+    summary: "查审计日志（仅管理员；可按实体/用户/动作筛）",
+    usage: [
+      "wc-cli query audit-logs [--entity-type product] [--entity-id N] [--username admin]",
+      "                        [--action create|update|void|...] [--from YYYY-MM-DD] [--to YYYY-MM-DD] [--table]",
+    ],
+    examples: [
+      "wc-cli query audit-logs --table",
+      "wc-cli query audit-logs --entity-type product --table    # 商品档案被谁改过",
+      "wc-cli query audit-logs --username admin --action create --table",
+    ],
+  },
 };
 
 const VERSION = "0.1.0";
