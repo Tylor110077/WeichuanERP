@@ -104,7 +104,7 @@ export async function createPurchaseReturnAction(
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
       const result = await prisma.$transaction(async (tx) => {
-        const poRows = await tx.purchaseOrder.findMany({
+        const poRows = await tx.purchaseReturn.findMany({
           where: { orderNo: { startsWith: `${ORDER_NO_PREFIXES.PRF}${todayCompact()}-` } },
           select: { orderNo: true },
         });
