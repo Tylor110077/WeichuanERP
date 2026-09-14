@@ -204,6 +204,48 @@ const COMMANDS: Record<string, Command> = {
       "wc-cli master product set-status --product-id 3 --enabled false --yes    # 真停用",
     ],
   },
+  "master.customer.create": {
+    op: "master.customer.create",
+    summary: "新建/更新客户（**默认预演**；默认拒绝重名）",
+    usage: [
+      "wc-cli master customer create --name <名称> [--phone 138...] [--address ...] [--remark ...]",
+      "                              [--group-id N] [--tag-ids 1,2] [--allow-duplicate] [--yes]",
+      "wc-cli master customer update --id N --name <名称> [--phone ...] [--yes]",
+    ],
+    examples: [
+      "wc-cli master customer create --name 张敬玮 --phone 13800000000",
+      "  ↑ 预演：只打印将要写入的内容",
+      "wc-cli master customer create --name 张敬玮 --phone 13800000000 --yes   # 真落库",
+      "wc-cli master customer update --id 3 --name 张敬玮 --phone 13900000000 --yes",
+    ],
+  },
+  "master.supplier.create": {
+    op: "master.supplier.create",
+    summary: "新建/更新厂家（**默认预演**；默认拒绝重名）",
+    usage: [
+      "wc-cli master supplier create --name <厂家名> [--contact ...] [--phone ...] [--allow-duplicate] [--yes]",
+      "wc-cli master supplier update --id N --name <厂家名> [--yes]",
+    ],
+    examples: [
+      "wc-cli master supplier create --name 远东电缆 --contact 王经理",
+      "wc-cli master supplier create --name 远东电缆 --contact 王经理 --yes",
+    ],
+  },
+  "master.customer.update": {
+    op: "master.customer.update",
+    summary: "更新客户（必须给 --id）",
+    usage: ["wc-cli master customer update --id N --name <名称> [--phone ...] [--group-id N] [--tag-ids 1,2] [--yes]"],
+    examples: [
+      "wc-cli master customer update --id 3 --name 张敬玮 --phone 13900000000",
+      "wc-cli master customer update --id 3 --name 张敬玮 --yes",
+    ],
+  },
+  "master.supplier.update": {
+    op: "master.supplier.update",
+    summary: "更新厂家（必须给 --id）",
+    usage: ["wc-cli master supplier update --id N --name <厂家名> [--contact ...] [--yes]"],
+    examples: ["wc-cli master supplier update --id 2 --name 远东电缆 --contact 王经理 --yes"],
+  },
   "query.audit-logs": {
     op: "query.audit-logs",
     summary: "查审计日志（仅管理员；可按实体/用户/动作筛）",

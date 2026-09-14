@@ -169,7 +169,13 @@ export async function setProductStatus(
       tx,
       ip: "cli",
       before: { code: product.code, name: product.name, status: product.status },
-      after: { code: product.code, name: product.name, status: enabled ? 1 : 0 },
+      after: {
+        code: product.code,
+        name: product.name,
+        status: enabled ? 1 : 0,
+        source: actor.kind === "agent" ? `cli:${actor.tokenName ?? ""}` : "web",
+        runId: actor.runId ?? null,
+      },
     });
     return { 商品: `${product.code} ${product.name}`, 状态: enabled ? "启用" : "停用" };
   });

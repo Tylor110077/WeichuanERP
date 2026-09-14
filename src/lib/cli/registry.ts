@@ -7,6 +7,7 @@ import { listPayments, type ListPaymentsInput } from "@/lib/services/payments";
 import { listStockMovements, type ListStockMovementsInput } from "@/lib/services/stock-movements";
 import { listAuditLogs, runReport, type ListAuditLogsInput, type ReportInput } from "@/lib/services/audit-and-reports";
 import { createProduct, setProductStatus, type CreateProductInput } from "@/lib/services/master/product";
+import { saveCustomer, saveSupplier, type SaveCustomerInput, type SaveSupplierInput } from "@/lib/services/master/partner";
 import {
   listCategories,
   listCustomers,
@@ -169,6 +170,41 @@ export const OPS: Record<string, OpDef> = {
     handler: async (actor, input, opts) => {
       const { productId, enabled } = input as { productId: number; enabled: boolean };
       return setProductStatus(actor, { productId, enabled }, opts);
+    },
+  },
+
+  /* 客户/厂家：create 与 update 分成两个 op（动词不同、校验也不同），
+     都落到同一个 saveXxx 服务函数上——服务里只有一份写逻辑。 */
+
+  "master.customer.create": {
+    requiredScope: SCOPES.writeMaster,
+    write: true,
+    summary: "新建客户（默认拒绝重名；默认预演）",
+    // 明确丢掉 id：create 是 create，不会被一个多余的 --id 变成"悄悄改别人"
+    handler: async (actor, input, opts) => saveCustomer(actor, { ...(input as SaveCustomerInput), id: undefined }, opts),
+  },
+  "master.customer.update": {
+    requiredScope: SCOPES.writeMaster,
+    write: true,
+    summary: "更新客户（必须给 --id）",
+    handler: async (actor, input, opts) => {
+      if ((input as { id?: unknown }).id == null) return fail("INVALID", "更新必须给 --id（要新建请用 create）");
+      return saveCustomer(actor, input as SaveCustomerInput, opts);
+    },
+  },
+  "master.supplier.create": {
+    requiredScope: SCOPES.writeMaster,
+    write: true,
+    summary: "新建厂家（默认拒绝重名；默认预演）",
+    handler: async (actor, input, opts) => saveSupplier(actor, { ...(input as SaveSupplierInput), id: undefined }, opts),
+  },
+  "master.supplier.update": {
+    requiredScope: SCOPES.writeMaster,
+    write: true,
+    summary: "更新厂家（必须给 --id）",
+    handler: async (actor, input, opts) => {
+      if ((input as { id?: unknown }).id == null) return fail("INVALID", "更新必须给 --id（要新建请用 create）");
+      return saveSupplier(actor, input as SaveSupplierInput, opts);
     },
   },
 };
