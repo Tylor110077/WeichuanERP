@@ -96,6 +96,7 @@ model User {
   updatedAt    DateTime  @updatedAt @map("updated_at")
 
   sessions        Session[]
+  apiTokens       ApiToken[]
   loginLogs       LoginLog[]
   auditLogs       AuditLog[]
   createdProducts Product[]        @relation("ProductCreator")
@@ -124,6 +125,29 @@ model Session {
   @@map("sessions")
 }
 
+/// CLI / Agent 的访问令牌（cookie 会话之外的第二条身份通道）。
+///
+/// 与 Session 同一套安全做法：库里只存 sha256 哈希，明文只在创建时返回一次，
+/// 库文件泄漏也无法伪造令牌。区别是它**长期有效**（expiresAt 可空）且带 scopes——
+/// 审核（review）与写入分离，发给 Agent 的令牌一律不含 review，从根上杜绝"自审自批"。
+model ApiToken {
+  id         Int       @id @default(autoincrement())
+  userId     Int       @map("user_id")
+  user       User      @relation(fields: [userId], references: [id])
+  name       String    @db.VarChar(50) // 用途备注，如「Agent 开单」，审计里显示的就是它
+  tokenHash  String    @unique @map("token_hash") @db.Char(64) // sha256 hex
+  /// 权限词表（string[]）：read / write:order / write:master / write:payment / ops
+  /// review 只发给人类令牌，见 lib/cli/registry.ts 的 requiredScope 声明
+  scopes     Json
+  expiresAt  DateTime? @map("expires_at")
+  lastUsedAt DateTime? @map("last_used_at")
+  revokedAt  DateTime? @map("revoked_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@map("api_tokens")
+}
+
 model LoginLog {
   id        Int      @id @default(autoincrement())
   userId    Int?     @map("user_id")
@@ -148,6 +172,9 @@ model AuditLog {
   action     String   @db.VarChar(50) // login / create / receive / void / update / delete
   entityType String   @map("entity_type") @db.VarChar(50)
   entityId   BigInt?  @map("entity_id")
+  /// 非数字标识（如 "backup-config"）。以前这类值走 entity_id 的 BigInt() 会抛错后被静默丢弃，
+  /// 于是"备份配置变更"完全没有审计；现在有专门一列承载，写不进去也不会再悄悄消失。
+  entityKey  String?  @map("entity_key") @db.VarChar(64)
   beforeJson Json?    @map("before_json")
   afterJson  Json?    @map("after_json")
   ip         String?  @db.VarChar(45)

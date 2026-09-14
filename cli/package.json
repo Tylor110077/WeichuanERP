@@ -1,0 +1,13 @@
+{
+  "name": "wc-cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "玮川进销存的 CLI：给 Agent / 脚本 / cron 用，走 HTTP 调服务层，不直连数据库",
+  "bin": {
+    "wc-cli": "src/index.ts"
+  },
+  "scripts": {
+    "start": "tsx src/index.ts"
+  }
+}
