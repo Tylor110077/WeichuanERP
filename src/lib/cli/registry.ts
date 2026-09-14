@@ -10,6 +10,7 @@ import { createProduct, setProductStatus, type CreateProductInput } from "@/lib/
 import { saveCustomer, saveSupplier, type SaveCustomerInput, type SaveSupplierInput } from "@/lib/services/master/partner";
 import { createPayment, voidPayment, type CreatePaymentInput } from "@/lib/services/payments-write";
 import { createSaleOrder, type CreateSaleOrderInput } from "@/lib/services/orders/sale-create";
+import { createPurchaseOrder, type CreatePurchaseOrderInput } from "@/lib/services/orders/purchase-create";
 import { saveCategory, saveUnit, setTaxonomyStatus, type SaveTaxonomyInput } from "@/lib/services/master/taxonomy";
 import {
   listCategories,
@@ -220,6 +221,17 @@ export const OPS: Record<string, OpDef> = {
     write: true,
     summary: "开售卖单（默认预演；会扣库存与成本快照，现场进货还会自动生成进货单）",
     handler: async (actor, input, opts) => createSaleOrder(actor, input as CreateSaleOrderInput, opts),
+  },
+
+  /**
+   * 开进货单。注意：**创建 ≠ 入库**——状态是 pending，库存与成本一动不动；
+   * 货到了要用 order.purchase.receive 才进库存。
+   */
+  "order.purchase.create": {
+    requiredScope: SCOPES.writeOrder,
+    write: true,
+    summary: "开进货单（默认预演；创建不等于入库，不碰库存）",
+    handler: async (actor, input, opts) => createPurchaseOrder(actor, input as CreatePurchaseOrderInput, opts),
   },
 
   /* 收付款：动钱的操作，写操作声明照旧 → 默认预演 */

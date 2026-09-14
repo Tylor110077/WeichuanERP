@@ -263,6 +263,19 @@ const COMMANDS: Record<string, Command> = {
       "wc-cli order sale create --customer-id 1 --items @/tmp/items.json --yes   # 真落库",
     ],
   },
+  "order.purchase.create": {
+    op: "order.purchase.create",
+    summary: "开进货单（**默认预演**；创建不等于入库，库存不动）",
+    usage: [
+      "wc-cli order purchase create --supplier-id N --items '<JSON 数组>' [--remark ...] [--yes]",
+      "  --items 每行：productId / quantity / unitPrice 必填，remark 可选",
+      "  单位取商品默认单位；货到了要再用 order purchase receive 确认入库",
+    ],
+    examples: [
+      "wc-cli order purchase create --supplier-id 1 --items '[{\"productId\":3,\"quantity\":100,\"unitPrice\":18}]'",
+      "wc-cli order purchase create --supplier-id 1 --items @/tmp/po.json --yes",
+    ],
+  },
   "payment.create": {
     op: "payment.create",
     summary: "登记收付款（**默认预演**；一单一笔）",

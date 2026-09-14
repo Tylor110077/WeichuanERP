@@ -3,13 +3,13 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { Prisma } from "@prisma/client";
-import { prisma, type TxClient } from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth/session";
 import { writeAudit } from "@/lib/audit";
 import { applyStockChange } from "@/lib/stock-cost";
-import { buildOrderNo, ORDER_NO_PREFIXES, todayCompact } from "@/lib/order-no";
 import { firstIssueMessage, requiredNumber } from "@/lib/form-number";
+import { createPurchaseOrder } from "@/lib/services/orders/purchase-create";
+import { humanActor } from "@/lib/cli/types";
 
 export type FormState = { error?: string; ok?: string } | null;
 
@@ -37,9 +37,6 @@ const createSchema = z.object({
   items: z.array(itemSchema).min(1, "请至少添加一行商品"),
 });
 
-function round2(n: number): number {
-  return Math.round(n * 100) / 100;
-}
 
 async function requirePurchaseWrite() {
   const user = await getCurrentUser();
@@ -72,106 +69,28 @@ function parseCreatePayload(formData: FormData) {
   });
 }
 
-/** 当日序号：同前缀单据最大序号 + 1；唯一索引冲突时重试（并发防重号）。 */
-async function nextSeq(tx: TxClient, prefix: string): Promise<number> {
-  const rows = await tx.purchaseOrder.findMany({
-    where: { orderNo: { startsWith: `${prefix}${todayCompact()}-` } },
-    select: { orderNo: true },
-  });
-  let maxSeq = 0;
-  for (const r of rows) {
-    const seq = Number(/-(\d{4})$/.exec(r.orderNo)?.[1] ?? 0);
-    if (seq > maxSeq) maxSeq = seq;
-  }
-  return maxSeq + 1;
-}
 
 export async function createPurchaseOrderAction(
   _prev: FormState,
   formData: FormData
 ): Promise<FormState> {
   const user = await requirePurchaseWrite();
+
+  // 薄壳：解析表单 → 调服务层 → 刷新与跳转（业务逻辑在 lib/services/orders/purchase-create.ts，
+  // 与 CLI 共用同一份，所以"页面开出来的单"与"CLI 开出来的单"不可能不一致）。
   const parsed = parseCreatePayload(formData);
   if (!parsed.success) {
     return { error: firstIssueMessage(parsed.error, { unitPrice: "进价" }) };
   }
-  const { supplierId, remark, items } = parsed.data;
-  // 开单时就能标星（表单厂家信息区里那个星按钮）
-  const starred = formData.get("starred") === "1";
+  const result = await createPurchaseOrder(
+    humanActor(user),
+    { ...parsed.data, starred: formData.get("starred") === "1" },
+    { dryRun: false }
+  );
+  if (!result.ok) return { error: result.error.message };
 
-  const supplier = await prisma.supplier.findUnique({ where: { id: supplierId } });
-  if (!supplier || supplier.status !== 1) return { error: "厂家不存在或已停用" };
-
-  const productIds = [...new Set(items.map((it) => it.productId))];
-  const products = await prisma.product.findMany({
-    where: { id: { in: productIds } },
-    select: { id: true, status: true, unitId: true },
-  });
-  const productMap = new Map(products.map((p) => [p.id, p]));
-  for (const p of products) {
-    if (p.status !== 1) return { error: `商品 #${p.id} 已停用，无法开单` };
-  }
-
-  const normalized = items.map((it) => {
-    const product = productMap.get(it.productId);
-    if (!product) throw new Error(`商品 #${it.productId} 不存在`);
-    return {
-      productId: it.productId,
-      unitId: product.unitId, // 单位取商品默认单位（文档：不做换算，单单位制）
-      quantity: Math.round(it.quantity * 1000) / 1000,
-      unitPrice: round2(it.unitPrice),
-      remark: it.remark || null,
-    };
-  });
-
-  for (let attempt = 0; attempt < 3; attempt++) {
-    try {
-      await prisma.$transaction(async (tx) => {
-        const seq = await nextSeq(tx, ORDER_NO_PREFIXES.PO);
-        const no = buildOrderNo(ORDER_NO_PREFIXES.PO, seq);
-        const itemsWithAmount = normalized.map((it) => ({
-          ...it,
-          amount: round2(it.quantity * it.unitPrice),
-        }));
-        const created = await tx.purchaseOrder.create({
-          data: {
-            orderNo: no,
-            supplierId,
-            status: "pending",
-            sourceType: "manual",
-            starred,
-            totalAmount: round2(itemsWithAmount.reduce((s, it) => s + it.amount, 0)),
-            remark: remark || null,
-            operatorId: user.id,
-            items: { create: itemsWithAmount.map((it) => ({ ...it })) },
-          },
-          select: { id: true, orderNo: true, totalAmount: true },
-        });
-        await writeAudit({
-          userId: user.id,
-          action: "create",
-          entityType: "purchase_order",
-          entityId: created.id,
-          // tx：与建单同事务。以前走全局 prisma，P2002 重试时同一次创建会写多条审计
-          tx,
-          after: { orderNo: created.orderNo, supplierId, totalAmount: Number(created.totalAmount) },
-        });
-        return created;
-      });
-      revalidatePath("/purchase-orders");
-      redirect("/purchase-orders");
-    } catch (err) {
-      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
-        continue; // 序号冲突，重取
-      }
-      if (err instanceof Error && err.message.startsWith("NEXT_REDIRECT")) {
-        throw err; // redirect 异常放行
-      }
-      console.error("[purchase] 开单失败:", err);
-      return { error: "开单失败，请重试" };
-    }
-  }
-  return { error: "单据号生成失败，请重试" };
+  revalidatePath("/purchase-orders");
+  redirect("/purchase-orders");
 }
 
 export async function receivePurchaseOrderAction(
