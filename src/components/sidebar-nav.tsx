@@ -8,6 +8,8 @@ import { useEffect, useState } from "react";
 export interface NavItem {
   href: string;
   label: string;
+  /** 待办计数（如"待审核 N 单"）：有值时显示角标 */
+  badge?: number;
 }
 
 export interface NavGroup {
@@ -112,6 +114,9 @@ function SidebarNavInner({ groups }: { groups: NavGroup[] }) {
                     }`}
                   >
                     {item.label}
+                    {item.badge != null && item.badge > 0 && (
+                      <span className="ml-1.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">{item.badge}</span>
+                    )}
                   </Link>
                 ))}
               </div>

@@ -5,6 +5,7 @@ import { logoutAction } from "./logout-action";
 import { ROLE_LABELS } from "@/lib/auth/roles";
 import { AppShell } from "@/components/app-shell";
 import { SIDEBAR_COOKIE } from "@/lib/sidebar";
+import { prisma } from "@/lib/prisma";
 
 const ALL_ROLES = ["admin", "sales", "boss"] as const;
 
@@ -25,6 +26,8 @@ const NAV_GROUPS: {
       { href: "/sale-returns", label: "退货单", roles: ALL_ROLES },
       // 开售卖单时只填了售价、进价与货源还没定的行，都收在这里补
       { href: "/pending-estimates", label: "估价待补单", roles: ["admin", "boss"] },
+      // Agent 代做的单据在这里复核（立刻生效、事后复核；驳回后要另行作废）
+      { href: "/reviews", label: "待审核", roles: ["admin", "boss"] },
       // 没填完的单据都收在这里，分售卖/进货两类
       { href: "/drafts", label: "开单草稿", roles: ALL_ROLES },
     ],
@@ -81,6 +84,15 @@ export default async function MainLayout({
 
   // 侧边栏收起状态由服务端从 Cookie 读取：刷新或表单 GET 跳转时直接渲染正确状态，避免闪烁
   const cookieStore = await cookies();
+  // 待审核计数：入口上带角标，否则没人会主动去点
+  const pendingReviews =
+    user.role === "admin" || user.role === "boss"
+      ? (await prisma.saleOrder.count({ where: { reviewStatus: "pending_review" } })) +
+        (await prisma.purchaseOrder.count({ where: { reviewStatus: "pending_review" } })) +
+        (await prisma.saleReturn.count({ where: { reviewStatus: "pending_review" } })) +
+        (await prisma.purchaseReturn.count({ where: { reviewStatus: "pending_review" } })) +
+        (await prisma.payment.count({ where: { reviewStatus: "pending_review" } }))
+      : 0;
   const initialCollapsed = cookieStore.get(SIDEBAR_COOKIE)?.value === "1";
 
   return (
@@ -90,7 +102,7 @@ export default async function MainLayout({
         label: group.label,
         items: group.items
           .filter((item) => item.roles.includes(user.role))
-          .map(({ href, label }) => ({ href, label })),
+          .map(({ href, label }) => ({ href, label, badge: href === "/reviews" ? pendingReviews : undefined })),
       })).filter((g) => g.items.length > 0)}
       footer={
         <div className="border-t border-gray-200 px-4 py-3">
