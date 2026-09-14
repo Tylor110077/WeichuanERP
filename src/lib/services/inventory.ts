@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
+import { zBoolean } from "@/lib/form-bool";
 import { prisma } from "@/lib/prisma";
 import { pinyinQuery } from "@/lib/pinyin";
 import { fail, ok, type Actor, type CliResult } from "@/lib/cli/types";
@@ -35,7 +36,7 @@ const inputSchema = z.object({
   q: z.string().trim().max(50).optional(),
   page: z.coerce.number().int().min(1).optional(),
   pageSize: z.coerce.number().int().min(1).max(500).optional(),
-  warnOnly: z.coerce.boolean().optional(),
+  warnOnly: zBoolean().optional(),
   /** 分类 id；"none" = 未分类 */
   category: z.union([z.coerce.number().int().positive(), z.literal("none")]).optional(),
   /** 厂家名；"none" = 未填厂家 */

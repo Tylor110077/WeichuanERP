@@ -246,6 +246,42 @@ const COMMANDS: Record<string, Command> = {
     usage: ["wc-cli master supplier update --id N --name <厂家名> [--contact ...] [--yes]"],
     examples: ["wc-cli master supplier update --id 2 --name 远东电缆 --contact 王经理 --yes"],
   },
+  "master.unit.create": {
+    op: "master.unit.create",
+    summary: "新建单位（**默认预演**；重名拒绝）",
+    usage: ["wc-cli master unit create --name <单位名> [--yes]"],
+    examples: ["wc-cli master unit create --name 卷", "wc-cli master unit create --name 卷 --yes"],
+  },
+  "master.unit.update": {
+    op: "master.unit.update",
+    summary: "重命名单位（必须给 --id）",
+    usage: ["wc-cli master unit update --id N --name <单位名> [--yes]"],
+    examples: ["wc-cli master unit update --id 3 --name 包 --yes"],
+  },
+  "master.unit.set-status": {
+    op: "master.unit.set-status",
+    summary: "启用/停用单位（软删）",
+    usage: ["wc-cli master unit set-status --id N --enabled true|false [--yes]"],
+    examples: ["wc-cli master unit set-status --id 3 --enabled false --yes"],
+  },
+  "master.category.create": {
+    op: "master.category.create",
+    summary: "新建商品分类（**默认预演**；重名拒绝）",
+    usage: ["wc-cli master category create --name <分类名> [--yes]"],
+    examples: ["wc-cli master category create --name 开关插座 --yes"],
+  },
+  "master.category.update": {
+    op: "master.category.update",
+    summary: "重命名商品分类（必须给 --id）",
+    usage: ["wc-cli master category update --id N --name <分类名> [--yes]"],
+    examples: ["wc-cli master category update --id 2 --name 电线电缆 --yes"],
+  },
+  "master.category.set-status": {
+    op: "master.category.set-status",
+    summary: "启用/停用商品分类（软删）",
+    usage: ["wc-cli master category set-status --id N --enabled true|false [--yes]"],
+    examples: ["wc-cli master category set-status --id 2 --enabled false --yes"],
+  },
   "query.audit-logs": {
     op: "query.audit-logs",
     summary: "查审计日志（仅管理员；可按实体/用户/动作筛）",
@@ -341,7 +377,10 @@ function buildInput(args: string[]): Record<string, unknown> {
       input[key] = true;
       continue;
     }
-    input[key] = NUMERIC_KEYS.has(key) ? Number(next) : next;
+    // 显式写 true/false 就按布尔传（否则服务端拿到的是字符串）；
+    // 注意 z.coerce.boolean() 那条坑：字符串 "false" 在 JS 里是真值，见 lib/form-bool.ts
+    if (next === "true" || next === "false") input[key] = next === "true";
+    else input[key] = NUMERIC_KEYS.has(key) ? Number(next) : next;
     i++;
   }
   return input;

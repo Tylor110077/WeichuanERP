@@ -8,6 +8,7 @@ import { listStockMovements, type ListStockMovementsInput } from "@/lib/services
 import { listAuditLogs, runReport, type ListAuditLogsInput, type ReportInput } from "@/lib/services/audit-and-reports";
 import { createProduct, setProductStatus, type CreateProductInput } from "@/lib/services/master/product";
 import { saveCustomer, saveSupplier, type SaveCustomerInput, type SaveSupplierInput } from "@/lib/services/master/partner";
+import { saveCategory, saveUnit, setTaxonomyStatus, type SaveTaxonomyInput } from "@/lib/services/master/taxonomy";
 import {
   listCategories,
   listCustomers,
@@ -205,6 +206,56 @@ export const OPS: Record<string, OpDef> = {
     handler: async (actor, input, opts) => {
       if ((input as { id?: unknown }).id == null) return fail("INVALID", "更新必须给 --id（要新建请用 create）");
       return saveSupplier(actor, input as SaveSupplierInput, opts);
+    },
+  },
+
+  /* 单位/分类：名称即身份，重名一律拒绝（没有 allowDuplicate 的口子） */
+  "master.unit.create": {
+    requiredScope: SCOPES.writeMaster,
+    write: true,
+    summary: "新建单位（默认预演）",
+    handler: async (actor, input, opts) => saveUnit(actor, { ...(input as SaveTaxonomyInput), id: undefined }, opts),
+  },
+  "master.unit.update": {
+    requiredScope: SCOPES.writeMaster,
+    write: true,
+    summary: "重命名单位（必须给 --id）",
+    handler: async (actor, input, opts) => {
+      if ((input as { id?: unknown }).id == null) return fail("INVALID", "更新必须给 --id");
+      return saveUnit(actor, input as SaveTaxonomyInput, opts);
+    },
+  },
+  "master.unit.set-status": {
+    requiredScope: SCOPES.writeMaster,
+    write: true,
+    summary: "启用/停用单位（软删）",
+    handler: async (actor, input, opts) => {
+      const { id, enabled } = input as { id: number; enabled: boolean };
+      return setTaxonomyStatus(actor, "unit", { id, enabled }, opts);
+    },
+  },
+  "master.category.create": {
+    requiredScope: SCOPES.writeMaster,
+    write: true,
+    summary: "新建商品分类（默认预演）",
+    handler: async (actor, input, opts) => saveCategory(actor, { ...(input as SaveTaxonomyInput), id: undefined }, opts),
+  },
+  "master.category.update": {
+    requiredScope: SCOPES.writeMaster,
+    write: true,
+    summary: "重命名商品分类（必须给 --id）",
+    handler: async (actor, input, opts) => {
+      if ((input as { id?: unknown }).id == null) return fail("INVALID", "更新必须给 --id");
+      return saveCategory(actor, input as SaveTaxonomyInput, opts);
+    },
+  },
+  "master.category.set-status": {
+    requiredScope: SCOPES.writeMaster,
+    write: true,
+    summary: "启用/停用商品分类（软删）",
+    handler: async (actor, input, opts) => {
+      const { id, enabled } = input as { id: number; enabled: boolean };
+      return setTaxonomyStatus(actor, "category", { id, enabled }, opts);
     },
   },
 };

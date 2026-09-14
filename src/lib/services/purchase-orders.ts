@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { zBoolean } from "@/lib/form-bool";
 import { prisma } from "@/lib/prisma";
 import { pinyinQuery } from "@/lib/pinyin";
 import { dateRange } from "@/lib/reports";
@@ -22,7 +23,7 @@ const inputSchema = z.object({
   supplierId: z.coerce.number().int().positive().optional(),
   q: z.string().trim().max(50).optional(),
   settle: z.enum(["settled", "unsettled"]).optional(),
-  starred: z.coerce.boolean().optional(),
+  starred: zBoolean().optional(),
   from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "from 应为 YYYY-MM-DD").optional(),
   to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "to 应为 YYYY-MM-DD").optional(),
 });

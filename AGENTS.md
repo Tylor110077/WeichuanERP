@@ -51,3 +51,16 @@ pkill -f "next dev" && npm run dev
 
 新增数字字段时照抄这三个函数，别再手写 `z.coerce.number()`；
 `tests/form-number.test.ts` 覆盖了这些边界。
+
+## Zod 布尔：不要用 `z.coerce.boolean()`
+
+它是 JS 的 `Boolean()`——**非空字符串一律为 true**，于是命令行里的
+`--enabled false` 会被当成"启用"，`--allow-duplicate=false` 会被当成"允许"。
+这类 bug 表里不一：命令看起来跑了、日志也对，只有结果悄悄反了。
+
+统一用 `src/lib/form-bool.ts` 的 `zBoolean()`：`false/0/no/off/否` 认作假，
+`true/1/yes/on/是` 认作真，**认不出的输入直接报错**而不是猜一个值。
+`tests/form-bool.test.ts` 覆盖了这些边界。
+
+（CLI 侧 `cli/src/index.ts` 会把 `--x true|false` 提前转成真布尔，
+但服务端仍要能自己挡住字符串 —— 端点是可以被 curl 直接打的。）

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { zBoolean } from "@/lib/form-bool";
 import { prisma } from "@/lib/prisma";
 import { pinyinQuery } from "@/lib/pinyin";
 import { fail, ok, type Actor, type CliResult } from "@/lib/cli/types";
@@ -40,7 +41,7 @@ const productSchema = pageSchema.extend({
   /** 厂家名；"none" = 未填厂家 */
   manufacturer: z.union([z.string().trim().min(1).max(100), z.literal("none")]).optional(),
   /** status=1 只看启用；默认全部（含停用），与页面一致 */
-  enabledOnly: z.coerce.boolean().optional(),
+  enabledOnly: zBoolean().optional(),
 });
 
 export type ListProductsInput = z.input<typeof productSchema>;

@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
+import { zBoolean } from "@/lib/form-bool";
 import { prisma, type TxClient } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { initials } from "@/lib/pinyin-server";
@@ -145,7 +146,7 @@ export async function setProductStatus(
   if (actor.role !== "admin") return fail("FORBIDDEN", "基础资料仅管理员可维护");
 
   const parsed = z
-    .object({ productId: z.coerce.number().int().positive(), enabled: z.coerce.boolean() })
+    .object({ productId: z.coerce.number().int().positive(), enabled: zBoolean() })
     .safeParse(rawInput);
   if (!parsed.success) return fail("INVALID", parsed.error.issues[0]?.message ?? "参数不正确");
   const { productId, enabled } = parsed.data;

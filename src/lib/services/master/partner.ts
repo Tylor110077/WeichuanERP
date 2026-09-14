@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { zBoolean } from "@/lib/form-bool";
 import { prisma, type TxClient } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { runInTransaction } from "@/lib/services/dry-run";
@@ -40,7 +41,7 @@ const customerSchema = z.object({
   groupId: z.coerce.number().int().positive().nullable().optional(),
   tagIds: csvNumbers,
   /** 默认拒绝重名（见文件头说明） */
-  allowDuplicate: z.coerce.boolean().optional(),
+  allowDuplicate: zBoolean().optional(),
 });
 
 export type SaveCustomerInput = z.input<typeof customerSchema>;
@@ -150,7 +151,7 @@ const supplierSchema = z.object({
   phone: z.string().trim().max(30).optional(),
   address: z.string().trim().max(200).optional(),
   remark: z.string().trim().max(200).optional(),
-  allowDuplicate: z.coerce.boolean().optional(),
+  allowDuplicate: zBoolean().optional(),
 });
 
 export type SaveSupplierInput = z.input<typeof supplierSchema>;
