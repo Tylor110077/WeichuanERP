@@ -322,6 +322,35 @@ const COMMANDS: Record<string, Command> = {
     usage: ["wc-cli order return purchase void --id N --reason <原因> [--yes]"],
     examples: ["wc-cli order return purchase void --id 3 --reason '退错批' --yes"],
   },
+  "order.sale.void": {
+    op: "order.sale.void",
+    summary: "作废售卖单（**默认预演**；级联作废自动补货单）",
+    usage: ["wc-cli order sale void --id N --reason <原因> [--yes]"],
+    examples: [
+      "wc-cli order sale void --id 20028 --reason '客户取消'          # 预演：看会冲回多少库存",
+      "wc-cli order sale void --id 20028 --reason '客户取消' --yes",
+    ],
+  },
+  "order.purchase.void": {
+    op: "order.purchase.void",
+    summary: "作废进货单（未入库不碰库存；已入库需库存未被消耗）",
+    usage: ["wc-cli order purchase void --id N --reason <原因> [--yes]"],
+    examples: ["wc-cli order purchase void --id 27 --reason '开错了' --yes"],
+  },
+  "order.reopen": {
+    op: "order.reopen",
+    summary: "改单（作废原单 + 按原单内容重开新单；**默认预演**）",
+    usage: [
+      "wc-cli order reopen --type sale|purchase --from-id N [--reason 改单原因]",
+      "                    [--customer-id N | --supplier-id N] [--remark ...]",
+      "                    [--items '<JSON 数组>'] [--yes]",
+      "  不给 --items 就照抄原单的行（含原售价/进价），相当于原样重开一张",
+    ],
+    examples: [
+      "wc-cli order reopen --type sale --from-id 20028 --reason '客户换成了张敬玮' --customer-id 2",
+      "wc-cli order reopen --type sale --from-id 20028 --items '[{\"productId\":3,\"quantity\":8,\"unitPrice\":26,\"supplyPrice\":18}]' --yes",
+    ],
+  },
   "payment.create": {
     op: "payment.create",
     summary: "登记收付款（**默认预演**；一单一笔）",
@@ -456,8 +485,15 @@ function valueOf(args: string[], flag: string): string | undefined {
   return i >= 0 ? args[i + 1] : undefined;
 }
 
-/** 需要转成数字的入参（其余按字符串）；与 registry 里各命令的 zod 校验对应 */
-const NUMERIC_KEYS = new Set(["page", "pageSize", "customerId", "orderId", "counterId", "productId"]);
+/**
+ * 哪些入参要转成数字：**凡是 Id 结尾的一律转**（productId / orderId / fromId / entityId…），
+ * 另加几个分页与数值键。
+ *
+ * 以前是一张手写白名单，结果每加一个命令都可能漏——`--from-id` 就漏过，
+ * 传过去的是字符串、服务端 Prisma 直接抛内部错误。改成规则以后不会再漏。
+ */
+const NUMERIC_KEYS = new Set(["page", "pageSize", "limit", "amount", "quantity", "unitPrice", "minStock", "refPurchasePrice", "refSalePrice"]);
+const isNumericKey = (key: string) => key.endsWith("Id") || NUMERIC_KEYS.has(key);
 
 /** 结构化入参（数组/对象）用 JSON 传；值以 @ 开头则读文件，便于 Agent 生成大数组 */
 const JSON_KEYS = new Set(["items"]);
@@ -492,7 +528,7 @@ function buildInput(args: string[]): Record<string, unknown> {
     // 注意 z.coerce.boolean() 那条坑：字符串 "false" 在 JS 里是真值，见 lib/form-bool.ts
     if (JSON_KEYS.has(key)) input[key] = parseJsonArg(key, next);
     else if (next === "true" || next === "false") input[key] = next === "true";
-    else input[key] = NUMERIC_KEYS.has(key) ? Number(next) : next;
+    else input[key] = isNumericKey(key) ? Number(next) : next;
     i++;
   }
   return input;

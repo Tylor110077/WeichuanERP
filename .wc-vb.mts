@@ -1,0 +1,16 @@
+import { prisma } from "@/lib/prisma";
+let bad = 0;
+const eq = (l: string, a: unknown, b: unknown) => { const s = String(a) === String(b); console.log(`${s ? "✅" : "❌"} ${l}：${a} / 预期 ${b}`); if (!s) bad++; };
+const old = await prisma.saleOrder.findFirst({ where: { items: { some: { productId: 1183 } }, status: "voided" }, orderBy: { id: "desc" }, select: { orderNo: true, voidReason: true } });
+eq("原单已作废且记了原因", old?.voidReason, "客户换成张敬玮");
+const neu = await prisma.saleOrder.findFirst({ where: { items: { some: { productId: 1183 } }, status: "confirmed" }, orderBy: { id: "desc" }, include: { customer: true } });
+eq("新单客户已换成张敬玮", neu!.customer.name, "张敬玮");
+eq("新单内容照抄（金额 6×30）", Number(neu!.totalAmount).toFixed(2), "180.00");
+const p = await prisma.product.findUnique({ where: { id: 1183 }, select: { stockQty: true, stockAmount: true, avgCost: true } });
+eq("库存回到卖出后的水平（16）", Number(p!.stockQty).toFixed(3), "16.000");
+eq("均价保持 10（作废与重开都按当前均价）", Number(p!.avgCost).toFixed(4), "10.0000");
+const a = await prisma.auditLog.findMany({ where: { entityType: "sale_order", action: { in: ["void", "create"] }, ip: "cli" }, orderBy: { id: "desc" }, take: 2, select: { action: true } });
+eq("审计里有作废与新建各一条", a.map((x) => x.action).sort().join(","), "create,void");
+console.log(bad === 0 ? "\n改单验收通过" : `\n${bad} 项不一致`);
+process.exitCode = bad === 0 ? 0 : 1;
+await prisma.$disconnect();

@@ -6,11 +6,11 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth/session";
 import { writeAudit } from "@/lib/audit";
-import { applyStockChange } from "@/lib/stock-cost";
 import { firstIssueMessage, requiredNumber } from "@/lib/form-number";
 import { createPurchaseOrder } from "@/lib/services/orders/purchase-create";
 import { humanActor } from "@/lib/cli/types";
 import { receivePurchaseOrder } from "@/lib/services/orders/purchase-receive";
+import { voidPurchaseOrder } from "@/lib/services/orders/void-and-reopen";
 
 export type FormState = { error?: string; ok?: string } | null;
 
@@ -117,115 +117,20 @@ export async function voidPurchaseOrderAction(
 ): Promise<FormState> {
   const user = await getCurrentUser();
   if (!user) return { error: "未登录" };
-  // 矩阵：进货单作废仅管理员/老板
-  if (user.role === "sales") return { error: "业务员无作废权限" };
+
+  const result = await voidPurchaseOrder(
+    humanActor(user),
+    { id: Number(formData.get("id")), reason: String(formData.get("reason") ?? "").trim().slice(0, 200) },
+    { dryRun: false }
+  );
+  if (!result.ok) return { error: result.error.message };
 
   const id = Number(formData.get("id"));
-  const reason = String(formData.get("reason") ?? "").trim().slice(0, 200);
-  if (!reason) return { error: "请填写作废原因" };
-
-  const order = await prisma.purchaseOrder.findUnique({
-    where: { id },
-    include: { items: true },
-  });
-  if (!order) return { error: "进货单不存在" };
-  if (order.status === "voided") return { error: "单据已作废" };
-  if (order.status === "pending") {
-    await prisma.purchaseOrder.update({
-      where: { id },
-      data: {
-        status: "voided",
-        voidedBy: user.id,
-        voidedAt: new Date(),
-        voidReason: reason,
-      },
-    });
-    await writeAudit({
-      userId: user.id,
-      action: "void",
-      entityType: "purchase_order",
-      entityId: id,
-      before: { orderNo: order.orderNo, status: order.status },
-      after: { orderNo: order.orderNo, status: "voided", voidReason: reason },
-    });
-    revalidatePath(`/purchase-orders/${id}`);
-    revalidatePath("/purchase-orders");
-    return { ok: "已作废（未入库，无库存影响）" };
-  }
-
-  // 已入库单：先校验可冲回（库存未被消耗），再冲回库存 + 反向流水
-  for (const item of order.items) {
-    const product = await prisma.product.findUnique({
-      where: { id: item.productId },
-      select: { stockQty: true, stockAmount: true, avgCost: true },
-    });
-    if (!product) throw new Error("商品不存在");
-    const available = Number(product.stockQty);
-    if (available < Number(item.quantity)) {
-      return {
-        error: `商品 ${item.productId} 当前库存 ${available} < 本单数量 ${item.quantity}，库存已被消耗，无法直接作废；请改用【进货退货】`,
-      };
-    }
-  }
-
-  try {
-    await prisma.$transaction(async (tx) => {
-      for (const item of order.items) {
-        const product = await tx.product.findUnique({
-          where: { id: item.productId },
-          select: { stockQty: true, stockAmount: true, avgCost: true },
-        });
-        if (!product) throw new Error(`商品 #${item.productId} 不存在`);
-        const before = {
-          qty: Number(product.stockQty),
-          amount: Number(product.stockAmount),
-          avgCost: Number(product.avgCost),
-        };
-        // 冲回按当前移动加权均价计价（与账本水池一致，修正批次口径差异）
-        const next = applyStockChange(before, -Number(item.quantity), before.avgCost);
-        await tx.product.update({
-          where: { id: item.productId },
-          data: { stockQty: next.qty, stockAmount: next.amount, avgCost: next.avgCost },
-        });
-        await tx.stockMovement.create({
-          data: {
-            productId: item.productId,
-            changeQty: -Number(item.quantity),
-            beforeQty: before.qty,
-            afterQty: next.qty,
-            unitCost: before.avgCost,
-            bizType: "void_reverse",
-            bizOrderNo: order.orderNo,
-            operatorId: user.id,
-          },
-        });
-      }
-      await tx.purchaseOrder.update({
-        where: { id },
-        data: { status: "voided", voidedBy: user.id, voidedAt: new Date(), voidReason: reason },
-      });
-    });
-    await writeAudit({
-      userId: user.id,
-      action: "void",
-      entityType: "purchase_order",
-      entityId: id,
-      before: { orderNo: order.orderNo, status: order.status },
-      after: { orderNo: order.orderNo, status: "voided", voidReason: reason, stockReversed: true },
-    });
-    revalidatePath(`/purchase-orders/${id}`);
-    revalidatePath("/purchase-orders");
-    return { ok: "已作废，库存已冲回" };
-  } catch (err) {
-    console.error("[purchase] 作废失败:", err);
-    return { error: err instanceof Error ? err.message : "作废失败，请重试" };
-  }
+  revalidatePath(`/purchase-orders/${id}`);
+  revalidatePath("/purchase-orders");
+  return { ok: (result.data.plan as { 说明: string }).说明 };
 }
 
-/**
- * 星标开关（列表行与详情页共用）。
- * 不是财务操作，不做二次确认；业务员只能标自己开的单（与退货同口径）。
- */
 export async function togglePurchaseOrderStarAction(formData: FormData): Promise<void> {
   const user = await getCurrentUser();
   if (!user) return;

@@ -6,10 +6,10 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth/session";
 import { writeAudit } from "@/lib/audit";
-import { applyStockChange } from "@/lib/stock-cost";
 import { firstIssueMessage, optionalNumber, requiredNumber } from "@/lib/form-number";
 import { createSaleOrder } from "@/lib/services/orders/sale-create";
 import { humanActor } from "@/lib/cli/types";
+import { voidSaleOrder } from "@/lib/services/orders/void-and-reopen";
 
 export type FormState = { error?: string; ok?: string } | null;
 
@@ -140,135 +140,21 @@ export async function voidSaleOrderAction(
 ): Promise<FormState> {
   const user = await getCurrentUser();
   if (!user) return { error: "未登录" };
-  if (user.role === "sales") return { error: "业务员无作废权限" };
+
+  // 薄壳：逻辑在 lib/services/orders/void-and-reopen.ts，与 CLI 共用同一份
+  const result = await voidSaleOrder(
+    humanActor(user),
+    { id: Number(formData.get("id")), reason: String(formData.get("reason") ?? "").trim().slice(0, 200) },
+    { dryRun: false }
+  );
+  if (!result.ok) return { error: result.error.message };
 
   const id = Number(formData.get("id"));
-  const reason = String(formData.get("reason") ?? "").trim().slice(0, 200);
-  if (!reason) return { error: "请填写作废原因" };
-
-  const order = await prisma.saleOrder.findUnique({
-    where: { id },
-    include: {
-      items: true,
-      autoRestockOrders: { include: { items: true } },
-      returns: { where: { status: "confirmed" }, select: { orderNo: true, totalAmount: true } },
-    },
-  });
-  if (!order) return { error: "售卖单不存在" };
-  if (order.status === "voided") return { error: "单据已作废" };
-
-  // 已有确认退货的单不许直接作废：退货已经把货补回库存一次，作废再按整单补一遍就是**多补**。
-  // 与其静默把库存补错，不如让操作者先处理退货（作废退货单或改单），把决定权交回给人。
-  if (order.returns.length > 0) {
-    const nos = order.returns.map((r) => r.orderNo).join("、");
-    return {
-      error: `本单已有 ${order.returns.length} 张退货单（${nos}），不能直接作废——否则库存会被重复补回。请先作废那些退货单，或改用「改单」。`,
-    };
-  }
-
-  try {
-    await prisma.$transaction(async (tx) => {
-      // ① 售卖行库存回补（按当前移动加权成本）
-      for (const item of order.items) {
-        // 估价行跳过：开单时它不占库存（stockQtyUsed / purchaseQty 都是 0），
-        // 也没有对应的自动补货单。按 quantity 加回去等于凭空造库存。
-        if (item.estimated) continue;
-        const product = await tx.product.findUnique({
-          where: { id: item.productId },
-          select: { stockQty: true, stockAmount: true, avgCost: true },
-        });
-        if (!product) throw new Error(`商品 #${item.productId} 不存在`);
-        const before = { qty: Number(product.stockQty), amount: Number(product.stockAmount), avgCost: Number(product.avgCost) };
-        const next = applyStockChange(before, Number(item.quantity), before.avgCost);
-        await tx.product.update({
-          where: { id: item.productId },
-          data: { stockQty: next.qty, stockAmount: next.amount, avgCost: next.avgCost },
-        });
-        await tx.stockMovement.create({
-          data: {
-            productId: item.productId,
-            changeQty: Number(item.quantity),
-            beforeQty: before.qty,
-            afterQty: next.qty,
-            unitCost: before.avgCost,
-            bizType: "void_reverse",
-            bizOrderNo: order.orderNo,
-            operatorId: user.id,
-          },
-        });
-      }
-      // ② 级联作废自动补货单（生成即入库的补货需冲回）
-      for (const po of order.autoRestockOrders) {
-        for (const item of po.items) {
-          const product = await tx.product.findUnique({
-            where: { id: item.productId },
-            select: { stockQty: true, stockAmount: true, avgCost: true },
-          });
-          if (!product) throw new Error(`商品 #${item.productId} 不存在`);
-          const before = { qty: Number(product.stockQty), amount: Number(product.stockAmount), avgCost: Number(product.avgCost) };
-          if (before.qty < Number(item.quantity)) {
-            throw new Error(`商品 #${item.productId} 库存不足，无法级联冲回补货单 ${po.orderNo}`);
-          }
-          const next = applyStockChange(before, -Number(item.quantity), before.avgCost);
-          await tx.product.update({
-            where: { id: item.productId },
-            data: { stockQty: next.qty, stockAmount: next.amount, avgCost: next.avgCost },
-          });
-          await tx.stockMovement.create({
-            data: {
-              productId: item.productId,
-              changeQty: -Number(item.quantity),
-              beforeQty: before.qty,
-              afterQty: next.qty,
-              unitCost: before.avgCost,
-              bizType: "void_reverse",
-              bizOrderNo: po.orderNo,
-              operatorId: user.id,
-            },
-          });
-        }
-        await tx.purchaseOrder.update({
-          where: { id: po.id },
-          data: { status: "voided", voidedBy: user.id, voidedAt: new Date(), voidReason: `随售卖单作废：${order.orderNo}` },
-        });
-        await writeAudit({
-          userId: user.id,
-          action: "void",
-          entityType: "purchase_order",
-          entityId: po.id,
-          // tx：级联作废与审计同事务，避免"审计写了作废、实际作废失败"的残留
-          tx,
-          before: { orderNo: po.orderNo, status: po.status },
-          after: { orderNo: po.orderNo, status: "voided", voidReason: `随售卖单作废：${order.orderNo}` },
-        });
-      }
-      await tx.saleOrder.update({
-        where: { id },
-        data: { status: "voided", voidedBy: user.id, voidedAt: new Date(), voidReason: reason },
-      });
-    });
-
-    await writeAudit({
-      userId: user.id,
-      action: "void",
-      entityType: "sale_order",
-      entityId: id,
-      before: { orderNo: order.orderNo, status: order.status },
-      after: { orderNo: order.orderNo, status: "voided", voidReason: reason, cascaded: order.autoRestockOrders.length },
-    });
-    revalidatePath(`/sale-orders/${id}`);
-    revalidatePath("/sale-orders");
-    return { ok: "已作废，库存已冲回" };
-  } catch (err) {
-    console.error("[sale] 作废失败:", err);
-    return { error: err instanceof Error ? err.message : "作废失败，请重试" };
-  }
+  revalidatePath(`/sale-orders/${id}`);
+  revalidatePath("/sale-orders");
+  return { ok: "已作废，库存已冲回" };
 }
 
-/**
- * 星标开关（列表行与详情页共用）。
- * 不是财务操作，不做二次确认；业务员只能标自己开的单（与退货同口径）。
- */
 export async function toggleSaleOrderStarAction(formData: FormData): Promise<void> {
   const user = await getCurrentUser();
   if (!user) return;

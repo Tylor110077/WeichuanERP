@@ -14,6 +14,7 @@ import { createPurchaseOrder, type CreatePurchaseOrderInput } from "@/lib/servic
 import { receivePurchaseOrder } from "@/lib/services/orders/purchase-receive";
 import { createSaleReturn, voidSaleReturn, type CreateSaleReturnInput } from "@/lib/services/orders/sale-return";
 import { createPurchaseReturn, voidPurchaseReturn, type CreatePurchaseReturnInput } from "@/lib/services/orders/purchase-return";
+import { reopenOrder, voidPurchaseOrder, voidSaleOrder } from "@/lib/services/orders/void-and-reopen";
 import { saveCategory, saveUnit, setTaxonomyStatus, type SaveTaxonomyInput } from "@/lib/services/master/taxonomy";
 import {
   listCategories,
@@ -290,6 +291,44 @@ export const OPS: Record<string, OpDef> = {
       const { id, reason } = input as { id: number; reason: string };
       return voidPurchaseReturn(actor, { id, reason }, opts);
     },
+  },
+
+  /**
+   * 作废：既是回退手段，也是"改单"的两半之一。已有确认退货的售卖单会被拒绝作废
+   * （退货已补回一次库存，作废再补一遍就是多补）。
+   */
+  "order.sale.void": {
+    requiredScope: SCOPES.writeOrder,
+    write: true,
+    summary: "作废售卖单（级联作废自动补货单；估价行跳过）",
+    handler: async (actor, input, opts) => {
+      const { id, reason } = input as { id: number; reason: string };
+      return voidSaleOrder(actor, { id, reason }, opts);
+    },
+  },
+  "order.purchase.void": {
+    requiredScope: SCOPES.writeOrder,
+    write: true,
+    summary: "作废进货单（未入库不碰库存；已入库需库存未被消耗）",
+    handler: async (actor, input, opts) => {
+      const { id, reason } = input as { id: number; reason: string };
+      return voidPurchaseOrder(actor, { id, reason }, opts);
+    },
+  },
+  /**
+   * 改单：作废原单 + 用原单内容重开一张新单，返回新旧两个单号。
+   * 预演会把"将作废什么、将新建什么"都列出来（含新单能否建出来）。
+   */
+  "order.reopen": {
+    requiredScope: SCOPES.writeOrder,
+    write: true,
+    summary: "改单（作废原单 + 按原单内容重开新单；预演会验证新单能否建出）",
+    handler: async (actor, input, opts) =>
+      reopenOrder(
+        actor,
+        input as { type: "sale" | "purchase"; fromId: number; reason?: string; remark?: string | null; customerId?: number; supplierId?: number; items?: unknown },
+        opts
+      ),
   },
 
   /* 收付款：动钱的操作，写操作声明照旧 → 默认预演 */
