@@ -1,10 +1,11 @@
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { auditIp, writeAudit } from "@/lib/audit";
+import { auditIp, auditProvenance, writeAudit } from "@/lib/audit";
 import { buildOrderNo, nextOrderSeq, ORDER_NO_PREFIXES } from "@/lib/order-no";
 import { requiredNumber } from "@/lib/form-number";
 import { runInTransaction } from "@/lib/services/dry-run";
+import { provenanceFor } from "@/lib/services/provenance";
 import { fail, ok, type Actor, type CliResult } from "@/lib/cli/types";
 
 /**
@@ -42,7 +43,7 @@ const round3 = (n: number) => Math.round(n * 1000) / 1000;
 export async function createPurchaseOrder(
   actor: Actor,
   rawInput: CreatePurchaseOrderInput,
-  opts: { dryRun: boolean }
+  opts: { dryRun: boolean; revisionOf?: number; version?: number }
 ): Promise<CliResult<Record<string, unknown>>> {
   // 与网页 requirePurchaseWrite 同一句话：老板/财务不能开进货单。
   // 判定必须在服务层——CLI 不经过 action。
@@ -93,6 +94,7 @@ export async function createPurchaseOrder(
           supplierId,
           status: "pending",
           sourceType: "manual",
+          ...provenanceFor(actor, { revisionOf: opts.revisionOf, version: opts.version }),
           starred,
           totalAmount,
           remark: remark || null,
@@ -108,6 +110,7 @@ export async function createPurchaseOrder(
         entityId: created.id,
         tx,
         ip: auditIp(actor),
+        ...auditProvenance(actor),
         after: {
           orderNo: created.orderNo,
           supplierId,

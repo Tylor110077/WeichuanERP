@@ -51,11 +51,19 @@ async function create() {
 
   const user = await prisma.user.findUnique({ where: { username }, select: { id: true, username: true, role: true } });
   if (!user) throw new Error(`用户不存在：${username}`);
+  // 默认铸 Agent 令牌（不带 review 权限）；人要自己用（含审核）就加 --human
+  const human = arg("human") === "true" || process.argv.includes("--human");
+  if (!human && scopes.includes("review")) {
+    console.warn(
+      "⚠️  review 权限是给「人」用的：Agent 令牌带 review 会破坏「Agent 不能自审自批」。\n" +
+        "     如果你要自己用这个令牌审核，请加 --human。"
+    );
+  }
 
   const plaintext = newTokenPlaintext();
   const token = await prisma.$transaction(async (tx) => {
     const row = await tx.apiToken.create({
-      data: { userId: user.id, name, tokenHash: hashToken(plaintext), scopes, expiresAt },
+      data: { userId: user.id, name, tokenHash: hashToken(plaintext), scopes, expiresAt, forAgent: !human },
       select: { id: true },
     });
     // 审计：本地脚本没有请求上下文，所以显式传 ip；
@@ -73,7 +81,7 @@ async function create() {
     return row;
   });
 
-  console.log(`已创建令牌 #${token.id}`);
+  console.log(`已创建令牌 #${token.id}（${human ? "人用的令牌" : "Agent 令牌"}）`);
   console.log(`  用户：${user.username}（${user.role}）`);
   console.log(`  用途：${name}`);
   console.log(`  权限：${scopes.join(", ")}${scopes.includes("review") ? "" : "  ← 不含 review（Agent 不能自审自批）"}`);
@@ -146,7 +154,7 @@ async function main() {
   else if (cmd === "revoke") await revoke();
   else {
     console.log("用法：");
-    console.log('  npx tsx scripts/api-token.ts create --user admin --name "Agent 开单" [--scopes a,b] [--expires 90d]');
+    console.log('  npx tsx scripts/api-token.ts create --user admin --name "Agent 开单" [--scopes a,b] [--expires 90d] [--human]');
     console.log("  npx tsx scripts/api-token.ts list");
     console.log("  npx tsx scripts/api-token.ts revoke --id 3");
     process.exitCode = 2;

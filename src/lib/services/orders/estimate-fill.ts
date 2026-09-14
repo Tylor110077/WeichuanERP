@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { auditIp, writeAudit } from "@/lib/audit";
+import { auditIp, auditProvenance, writeAudit } from "@/lib/audit";
 import { buildOrderNo, nextOrderSeq, ORDER_NO_PREFIXES } from "@/lib/order-no";
 import { requiredNumber } from "@/lib/form-number";
 import { runInTransaction } from "@/lib/services/dry-run";
@@ -122,6 +122,7 @@ export async function fillEstimate(
         entityId: itemId,
         tx,
         ip: auditIp(actor),
+        ...auditProvenance(actor),
         before: { estimated: true, costAmount: Number(item.costAmount) },
         after: {
           补单进货单: po.orderNo,

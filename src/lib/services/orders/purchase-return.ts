@@ -1,11 +1,12 @@
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { auditIp, writeAudit } from "@/lib/audit";
+import { auditIp, auditProvenance, writeAudit } from "@/lib/audit";
 import { applyStockChange } from "@/lib/stock-cost";
 import { buildOrderNo, nextOrderSeq, ORDER_NO_PREFIXES } from "@/lib/order-no";
 import { requiredNumber } from "@/lib/form-number";
 import { runInTransaction } from "@/lib/services/dry-run";
+import { provenanceFor } from "@/lib/services/provenance";
 import { fail, ok, type Actor, type CliResult } from "@/lib/cli/types";
 
 /**
@@ -113,7 +114,7 @@ export async function createPurchaseReturn(
         )
       );
       const ret = await tx.purchaseReturn.create({
-        data: { orderNo, purchaseOrderId, supplierId: order.supplierId, totalAmount: 0, operatorId: actor.userId },
+        data: { orderNo, purchaseOrderId, supplierId: order.supplierId, totalAmount: 0, operatorId: actor.userId, ...provenanceFor(actor) },
         select: { id: true },
       });
 
@@ -173,6 +174,7 @@ export async function createPurchaseReturn(
         entityId: ret.id,
         tx,
         ip: auditIp(actor),
+        ...auditProvenance(actor),
         after: {
           orderNo,
           purchaseOrderId,
@@ -256,6 +258,7 @@ export async function voidPurchaseReturn(
       entityId: id,
       tx,
       ip: auditIp(actor),
+        ...auditProvenance(actor),
       before: { orderNo: ret.orderNo, status: ret.status },
       after: { orderNo: ret.orderNo, status: "voided", voidReason: reason, source: actor.kind === "agent" ? `cli:${actor.tokenName ?? ""}` : "web", runId: actor.runId ?? null },
     });

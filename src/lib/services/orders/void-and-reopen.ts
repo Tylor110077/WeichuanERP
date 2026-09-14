@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { prisma, type TxClient } from "@/lib/prisma";
-import { auditIp, writeAudit } from "@/lib/audit";
+import { auditIp, auditProvenance, writeAudit } from "@/lib/audit";
 import { applyStockChange } from "@/lib/stock-cost";
 import { runInTransaction } from "@/lib/services/dry-run";
 import { createSaleOrder, type CreateSaleOrderInput } from "@/lib/services/orders/sale-create";
@@ -43,6 +43,8 @@ const reopenSchema = z.object({
   starred: z.boolean().optional(),
   items: z.array(z.record(z.string(), z.unknown())).optional(),
   validateCreate: z.boolean().optional(),
+  revisionOf: z.coerce.number().int().positive().optional(),
+  version: z.coerce.number().int().positive().optional(),
 });
 
 const reasonSchema = z.object({ id: z.coerce.number().int().positive("请指定单据 --id"), reason: z.string().trim().min(1, "请填写作废原因").max(200) });
@@ -114,6 +116,7 @@ export async function voidSaleOrder(
         entityId: po.id,
         tx,
         ip: auditIp(actor),
+        ...auditProvenance(actor),
         before: { orderNo: po.orderNo, status: po.status },
         after: { orderNo: po.orderNo, status: "voided", voidReason: `随售卖单作废：${order.orderNo}` },
       });
@@ -129,6 +132,7 @@ export async function voidSaleOrder(
       entityId: id,
       tx,
       ip: auditIp(actor),
+        ...auditProvenance(actor),
       before: { orderNo: order.orderNo, status: order.status },
       after: {
         orderNo: order.orderNo,
@@ -193,6 +197,7 @@ export async function voidPurchaseOrder(
       entityId: id,
       tx,
       ip: auditIp(actor),
+        ...auditProvenance(actor),
       before: { orderNo: order.orderNo, status: order.status },
       after: {
         orderNo: order.orderNo,
@@ -235,6 +240,9 @@ export async function reopenOrder(
     items?: unknown;
     /** 预演时是否连带校验新单能建出来（默认 true） */
     validateCreate?: boolean;
+    /** 修订血缘：被驳回后重提时指向旧版（同时 version 递增） */
+    revisionOf?: number;
+    version?: number;
   },
   opts: { dryRun: boolean }
 ): Promise<CliResult<Record<string, unknown>>> {
@@ -276,7 +284,13 @@ export async function reopenOrder(
       type,
       fromOrderNo: order.orderNo,
       voidFn: (a, o) => voidSaleOrder(a, { id: fromId, reason }, o),
-      createFn: (a, o) => createSaleOrder(a, input, o),
+      // 修订血缘：revisionOf 指向被驳回的旧版；**version 自动递增**（调用方不必自己维护版本号）
+      createFn: (a, o) =>
+        createSaleOrder(a, input, {
+          ...o,
+          revisionOf: raw.revisionOf,
+          version: raw.version ?? (raw.revisionOf ? order.version + 1 : 1),
+        }),
       newSummary: { customerId: input.customerId, lines: items.length },
     });
   }
@@ -305,7 +319,8 @@ export async function reopenOrder(
     type,
     fromOrderNo: order.orderNo,
     voidFn: (a, o) => voidPurchaseOrder(a, { id: fromId, reason }, o),
-    createFn: (a, o) => createPurchaseOrder(a, input, o),
+    createFn: (a, o) =>
+      createPurchaseOrder(a, input, { ...o, revisionOf: raw.revisionOf, version: raw.version ?? (raw.revisionOf ? order.version + 1 : 1) }),
     newSummary: { supplierId: input.supplierId, lines: items.length },
   });
 }

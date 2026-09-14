@@ -1,10 +1,11 @@
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { auditIp, writeAudit } from "@/lib/audit";
+import { auditIp, auditProvenance, writeAudit } from "@/lib/audit";
 import { applyStockChange } from "@/lib/stock-cost";
 import { buildOrderNo, nextOrderSeq, ORDER_NO_PREFIXES } from "@/lib/order-no";
 import { optionalNumber, requiredNumber } from "@/lib/form-number";
 import { runInTransaction } from "@/lib/services/dry-run";
+import { provenanceFor } from "@/lib/services/provenance";
 import { fail, ok, type Actor, type CliResult } from "@/lib/cli/types";
 
 /**
@@ -87,7 +88,7 @@ interface AutoItem {
 export async function createSaleOrder(
   actor: Actor,
   rawInput: CreateSaleOrderInput,
-  opts: { dryRun: boolean }
+  opts: { dryRun: boolean; revisionOf?: number; version?: number }
 ): Promise<CliResult<Record<string, unknown>>> {
   // 与网页的 requireSaleWrite 同一句话：老板/财务只能看，不能开单。
   // 这道判定必须在服务层，否则 boss 的令牌可以走 CLI 开单（网页是拦住的）。
@@ -151,6 +152,7 @@ export async function createSaleOrder(
               entityId: created.id,
               tx,
               ip: auditIp(actor),
+        ...auditProvenance(actor),
               after: { name: created.name, autoFromManufacturer: true, source: actor.kind === "agent" ? `cli:${actor.tokenName ?? ""}` : "web" },
             });
           }
@@ -203,7 +205,17 @@ export async function createSaleOrder(
       }
 
       const saleOrder = await tx.saleOrder.create({
-        data: { orderNo: saleOrderNo, customerId, status: "confirmed", starred, totalAmount: 0, operatorId: actor.userId, remark: remark || null },
+        data: {
+          orderNo: saleOrderNo,
+          customerId,
+          status: "confirmed",
+          starred,
+          totalAmount: 0,
+          operatorId: actor.userId,
+          remark: remark || null,
+          // 来源与审核状态由服务层统一写入（Agent 必须诚实标注自己，CLI 绕不过去）
+          ...provenanceFor(actor, { revisionOf: opts.revisionOf, version: opts.version }),
+        },
         select: { id: true },
       });
 
@@ -268,6 +280,7 @@ export async function createSaleOrder(
           entityId: po.id,
           tx,
           ip: auditIp(actor),
+        ...auditProvenance(actor),
           after: {
             orderNo: poNo,
             supplierId,
@@ -336,6 +349,7 @@ export async function createSaleOrder(
         entityId: saleOrder.id,
         tx,
         ip: auditIp(actor),
+        ...auditProvenance(actor),
         after: {
           orderNo: saleOrderNo,
           customerId,

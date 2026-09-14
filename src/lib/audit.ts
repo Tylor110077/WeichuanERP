@@ -43,6 +43,10 @@ export interface AuditParams {
   ip?: string | null;
   /** 传入事务客户端 → 审计与业务同事务（写不进去就一起失败，不留"无痕变更"） */
   tx?: TxClient;
+  /** 来源：人 / Agent（用 auditProvenance(actor) 展开传入即可） */
+  actorKind?: "human" | "agent";
+  agentRunId?: string | null;
+  apiTokenId?: number | null;
 }
 
 /**
@@ -67,6 +71,9 @@ export async function writeAudit(params: AuditParams): Promise<void> {
         entityType: params.entityType,
         entityId: id.entityId,
         entityKey: id.entityKey,
+        actorKind: params.actorKind ?? "human",
+        agentRunId: params.agentRunId ?? null,
+        apiTokenId: params.apiTokenId ?? null,
         beforeJson: params.before != null ? (params.before as object) : undefined,
         afterJson: params.after != null ? (params.after as object) : undefined,
         ip,
@@ -91,6 +98,15 @@ export async function writeAudit(params: AuditParams): Promise<void> {
  */
 export function auditIp(actor: { kind: "human" | "agent" }): string | undefined {
   return actor.kind === "agent" ? "cli" : undefined;
+}
+
+/** 审计行的来源三列（与单据同源，便于按来源筛审计） */
+export function auditProvenance(actor: { kind: "human" | "agent"; runId?: string | null; tokenId?: number }) {
+  return {
+    actorKind: actor.kind,
+    agentRunId: actor.kind === "agent" ? (actor.runId ?? null) : null,
+    apiTokenId: actor.kind === "agent" ? (actor.tokenId ?? null) : null,
+  };
 }
 
 /**

@@ -345,9 +345,11 @@ const COMMANDS: Record<string, Command> = {
       "                    [--customer-id N | --supplier-id N] [--remark ...]",
       "                    [--items '<JSON 数组>'] [--yes]",
       "  不给 --items 就照抄原单的行（含原售价/进价），相当于原样重开一张",
+      "  --revision-of N：记修订血缘（审核被驳回后重提用它指向旧版）",
     ],
     examples: [
       "wc-cli order reopen --type sale --from-id 20028 --reason '客户换成了张敬玮' --customer-id 2",
+      "wc-cli order reopen --type sale --from-id 20028 --reason '按驳回意见改数量' --items '[...]' --revision-of 20028 --yes",
       "wc-cli order reopen --type sale --from-id 20028 --items '[{\"productId\":3,\"quantity\":8,\"unitPrice\":26,\"supplyPrice\":18}]' --yes",
     ],
   },
@@ -364,6 +366,45 @@ const COMMANDS: Record<string, Command> = {
       "  ↑ 预演：列出将生成哪张进货单、成本写回多少、商品档案改什么",
       "wc-cli order estimate fill --item-id 20032 --supplier-id 1 --unit-price 18 --product-name 'YJV 5*6' --yes",
     ],
+  },
+  "review.list": {
+    op: "review.list",
+    summary: "审核台列表（默认看待审核；可 --needs-void 看已驳回未作废的待办）",
+    usage: [
+      "wc-cli review list [--status pending_review|approved|rejected] [--doc-type sale_order|...]",
+      "                  [--agent-only] [--run <agentRunId>] [--needs-void] [--table]",
+      "  也可以直接写 review mine --status rejected（Agent 拉自己的驳回待办）",
+    ],
+    examples: [
+      "wc-cli review list --table                        # 待审核队列",
+      "wc-cli review list --agent-only --table           # 只看 Agent 代做的",
+      "wc-cli review list --run run-20260914-abc --table # 只看某一次运行的批次",
+      "wc-cli review list --needs-void --table           # 已驳回但还没作废的（待办）",
+    ],
+  },
+  "review.show": {
+    op: "review.show",
+    summary: "看一张单的审核状态与历轮意见",
+    usage: ["wc-cli review show --doc-type sale_order --doc-id N [--table]"],
+    examples: ["wc-cli review show --doc-type sale_order --doc-id 20028 --table"],
+  },
+  "review.approve": {
+    op: "review.approve",
+    summary: "审核通过（**仅人类**；Agent 令牌会被拒）",
+    usage: ["wc-cli review approve --doc-type sale_order --doc-id N --notes <意见> [--yes]"],
+    examples: ["wc-cli review approve --doc-type sale_order --doc-id 20028 --notes '已核对' --yes"],
+  },
+  "review.reject": {
+    op: "review.reject",
+    summary: "驳回（**仅人类**；驳回不等于撤销，单据已生效，需另行作废）",
+    usage: ["wc-cli review reject --doc-type sale_order --doc-id N --notes <原因> [--yes]"],
+    examples: ["wc-cli review reject --doc-type sale_order --doc-id 20028 --notes '数量不对，请改成 5' --yes"],
+  },
+  "review.comment": {
+    op: "review.comment",
+    summary: "只留一条意见，不改审核状态（仅人类）",
+    usage: ["wc-cli review comment --doc-type sale_order --doc-id N --notes <意见> [--yes]"],
+    examples: ["wc-cli review comment --doc-type sale_order --doc-id 20028 --notes '下不为例' --yes"],
   },
   "payment.create": {
     op: "payment.create",

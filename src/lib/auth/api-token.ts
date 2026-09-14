@@ -47,7 +47,9 @@ export async function resolveApiToken(raw: string): Promise<Actor | null> {
   if (row.expiresAt && row.expiresAt.getTime() <= Date.now()) return null;
   if (row.user.status !== 1) return null;
   return {
-    kind: "agent",
+    // 令牌的"性质"决定它是 Agent 还是人：Agent 令牌用于自动化，人自己的令牌用于人工操作
+    // （审核类操作是 humanOnly，只有人的令牌能过）。默认 forAgent=true，最安全。
+    kind: row.forAgent ? "agent" : "human",
     userId: row.user.id,
     username: row.user.username,
     displayName: row.user.displayName,

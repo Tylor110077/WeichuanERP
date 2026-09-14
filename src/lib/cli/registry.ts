@@ -16,6 +16,7 @@ import { createSaleReturn, voidSaleReturn, type CreateSaleReturnInput } from "@/
 import { createPurchaseReturn, voidPurchaseReturn, type CreatePurchaseReturnInput } from "@/lib/services/orders/purchase-return";
 import { reopenOrder, voidPurchaseOrder, voidSaleOrder } from "@/lib/services/orders/void-and-reopen";
 import { fillEstimate, type FillEstimateInput } from "@/lib/services/orders/estimate-fill";
+import { approveReview, commentReview, listReviews, rejectReview, showReview, type ReviewListInput } from "@/lib/services/review";
 import { saveCategory, saveUnit, setTaxonomyStatus, type SaveTaxonomyInput } from "@/lib/services/master/taxonomy";
 import {
   listCategories,
@@ -341,6 +342,51 @@ export const OPS: Record<string, OpDef> = {
     write: true,
     summary: "估价补单（默认预演；生成待收货进货单并把成本写回原行）",
     handler: async (actor, input, opts) => fillEstimate(actor, input as FillEstimateInput, opts),
+  },
+
+  /* ── 审核（Phase 2.5）──
+     前三个是**人类专属**：humanOnly 让 Agent 令牌在端点层就被拒（Service 里还有第二道）。
+     这就是"Agent 不能自审自批"的落点。 */
+
+  "review.list": {
+    requiredScope: SCOPES.read,
+    summary: "审核台列表（默认看待审核；可按类型/批次/来源筛）",
+    handler: async (actor, input) => listReviews(actor, input as ReviewListInput),
+  },
+  "review.show": {
+    requiredScope: SCOPES.read,
+    summary: "看一张单的审核状态与历轮意见",
+    handler: async (actor, input) => showReview(actor, input as { docType: string; docId: number }),
+  },
+  "review.approve": {
+    requiredScope: SCOPES.review,
+    humanOnly: true,
+    write: true,
+    summary: "审核通过（仅人类）",
+    handler: async (actor, input, opts) => {
+      const { docType, docId, notes } = input as { docType: string; docId: number; notes: string };
+      return approveReview(actor, { docType, docId, notes }, opts);
+    },
+  },
+  "review.reject": {
+    requiredScope: SCOPES.review,
+    humanOnly: true,
+    write: true,
+    summary: "驳回（仅人类；注意：驳回不等于撤销，单据已生效，需另行作废）",
+    handler: async (actor, input, opts) => {
+      const { docType, docId, notes } = input as { docType: string; docId: number; notes: string };
+      return rejectReview(actor, { docType, docId, notes }, opts);
+    },
+  },
+  "review.comment": {
+    requiredScope: SCOPES.review,
+    humanOnly: true,
+    write: true,
+    summary: "只留一条意见，不改审核状态（仅人类）",
+    handler: async (actor, input, opts) => {
+      const { docType, docId, notes } = input as { docType: string; docId: number; notes: string };
+      return commentReview(actor, { docType, docId, notes }, opts);
+    },
   },
 
   /* 收付款：动钱的操作，写操作声明照旧 → 默认预演 */

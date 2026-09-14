@@ -1,10 +1,11 @@
 import { Prisma, type PaymentOrderType } from "@prisma/client";
 import { z } from "zod";
 import { prisma, type TxClient } from "@/lib/prisma";
-import { auditIp, writeAudit } from "@/lib/audit";
+import { auditIp, auditProvenance, writeAudit } from "@/lib/audit";
 import { buildOrderNo, ORDER_NO_PREFIXES, todayCompact } from "@/lib/order-no";
 import { requiredNumber } from "@/lib/form-number";
 import { runInTransaction } from "@/lib/services/dry-run";
+import { provenanceFor } from "@/lib/services/provenance";
 import { fail, ok, type Actor, type CliResult } from "@/lib/cli/types";
 
 /**
@@ -111,6 +112,7 @@ export async function createPayment(
           method,
           remark: remark || null,
           operatorId: actor.userId,
+          ...provenanceFor(actor),
         },
         select: { id: true, orderNo: true },
       });
@@ -123,6 +125,7 @@ export async function createPayment(
         entityId: created.id,
         tx,
         ip: auditIp(actor),
+        ...auditProvenance(actor),
         after: {
           orderNo: created.orderNo,
           direction,
@@ -185,6 +188,7 @@ export async function voidPayment(
       entityId: id,
       tx,
       ip: auditIp(actor),
+        ...auditProvenance(actor),
       before: { orderNo: payment.orderNo, status: payment.status },
       after: {
         orderNo: payment.orderNo,

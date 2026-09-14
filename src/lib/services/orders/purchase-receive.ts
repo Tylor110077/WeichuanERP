@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { auditIp, writeAudit } from "@/lib/audit";
+import { auditIp, auditProvenance, writeAudit } from "@/lib/audit";
 import { applyStockChange } from "@/lib/stock-cost";
 import { runInTransaction } from "@/lib/services/dry-run";
 import { fail, ok, type Actor, type CliResult } from "@/lib/cli/types";
@@ -95,6 +95,7 @@ export async function receivePurchaseOrder(
         entityId: id,
         tx,
         ip: auditIp(actor),
+        ...auditProvenance(actor),
         before: { orderNo: order.orderNo, status: order.status },
         after: {
           orderNo: order.orderNo,

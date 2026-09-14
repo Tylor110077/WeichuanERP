@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { zBoolean } from "@/lib/form-bool";
 import { prisma, type TxClient } from "@/lib/prisma";
-import { auditIp, writeAudit } from "@/lib/audit";
+import { auditIp, auditProvenance, writeAudit } from "@/lib/audit";
 import { runInTransaction } from "@/lib/services/dry-run";
 import { fail, ok, type Actor, type CliResult } from "@/lib/cli/types";
 
@@ -93,6 +93,7 @@ async function saveTaxonomy(
         entityId: id,
         tx,
         ip: auditIp(actor),
+        ...auditProvenance(actor),
         before: { name: before?.name ?? "" },
         after: { name, source: actor.kind === "agent" ? `cli:${actor.tokenName ?? ""}` : "web", runId: actor.runId ?? null },
       });
@@ -106,6 +107,7 @@ async function saveTaxonomy(
       entityId: created.id,
       tx,
       ip: auditIp(actor),
+        ...auditProvenance(actor),
       after: { name: created.name, source: actor.kind === "agent" ? `cli:${actor.tokenName ?? ""}` : "web", runId: actor.runId ?? null },
     });
     return { [label]: created, 操作: "新建" };
@@ -142,6 +144,7 @@ export async function setTaxonomyStatus(
       entityId: id,
       tx,
       ip: auditIp(actor),
+        ...auditProvenance(actor),
       before: { name: row.name, status: row.status },
       after: { name: row.name, status: enabled ? 1 : 0, source: actor.kind === "agent" ? `cli:${actor.tokenName ?? ""}` : "web", runId: actor.runId ?? null },
     });

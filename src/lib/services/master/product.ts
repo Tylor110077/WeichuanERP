@@ -2,7 +2,7 @@ import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { zBoolean } from "@/lib/form-bool";
 import { prisma, type TxClient } from "@/lib/prisma";
-import { auditIp, writeAudit } from "@/lib/audit";
+import { auditIp, auditProvenance, writeAudit } from "@/lib/audit";
 import { initials } from "@/lib/pinyin-server";
 import { runInTransaction } from "@/lib/services/dry-run";
 import { fail, ok, type Actor, type CliResult } from "@/lib/cli/types";
@@ -100,6 +100,7 @@ export async function createProduct(
         entityId: created.id,
         tx,
         ip: auditIp(actor),
+        ...auditProvenance(actor),
         after: {
           code: created.code,
           name: created.name,
@@ -169,6 +170,7 @@ export async function setProductStatus(
       entityId: productId,
       tx,
       ip: auditIp(actor),
+        ...auditProvenance(actor),
       before: { code: product.code, name: product.name, status: product.status },
       after: {
         code: product.code,
