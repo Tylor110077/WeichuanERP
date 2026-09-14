@@ -141,6 +141,33 @@ const COMMANDS: Record<string, Command> = {
     ],
     examples: ["wc-cli query payables --table", "wc-cli query payables --counter-id 2 --table"],
   },
+  "query.payments": {
+    op: "query.payments",
+    summary: "查收付款流水（默认只看已登记）",
+    usage: [
+      "wc-cli query payments [--direction receipt|payment] [--status confirmed|voided|all]",
+      "                     [--q 关键词] [--from YYYY-MM-DD] [--to YYYY-MM-DD] [--page N] [--table]",
+    ],
+    examples: [
+      "wc-cli query payments --table",
+      "wc-cli query payments --direction receipt --table    # 只看收款",
+      "wc-cli query payments --status all --table           # 含已作废",
+      "wc-cli query payments --q zjw --table                # 按客户名找他的款",
+    ],
+  },
+  "query.movements": {
+    op: "query.movements",
+    summary: "查库存流水（含变动前后数量与当次单价）",
+    usage: [
+      "wc-cli query movements [--product-id N] [--biz-type purchase_in|sale_out|...]",
+      "                       [--from YYYY-MM-DD] [--to YYYY-MM-DD] [--page N] [--table]",
+    ],
+    examples: [
+      "wc-cli query movements --table",
+      "wc-cli query movements --product-id 1 --table                     # 某个商品的进销存轨迹",
+      "wc-cli query movements --biz-type sale_return_in --table          # 只看销售退货",
+    ],
+  },
 };
 
 const VERSION = "0.1.0";

@@ -3,6 +3,8 @@ import { listSaleOrders, type ListSaleOrdersInput } from "@/lib/services/sale-or
 import { listPurchaseOrders, type ListPurchaseOrdersInput } from "@/lib/services/purchase-orders";
 import { listInventory, type ListInventoryInput } from "@/lib/services/inventory";
 import { listOutstanding } from "@/lib/services/outstanding";
+import { listPayments, type ListPaymentsInput } from "@/lib/services/payments";
+import { listStockMovements, type ListStockMovementsInput } from "@/lib/services/stock-movements";
 import {
   listCategories,
   listCustomers,
@@ -114,6 +116,20 @@ export const OPS: Record<string, OpDef> = {
     requiredScope: SCOPES.read,
     summary: "查应付（同应收，方向相反）",
     handler: async (actor, input) => listOutstanding(actor, { ...input, direction: "payable" }),
+  },
+
+  /** 财务流水：默认只看已登记（作废不算数），合计不分收付 */
+  "query.payments": {
+    requiredScope: SCOPES.read,
+    summary: "查收付款流水（默认只看已登记；合计不分收付）",
+    handler: async (actor, input) => listPayments(actor, input as ListPaymentsInput),
+  },
+
+  /** 库存流水：变动前后的数量与当次单价都在里面 */
+  "query.movements": {
+    requiredScope: SCOPES.read,
+    summary: "查库存流水（进货入库/销售出库/退货/作废冲回）",
+    handler: async (actor, input) => listStockMovements(actor, input as ListStockMovementsInput),
   },
 };
 

@@ -8,6 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { initials } from "@/lib/pinyin-server";
 import { DateShortcuts } from "@/components/date-shortcuts";
 import { SearchSelect } from "@/components/search-select";
+import { STOCK_BIZ_TYPE_LABELS } from "@/lib/stock-labels";
 
 export const metadata = { title: "库存流水 - 玮川进销存" };
 
@@ -19,13 +20,17 @@ const ORDER_PATH: Record<string, string> = {
   sale_out: "/sale-orders",
 };
 
-const BIZ_TYPE_LABELS: Record<string, { label: string; cls: string }> = {
-  purchase_in: { label: "进货入库", cls: "bg-green-50 text-green-700" },
-  sale_out: { label: "销售出库", cls: "bg-blue-50 text-blue-700" },
-  purchase_return_out: { label: "进货退货", cls: "bg-orange-50 text-orange-700" },
-  sale_return_in: { label: "销售退货", cls: "bg-teal-50 text-teal-700" },
-  void_reverse: { label: "作废冲回", cls: "bg-gray-100 text-gray-600" },
+/** 徽标配色留在页面（纯展示）；**文字**统一取 lib/stock-labels，CLI 用的是同一份 */
+const BIZ_TYPE_CLS: Record<string, string> = {
+  purchase_in: "bg-green-50 text-green-700",
+  sale_out: "bg-blue-50 text-blue-700",
+  purchase_return_out: "bg-orange-50 text-orange-700",
+  sale_return_in: "bg-teal-50 text-teal-700",
+  void_reverse: "bg-gray-100 text-gray-600",
 };
+const BIZ_TYPE_LABELS: Record<string, { label: string; cls: string }> = Object.fromEntries(
+  Object.entries(STOCK_BIZ_TYPE_LABELS).map(([k, label]) => [k, { label, cls: BIZ_TYPE_CLS[k] ?? "bg-gray-100 text-gray-600" }])
+);
 
 export default async function StockMovementsPage({
   searchParams,
