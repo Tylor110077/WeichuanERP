@@ -19,7 +19,7 @@ const PAGE_SIZE = 20;
 export default async function SaleOrdersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; status?: string; from?: string; to?: string; customerId?: string; q?: string; settle?: string; star?: string; mode?: string }>;
+  searchParams: Promise<{ page?: string; status?: string; from?: string; to?: string; customerId?: string; q?: string; settle?: string; star?: string; mode?: string; origin?: string; review?: string }>;
 }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
@@ -36,6 +36,13 @@ export default async function SaleOrdersPage({
   const starredOnly = params.star === "1";
   /** 查看方式：按单据（可展开商品）/ 只看商品（把商品行平铺，不分单） */
   const mode = params.mode === "item" ? "item" : "order";
+  /** 来源筛选：只看 Agent 代做的（溯源用；Agent 建的单一律标 agent） */
+  const origin: "agent" | "human" | undefined = params.origin === "agent" || params.origin === "human" ? params.origin : undefined;
+  /** 审核状态筛选：pending_review / approved / rejected */
+  const review: "pending_review" | "approved" | "rejected" | "not_required" | undefined =
+    params.review === "pending_review" || params.review === "approved" || params.review === "rejected" || params.review === "not_required"
+      ? params.review
+      : undefined;
 
   // 款项结清筛选：未结清 = 应收 − 已收 − 未作废退货冲减 > 0（仅统计已开单）
   let settleIds: number[] | null = null;
@@ -77,6 +84,8 @@ export default async function SaleOrdersPage({
     ...(settleIds ? { id: { in: settleIds } } : {}),
     ...(starredOnly ? { starred: true } : {}),
     createdAt: { gte: range.gte, lte: range.lte },
+    ...(origin ? { actorKind: origin } : {}),
+    ...(review ? { reviewStatus: review } : {}),
     ...(user.role === "sales" ? { operatorId: user.id } : {}),
   };
 
@@ -142,6 +151,8 @@ export default async function SaleOrdersPage({
       operatorRole: o.operator.role,
       createdAtLabel: o.createdAt.toLocaleString("zh-CN"),
       starred: o.starred,
+      actorKind: o.actorKind,
+      reviewStatus: o.reviewStatus,
       needsReceipt: o.status !== "voided" && Number(o.totalAmount) - Number(o.receivedAmount) - returned > 0,
       items: o.items.map((it) => ({
         id: it.id,
@@ -235,6 +246,17 @@ export default async function SaleOrdersPage({
         <select name="star" defaultValue={starredOnly ? "1" : ""} className={`${inputBase}`}>
           <option value="">全部单据</option>
           <option value="1">只看星标</option>
+        </select>
+        <select name="origin" defaultValue={origin ?? ""} className={`${inputBase}`} title="来源：人做的 / Agent 代做的">
+          <option value="">全部来源</option>
+          <option value="agent">只看 Agent 代做</option>
+          <option value="human">只看人做的</option>
+        </select>
+        <select name="review" defaultValue={review ?? ""} className={`${inputBase}`} title="审核状态">
+          <option value="">全部审核状态</option>
+          <option value="pending_review">待审核</option>
+          <option value="approved">已通过</option>
+          <option value="rejected">已驳回</option>
         </select>
         <button type="submit" className={btnSecondary}>
           筛选

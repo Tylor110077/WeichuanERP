@@ -41,13 +41,16 @@ const COMMANDS: Record<string, Command> = {
     usage: [
       "wc-cli query orders [--page N] [--page-size N] [--from YYYY-MM-DD] [--to YYYY-MM-DD]",
       "                    [--status confirmed|voided] [--settle settled|unsettled]",
-      "                    [--customer-id N] [--q 关键词] [--starred] [--table]",
+      "                    [--customer-id N] [--q 关键词] [--starred]",
+      "                    [--origin agent|human] [--review pending_review|approved|rejected] [--table]",
     ],
     examples: [
       "wc-cli query orders --table",
       "wc-cli query orders --settle unsettled --table   # 只看未结清",
       "wc-cli query orders --q zjw --from 2026-09-01 --to 2026-09-30",
       "wc-cli query orders --page 2 --page-size 50",
+      "wc-cli query orders --origin agent --table          # 只看 Agent 代做的",
+      "wc-cli query orders --review pending_review --table # 只看还没复核的",
     ],
   },
   "query.purchase-orders": {

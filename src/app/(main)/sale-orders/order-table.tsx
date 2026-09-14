@@ -29,6 +29,10 @@ export interface SaleOrderRow {
   operatorRole: keyof typeof ROLE_LABELS;
   /** 已格式化的开单时间 */
   createdAtLabel: string;
+  /** 来源：人做的 / Agent 代做的 */
+  actorKind: "human" | "agent";
+  /** 审核状态（Agent 建的单为 pending_review，人建的为 not_required） */
+  reviewStatus: string;
   starred: boolean;
   /** 还有未收款：详情链接直接落到收款登记处 */
   needsReceipt: boolean;
@@ -131,6 +135,22 @@ export function SaleOrderTable({ rows, children }: { rows: SaleOrderRow[]; child
                       </button>
                       <StarToggle id={o.id} starred={o.starred} toggle={toggleSaleOrderStarAction} />
                       <span className="font-medium text-gray-900">{o.orderNo}</span>
+                      {/* 来源与审核角标：Agent 必须看得出来，人也要一眼知道哪些还没复核 */}
+                      {o.actorKind === "agent" && (
+                        <span className="rounded bg-blue-50 px-1.5 py-0.5 text-xs text-blue-700" title="Agent 代做的单据">
+                          🤖 Agent
+                        </span>
+                      )}
+                      {o.reviewStatus === "pending_review" && (
+                        <span className="rounded bg-amber-50 px-1.5 py-0.5 text-xs text-amber-700" title="Agent 代做、还没复核">
+                          待审核
+                        </span>
+                      )}
+                      {o.reviewStatus === "rejected" && (
+                        <span className="rounded bg-red-50 px-1.5 py-0.5 text-xs text-red-700" title="已驳回：单据仍生效，需要作废">
+                          已驳回·待作废
+                        </span>
+                      )}
                     </span>
                   </td>
                   <td className="whitespace-nowrap px-4 py-2.5 text-gray-900">{o.customerName}</td>

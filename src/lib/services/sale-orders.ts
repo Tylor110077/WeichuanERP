@@ -30,6 +30,10 @@ const inputSchema = z.object({
   q: z.string().trim().max(50).optional(),
   settle: z.enum(["settled", "unsettled"]).optional(),
   starred: zBoolean().optional(),
+  /** 来源筛选：agent = 只看 Agent 代做的（溯源用） */
+  origin: z.enum(["agent", "human"]).optional(),
+  /** 审核状态筛选 */
+  review: z.enum(["pending_review", "approved", "rejected", "not_required"]).optional(),
   from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "from 应为 YYYY-MM-DD").optional(),
   to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "to 应为 YYYY-MM-DD").optional(),
 });
@@ -57,6 +61,10 @@ export interface SaleOrderListRow {
   operatorRole: string;
   createdAt: string;
   itemLines: number;
+  /** human = 人做的；agent = Agent 代做（Agent 必须诚实标注自己） */
+  actorKind: "human" | "agent";
+  /** not_required（人建单）/ pending_review / approved / rejected */
+  reviewStatus: string;
 }
 
 export interface SaleOrderListResult {
@@ -110,6 +118,8 @@ export async function listSaleOrders(
       : {}),
     ...(settleIds ? { id: { in: settleIds } } : {}),
     ...(input.starred ? { starred: true } : {}),
+    ...(input.origin ? { actorKind: input.origin } : {}),
+    ...(input.review ? { reviewStatus: input.review } : {}),
     createdAt: { gte: range.gte, lte: range.lte },
     ...(onlyMine ? { operatorId: actor.userId } : {}),
   };
@@ -148,6 +158,9 @@ export async function listSaleOrders(
       operatorRole: o.operator.role,
       createdAt: day(o.createdAt),
       itemLines: o._count.items,
+      /** 来源与审核状态（与列表页角标同口径） */
+      actorKind: o.actorKind,
+      reviewStatus: o.reviewStatus,
     };
   });
 
@@ -165,6 +178,8 @@ export async function listSaleOrders(
       settle: input.settle ?? null,
       starredOnly: input.starred ?? false,
       onlyMine,
+      origin: input.origin ?? null,
+      review: input.review ?? null,
     },
     rows,
   });
