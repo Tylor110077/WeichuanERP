@@ -11,6 +11,7 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { pinyinQuery } from "@/lib/pinyin";
 import { Prisma } from "@prisma/client";
+import { warningProductIds } from "@/lib/services/inventory";
 
 const PAGE_SIZE = 50;
 
@@ -69,6 +70,9 @@ export default async function InventoryPage({
   // 库存列表会随商品目录一起变长：分页（与商品列表同一套 PAGE_SIZE 与写法），
   // 过滤条件全部下推数据库，count 与列表用同一个 where，保证"共 N 个"与翻页口径一致。
   const page = Math.max(1, Number(params.page) || 1);
+  // 预警谓词的唯一来源（与 CLI 的 --warn-only 共用同一段 SQL）
+  const warningIds = await warningProductIds();
+  const warningIdSet = new Set(warningIds);
   const where: Prisma.ProductWhereInput = {
       ...(q
         ? {
@@ -94,6 +98,9 @@ export default async function InventoryPage({
             },
           }
         : {}),
+      // 预警筛选下推数据库：以前是拿"已分页的当前页"在内存里筛，于是开着 warnOnly 时
+      // 一页显示不满 50 条、翻页时数字还会变。谓词与计数都走 lib/services/inventory.ts 的同一段 SQL。
+      ...(warnOnly ? { id: { in: warningIds } } : {}),
   };
   const [productTotal, products] = await Promise.all([
     prisma.product.count({ where }),
@@ -172,16 +179,14 @@ export default async function InventoryPage({
     .map((p) => {
       const qty = Number(p.stockQty);
       const minStock = Number(p.minStock);
-      const warning = p.status === 1 && minStock > 0 && qty < minStock;
+      const warning = warningIdSet.has(p.id);
       const negative = qty < 0;
       return { p, qty, minStock, warning, negative };
-    })
-    .filter((r) => !warnOnly || r.warning);
+    });
 
-  const warningCount = products.filter((p) => {
-    const qty = Number(p.stockQty);
-    return p.status === 1 && Number(p.minStock) > 0 && qty < Number(p.minStock);
-  }).length;
+  // 预警总数与当前页/当前筛选无关：它是"全库有几个跌破预警线"的提示条。
+  // 以前是从"已分页的当前页"里数出来的，所以数字会随翻页变化。
+  const warningCount = warningIds.length;
 
   return (
     <div className="space-y-6">

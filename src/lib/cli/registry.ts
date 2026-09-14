@@ -1,5 +1,7 @@
 import { fail, ok, SCOPES, type Actor, type CliResult } from "./types";
 import { listSaleOrders, type ListSaleOrdersInput } from "@/lib/services/sale-orders";
+import { listPurchaseOrders, type ListPurchaseOrdersInput } from "@/lib/services/purchase-orders";
+import { listInventory, type ListInventoryInput } from "@/lib/services/inventory";
 
 /**
  * 命令注册表：**唯一**声明"这个 op 需要什么权限"的地方。
@@ -45,6 +47,20 @@ export const OPS: Record<string, OpDef> = {
     requiredScope: SCOPES.read,
     summary: "查售卖单列表（默认本月 1 日至今；与网页列表同口径）",
     handler: async (actor, input) => listSaleOrders(actor, input as ListSaleOrdersInput),
+  },
+
+  /** 进货单列表：同上 */
+  "query.purchase-orders": {
+    requiredScope: SCOPES.read,
+    summary: "查进货单列表（默认本月 1 日至今；未结清只算 pending/received）",
+    handler: async (actor, input) => listPurchaseOrders(actor, input as ListPurchaseOrdersInput),
+  },
+
+  /** 库存：预警谓词与库存页共用同一段 SQL（页面那两个 bug 也由此修掉） */
+  "query.inventory": {
+    requiredScope: SCOPES.read,
+    summary: "查库存（--warn-only 只看跌破预警线的；含全局预警数）",
+    handler: async (actor, input) => listInventory(actor, input as ListInventoryInput),
   },
 };
 

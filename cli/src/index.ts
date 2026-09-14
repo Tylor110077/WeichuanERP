@@ -49,6 +49,34 @@ const COMMANDS: Record<string, Command> = {
       "wc-cli query orders --page 2 --page-size 50",
     ],
   },
+  "query.purchase-orders": {
+    op: "query.purchase-orders",
+    summary: "查进货单列表（默认本月 1 日至今）",
+    usage: [
+      "wc-cli query purchase-orders [--page N] [--page-size N] [--from YYYY-MM-DD] [--to YYYY-MM-DD]",
+      "                              [--status pending|received|voided] [--settle settled|unsettled]",
+      "                              [--supplier-id N] [--q 关键词] [--starred] [--table]",
+    ],
+    examples: [
+      "wc-cli query purchase-orders --table",
+      "wc-cli query purchase-orders --status pending --table    # 待收货的",
+      "wc-cli query purchase-orders --settle unsettled --table  # 还欠厂家钱的",
+    ],
+  },
+  "query.inventory": {
+    op: "query.inventory",
+    summary: "查库存（--warn-only 只看跌破预警线的）",
+    usage: [
+      "wc-cli query inventory [--page N] [--page-size N] [--q 关键词] [--warn-only]",
+      "                       [--category N|none] [--manufacturer 名|none]",
+      "                       [--from YYYY-MM-DD] [--to YYYY-MM-DD] [--table]",
+    ],
+    examples: [
+      "wc-cli query inventory --table",
+      "wc-cli query inventory --warn-only --table   # 只看跌破预警线的",
+      "wc-cli query inventory --q zjw --table       # 拼音首字母也能搜",
+    ],
+  },
 };
 
 const VERSION = "0.1.0";
