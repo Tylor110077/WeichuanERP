@@ -38,6 +38,7 @@ export function SearchSelect({
   createLabel,
   onCreate,
   ariaLabel,
+  form,
 }: {
   name: string;
   options: SearchSelectOption[];
@@ -57,6 +58,8 @@ export function SearchSelect({
   onCreate?: (keyword: string) => void;
   /** 无障碍标签（筛选栏里用，读屏能报出这是哪个字段） */
   ariaLabel?: string;
+  /** 归属表单的 id：控件与表单不在同一处（例如分属表格不同单元格）时，用 html 的 form 属性关联 */
+  form?: string;
 }) {
   const all = useMemo(
     () => (noneLabel != null ? [{ value: "", label: noneLabel }, ...options] : options),
@@ -211,7 +214,7 @@ export function SearchSelect({
 
   return (
     <div className={`relative ${className}`}>
-      <input type="hidden" name={name} value={value} />
+      <input type="hidden" name={name} value={value} form={form} />
       <input
         ref={inputRef}
         type="text"

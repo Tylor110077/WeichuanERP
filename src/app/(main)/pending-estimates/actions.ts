@@ -7,7 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/guards";
 import { writeAudit } from "@/lib/audit";
 import { buildOrderNo, ORDER_NO_PREFIXES, todayCompact } from "@/lib/order-no";
-import { requiredNumber } from "@/lib/form-number";
+import { optionalNumber, requiredNumber } from "@/lib/form-number";
 
 export type FillState = { error?: string; ok?: string } | null;
 
@@ -21,6 +21,16 @@ const schema = z.object({
     maxMessage: "进价格式不正确",
   }).refine((v) => v > 0, "进价必须大于 0"),
   productName: z.string().trim().max(100),
+  /** 分类：留空＝未分类（与商品档案当前值比较后才写，见下方 patch） */
+  categoryId: optionalNumber({ invalid: "分类不正确", min: 1 }),
+  /** 参考进价：留空＝不改商品档案里的值（下次开单的默认进价） */
+  refPurchasePrice: optionalNumber({
+    invalid: "参考进价必须是数字",
+    min: 0,
+    max: 9_999_999_999.99,
+    minMessage: "参考进价不能为负",
+    maxMessage: "参考进价过大",
+  }),
 });
 
 function round2(n: number): number {
@@ -48,14 +58,26 @@ export async function fillEstimatedAction(_prev: FillState, formData: FormData):
     supplierId: formData.get("supplierId"),
     unitPrice: formData.get("unitPrice"),
     productName: formData.get("productName") ?? "",
+    categoryId: formData.get("categoryId"),
+    refPurchasePrice: formData.get("refPurchasePrice"),
   });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "输入有误" };
-  const { itemId, supplierId, unitPrice, productName } = parsed.data;
+  const { itemId, supplierId, unitPrice, productName, categoryId, refPurchasePrice } = parsed.data;
 
   const item = await prisma.saleOrderItem.findUnique({
     where: { id: itemId },
     include: {
-      product: { select: { id: true, code: true, name: true, unitId: true, manufacturer: true } },
+      product: {
+        select: {
+          id: true,
+          code: true,
+          name: true,
+          unitId: true,
+          manufacturer: true,
+          categoryId: true,
+          refPurchasePrice: true,
+        },
+      },
       saleOrder: { select: { id: true, orderNo: true, status: true } },
     },
   });
@@ -116,15 +138,27 @@ export async function fillEstimatedAction(_prev: FillState, formData: FormData):
           data: { costAmount, estimatedResolvedAt: new Date(), estimatedPurchaseOrderId: po.id },
         });
 
-        // 临时名/没厂家的商品档案顺手补正
-        const patch: { name?: string; manufacturer?: string } = {};
+        // 临时商品的档案顺手补正：品名/厂家/分类/参考进价
+        // 只写「与档案当前值不同」的字段——表单是预填的，未改动的字段不该产生写操作
+        const patch: {
+          name?: string;
+          manufacturer?: string;
+          categoryId?: number | null;
+          refPurchasePrice?: number;
+        } = {};
         if (productName && productName !== item.product.name) patch.name = productName;
         if (supplier.name && supplier.name !== item.product.manufacturer) patch.manufacturer = supplier.name;
+        // 分类留空＝未分类：与当前值不同才写（null 表示把已有的分类清掉）
+        if (categoryId !== (item.product.categoryId ?? undefined)) patch.categoryId = categoryId ?? null;
+        if (refPurchasePrice != null && refPurchasePrice !== Number(item.product.refPurchasePrice)) {
+          patch.refPurchasePrice = refPurchasePrice;
+        }
         if (Object.keys(patch).length > 0) {
           await tx.product.update({ where: { id: item.productId }, data: patch });
         }
 
-        return po;
+        // patch 要带出去写进审计，所以和进货单一起返回
+        return { po, patched: Object.keys(patch).length > 0 ? patch : undefined };
       });
 
       await writeAudit({
@@ -134,17 +168,18 @@ export async function fillEstimatedAction(_prev: FillState, formData: FormData):
         entityId: itemId,
         before: { estimated: true, costAmount: Number(item.costAmount) },
         after: {
-          补单进货单: result.orderNo,
+          补单进货单: result.po.orderNo,
           supplierId,
           unitPrice,
           costAmount,
           商品改名: productName || undefined,
+          商品档案补正: result.patched,
         },
       });
       revalidatePath("/pending-estimates");
       revalidatePath("/purchase-orders");
       revalidatePath(`/sale-orders/${item.saleOrder.id}`);
-      return { ok: `已生成进货单 ${result.orderNo}（待收货），成本 ¥${costAmount.toFixed(2)} 已写回本行` };
+      return { ok: `已生成进货单 ${result.po.orderNo}（待收货），成本 ¥${costAmount.toFixed(2)} 已写回本行` };
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") continue;
       console.error("[pending-estimates] 补单失败:", err);
