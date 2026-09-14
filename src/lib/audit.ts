@@ -82,6 +82,18 @@ export async function writeAudit(params: AuditParams): Promise<void> {
 }
 
 /**
+ * 审计该记什么 IP：
+ * - 网页（human）→ 返回 undefined，交给 writeAudit 从请求头取**真实** IP
+ * - CLI / 脚本（agent）→ 没有浏览器 IP，记为 "cli"
+ *
+ * 之前服务层一律写死 "cli"，于是人在网页上的操作也被记成来自 CLI —— 审计失真。
+ * 这类问题读代码不容易发现（值看着"合理"），是对照真实提交才暴露的。
+ */
+export function auditIp(actor: { kind: "human" | "agent" }): string | undefined {
+  return actor.kind === "agent" ? "cli" : undefined;
+}
+
+/**
  * 拆分标识：
  * - 纯数字/数字串 → `entityId`（保持历史行为：以前 `BigInt("123")` 也是能落库的）
  * - 其它字符串 → `entityKey`（"backup-config" 这类，以前会被静默丢弃）

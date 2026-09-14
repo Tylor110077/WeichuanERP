@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { writeAudit } from "@/lib/audit";
+import { auditIp, writeAudit } from "@/lib/audit";
 import { buildOrderNo, nextOrderSeq, ORDER_NO_PREFIXES } from "@/lib/order-no";
 import { requiredNumber } from "@/lib/form-number";
 import { runInTransaction } from "@/lib/services/dry-run";
@@ -107,7 +107,7 @@ export async function createPurchaseOrder(
         entityType: "purchase_order",
         entityId: created.id,
         tx,
-        ip: "cli",
+        ip: auditIp(actor),
         after: {
           orderNo: created.orderNo,
           supplierId,

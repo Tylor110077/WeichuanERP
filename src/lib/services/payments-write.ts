@@ -1,7 +1,7 @@
 import { Prisma, type PaymentOrderType } from "@prisma/client";
 import { z } from "zod";
 import { prisma, type TxClient } from "@/lib/prisma";
-import { writeAudit } from "@/lib/audit";
+import { auditIp, writeAudit } from "@/lib/audit";
 import { buildOrderNo, ORDER_NO_PREFIXES, todayCompact } from "@/lib/order-no";
 import { requiredNumber } from "@/lib/form-number";
 import { runInTransaction } from "@/lib/services/dry-run";
@@ -122,7 +122,7 @@ export async function createPayment(
         entityType: "payment",
         entityId: created.id,
         tx,
-        ip: "cli",
+        ip: auditIp(actor),
         after: {
           orderNo: created.orderNo,
           direction,
@@ -184,7 +184,7 @@ export async function voidPayment(
       entityType: "payment",
       entityId: id,
       tx,
-      ip: "cli",
+      ip: auditIp(actor),
       before: { orderNo: payment.orderNo, status: payment.status },
       after: {
         orderNo: payment.orderNo,

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { writeAudit } from "@/lib/audit";
+import { auditIp, writeAudit } from "@/lib/audit";
 import { applyStockChange } from "@/lib/stock-cost";
 import { buildOrderNo, nextOrderSeq, ORDER_NO_PREFIXES } from "@/lib/order-no";
 import { optionalNumber, requiredNumber } from "@/lib/form-number";
@@ -150,7 +150,7 @@ export async function createSaleOrder(
               entityType: "supplier",
               entityId: created.id,
               tx,
-              ip: "cli",
+              ip: auditIp(actor),
               after: { name: created.name, autoFromManufacturer: true, source: actor.kind === "agent" ? `cli:${actor.tokenName ?? ""}` : "web" },
             });
           }
@@ -267,7 +267,7 @@ export async function createSaleOrder(
           entityType: "purchase_order",
           entityId: po.id,
           tx,
-          ip: "cli",
+          ip: auditIp(actor),
           after: {
             orderNo: poNo,
             supplierId,
@@ -335,7 +335,7 @@ export async function createSaleOrder(
         entityType: "sale_order",
         entityId: saleOrder.id,
         tx,
-        ip: "cli",
+        ip: auditIp(actor),
         after: {
           orderNo: saleOrderNo,
           customerId,

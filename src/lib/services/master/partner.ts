@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { zBoolean } from "@/lib/form-bool";
 import { prisma, type TxClient } from "@/lib/prisma";
-import { writeAudit } from "@/lib/audit";
+import { auditIp, writeAudit } from "@/lib/audit";
 import { runInTransaction } from "@/lib/services/dry-run";
 import { fail, ok, type Actor, type CliResult } from "@/lib/cli/types";
 
@@ -104,7 +104,7 @@ export async function saveCustomer(
         entityType: "customer",
         entityId: id,
         tx,
-        ip: "cli",
+        ip: auditIp(actor),
         before: { name: before.name, groupId: before.groupId, tagIds: before.tagLinks.map((l) => l.tagId) },
         // 更新同样要记来源：溯源要求"所有代做的都看得出来"，不能只在创建时记
         after: {
@@ -125,7 +125,7 @@ export async function saveCustomer(
       entityType: "customer",
       entityId: created.id,
       tx,
-      ip: "cli",
+      ip: auditIp(actor),
       after: { name: created.name, groupId: data.groupId, tagIds: input.tagIds, source: actor.kind === "agent" ? `cli:${actor.tokenName ?? ""}` : "web" },
     });
     return { 客户: created, 操作: "新建", 分组: data.groupId, 标签: input.tagIds };
@@ -202,7 +202,7 @@ export async function saveSupplier(
         entityType: "supplier",
         entityId: id,
         tx,
-        ip: "cli",
+        ip: auditIp(actor),
         before: { name: before.name },
         after: {
           name: data.name,
@@ -219,7 +219,7 @@ export async function saveSupplier(
       entityType: "supplier",
       entityId: created.id,
       tx,
-      ip: "cli",
+      ip: auditIp(actor),
       after: { name: created.name, source: actor.kind === "agent" ? `cli:${actor.tokenName ?? ""}` : "web" },
     });
     return { 厂家: { id: created.id, name: created.name }, 拼音检索串: created.searchPinyin };
