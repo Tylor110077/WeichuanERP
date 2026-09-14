@@ -8,6 +8,7 @@ import { listStockMovements, type ListStockMovementsInput } from "@/lib/services
 import { listAuditLogs, runReport, type ListAuditLogsInput, type ReportInput } from "@/lib/services/audit-and-reports";
 import { createProduct, setProductStatus, type CreateProductInput } from "@/lib/services/master/product";
 import { saveCustomer, saveSupplier, type SaveCustomerInput, type SaveSupplierInput } from "@/lib/services/master/partner";
+import { createPayment, voidPayment, type CreatePaymentInput } from "@/lib/services/payments-write";
 import { saveCategory, saveUnit, setTaxonomyStatus, type SaveTaxonomyInput } from "@/lib/services/master/taxonomy";
 import {
   listCategories,
@@ -206,6 +207,23 @@ export const OPS: Record<string, OpDef> = {
     handler: async (actor, input, opts) => {
       if ((input as { id?: unknown }).id == null) return fail("INVALID", "更新必须给 --id（要新建请用 create）");
       return saveSupplier(actor, input as SaveSupplierInput, opts);
+    },
+  },
+
+  /* 收付款：动钱的操作，写操作声明照旧 → 默认预演 */
+  "payment.create": {
+    requiredScope: SCOPES.writePayment,
+    write: true,
+    summary: "登记收付款（一单一笔；收款对售卖单、付款对进货单）",
+    handler: async (actor, input, opts) => createPayment(actor, input as CreatePaymentInput, opts),
+  },
+  "payment.void": {
+    requiredScope: SCOPES.writePayment,
+    write: true,
+    summary: "作废收付款（冲回单据已收/已付；错了只能作废不能改）",
+    handler: async (actor, input, opts) => {
+      const { id, reason } = input as { id: number; reason: string };
+      return voidPayment(actor, { id, reason }, opts);
     },
   },
 

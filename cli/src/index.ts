@@ -246,6 +246,27 @@ const COMMANDS: Record<string, Command> = {
     usage: ["wc-cli master supplier update --id N --name <厂家名> [--contact ...] [--yes]"],
     examples: ["wc-cli master supplier update --id 2 --name 远东电缆 --contact 王经理 --yes"],
   },
+  "payment.create": {
+    op: "payment.create",
+    summary: "登记收付款（**默认预演**；一单一笔）",
+    usage: [
+      "wc-cli payment create --direction receipt|payment --order-type sale|purchase --order-id N",
+      "                      --amount 100.00 [--method cash|bank|wechat|alipay|other]",
+      "                      [--remark ...] [--yes]",
+    ],
+    examples: [
+      "wc-cli payment create --direction receipt --order-type sale --order-id 20020 --amount 1000 --method bank",
+      "  ↑ 收款：客户付了 1000（预演，不落库）",
+      "wc-cli payment create --direction receipt --order-type sale --order-id 20020 --amount 1000 --yes",
+      "wc-cli payment create --direction payment --order-type purchase --order-id 22 --amount 500 --yes   # 付厂家",
+    ],
+  },
+  "payment.void": {
+    op: "payment.void",
+    summary: "作废收付款（冲回已收/已付；错了只能作废不能改）",
+    usage: ["wc-cli payment void --id N --reason <原因> [--yes]"],
+    examples: ["wc-cli payment void --id 9 --reason '金额填错，重登' --yes"],
+  },
   "master.unit.create": {
     op: "master.unit.create",
     summary: "新建单位（**默认预演**；重名拒绝）",
