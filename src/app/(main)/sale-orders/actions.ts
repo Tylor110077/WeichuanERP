@@ -169,6 +169,8 @@ export async function createSaleOrderAction(
   for (const it of items) {
     const product = productMap.get(it.productId);
     if (!product) return { error: `商品 #${it.productId} 不存在` };
+    // 估价行不占库存、不补货（下方计划逻辑已把它的用量与补货量全部归零），因此也不需要补货厂家
+    if (it.estimated) continue;
     const shortfall = Math.max(Number(product.stockQty) < it.quantity ? it.quantity - Number(product.stockQty) : 0, 0);
     if (shortfall > 0) {
       if (it.supplierId) {
@@ -223,6 +225,7 @@ export async function createSaleOrderAction(
         const rowsItem: {
           productId: number;
           quantity: number;
+          unitId: number;
           unitPrice: number;
           costAmount: number;
           avgCost: number;
@@ -407,6 +410,8 @@ export async function createSaleOrderAction(
             action: "create",
             entityType: "purchase_order",
             entityId: po.id,
+            // tx：与补货单同一个事务。以前这里走全局 prisma，事务回滚（如后面库存不足）会留下假审计
+            tx,
             after: {
               orderNo: poNo,
               supplierId,
@@ -460,6 +465,7 @@ export async function createSaleOrderAction(
           rowsItem.push({
             productId: p.productId,
             quantity: p.qty,
+            unitId: p.unitId,
             unitPrice: round2(items[i].unitPrice),
             costAmount,
             avgCost: p.qty > 0 ? round2(costAmount / p.qty) : 0,
@@ -477,11 +483,12 @@ export async function createSaleOrderAction(
               saleOrderId: saleOrder.id,
               productId: r.productId,
               quantity: r.quantity,
-              unitId: productMap.get(r.productId)!.unitId,
+              unitId: r.unitId,
               unitPrice: r.unitPrice,
               amount: round2(r.quantity * r.unitPrice),
               costAmount: r.costAmount,
               stockQtyUsed: r.stockQtyUsed,
+              estimated: r.estimated,
               remark: r.remark || null,
             },
           });
@@ -597,6 +604,8 @@ export async function voidSaleOrderAction(
           action: "void",
           entityType: "purchase_order",
           entityId: po.id,
+          // tx：级联作废与审计同事务，避免"审计写了作废、实际作废失败"的残留
+          tx,
           before: { orderNo: po.orderNo, status: po.status },
           after: { orderNo: po.orderNo, status: "voided", voidReason: `随售卖单作废：${order.orderNo}` },
         });

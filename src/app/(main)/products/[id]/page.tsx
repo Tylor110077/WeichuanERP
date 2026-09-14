@@ -72,6 +72,7 @@ export default async function EditProductPage({
             options: units.map((u) => ({ value: String(u.id), label: u.status === 1 ? u.name : `${u.name}（停用）`, py: initials(u.name) })),
           },
           { name: "refPurchasePrice", label: "参考进价", type: "number", step: "0.01" },
+          { name: "refSalePrice", label: "参考售价", type: "number", step: "0.01" },
           { name: "minStock", label: "库存预警线", placeholder: "留空按 1 计", type: "number", step: "0.001" },
         ]}
         initial={{
@@ -80,6 +81,7 @@ export default async function EditProductPage({
           categoryId: product.categoryId != null ? String(product.categoryId) : "",
           unitId: String(product.unitId),
           refPurchasePrice: product.refPurchasePrice.toString(),
+          refSalePrice: product.refSalePrice.toString(),
           minStock: product.minStock.toString() === "0" ? "1" : product.minStock.toString(),
         }}
         initialId={product.id}
