@@ -285,6 +285,25 @@ const COMMANDS: Record<string, Command> = {
       "wc-cli order purchase receive --id 21 --yes    # 真入库",
     ],
   },
+  "order.return.sale.create": {
+    op: "order.return.sale.create",
+    summary: "开售卖退货单（**默认预演**；成本按原单快照均价入库，估价行不入库）",
+    usage: [
+      "wc-cli order return sale create --order-id N --items '<JSON 数组>' [--yes]",
+      "  --items 每行：orderItemId / quantity / unitPrice（不退货的行不要写进来）",
+      "  原单行 id 用 query orders 看不到，用 query order --id N 或先从下单返回里拿",
+    ],
+    examples: [
+      "wc-cli order return sale create --order-id 20020 --items '[{\"orderItemId\":20022,\"quantity\":5,\"unitPrice\":77}]'",
+      "wc-cli order return sale create --order-id 20020 --items @/tmp/ret.json --yes",
+    ],
+  },
+  "order.return.sale.void": {
+    op: "order.return.sale.void",
+    summary: "作废售卖退货单（库存减回）",
+    usage: ["wc-cli order return sale void --id N --reason <原因> [--yes]"],
+    examples: ["wc-cli order return sale void --id 5 --reason '退错商品' --yes"],
+  },
   "payment.create": {
     op: "payment.create",
     summary: "登记收付款（**默认预演**；一单一笔）",
@@ -401,7 +420,9 @@ function commandHelp(name: string, cmd: Command): string {
  * 与 `query orders`（两段）、`auth.whoami`（一段）都能落到同一张表上。
  */
 function resolveCommand(argv: string[]): { key: string; rest: string[] } | null {
-  for (let n = Math.min(3, argv.length); n >= 1; n--) {
+  // 段数从深到浅试，上限取注册表里最深的命令（现在是 order.return.sale.create 四段）。
+  // 写死数字会随命令面增长而过期——`order return sale create` 就曾因此报"未知命令"。
+  for (let n = Math.min(MAX_DEPTH, argv.length); n >= 1; n--) {
     const key = argv.slice(0, n).join(".");
     if (key in COMMANDS) return { key, rest: argv.slice(n) };
   }
@@ -458,6 +479,9 @@ function buildInput(args: string[]): Record<string, unknown> {
   }
   return input;
 }
+
+/** 命令名最深有几段（由注册表推导，避免写死） */
+const MAX_DEPTH = Math.max(...Object.keys(COMMANDS).map((k) => k.split(".").length));
 
 /** 把嵌套对象摊平成"点号路径 → 值"，便于两列对齐 */
 function flatten(data: Record<string, unknown>, prefix = ""): [string, string][] {

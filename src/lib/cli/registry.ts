@@ -12,6 +12,7 @@ import { createPayment, voidPayment, type CreatePaymentInput } from "@/lib/servi
 import { createSaleOrder, type CreateSaleOrderInput } from "@/lib/services/orders/sale-create";
 import { createPurchaseOrder, type CreatePurchaseOrderInput } from "@/lib/services/orders/purchase-create";
 import { receivePurchaseOrder } from "@/lib/services/orders/purchase-receive";
+import { createSaleReturn, voidSaleReturn, type CreateSaleReturnInput } from "@/lib/services/orders/sale-return";
 import { saveCategory, saveUnit, setTaxonomyStatus, type SaveTaxonomyInput } from "@/lib/services/master/taxonomy";
 import {
   listCategories,
@@ -244,6 +245,30 @@ export const OPS: Record<string, OpDef> = {
     write: true,
     summary: "确认入库（默认预演；按本单进价重算移动加权均价）",
     handler: async (actor, input, opts) => receivePurchaseOrder(actor, input as { id: number }, opts),
+  },
+
+  /**
+   * 售卖退货：成本按**原单快照均价**入库；估价行不入库（开单时就没占库存）。
+   * 应收是读取时动态冲减，不写回原单。
+   */
+  "order.return.sale.create": {
+    requiredScope: SCOPES.writeOrder,
+    write: true,
+    summary: "开售卖退货单（默认预演；估价行不入库）",
+    // CLI 面用 --order-id（更直观），服务层字段仍叫 saleOrderId（与页面一致）——适配在这一行
+    handler: async (actor, input, opts) => {
+      const { orderId, items } = input as { orderId?: number; items?: unknown };
+      return createSaleReturn(actor, { saleOrderId: orderId, items } as CreateSaleReturnInput, opts);
+    },
+  },
+  "order.return.sale.void": {
+    requiredScope: SCOPES.writeOrder,
+    write: true,
+    summary: "作废售卖退货单（库存减回；估价行跳过）",
+    handler: async (actor, input, opts) => {
+      const { id, reason } = input as { id: number; reason: string };
+      return voidSaleReturn(actor, { id, reason }, opts);
+    },
   },
 
   /* 收付款：动钱的操作，写操作声明照旧 → 默认预演 */

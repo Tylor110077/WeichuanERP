@@ -3,14 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { Prisma } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth/session";
-import { writeAudit } from "@/lib/audit";
-import { applyStockChange } from "@/lib/stock-cost";
-import { buildOrderNo, ORDER_NO_PREFIXES, todayCompact } from "@/lib/order-no";
 import { firstIssueMessage, requiredNumber } from "@/lib/form-number";
 import { parseReturnRows } from "@/lib/return-rows";
+import { createSaleReturn, voidSaleReturn } from "@/lib/services/orders/sale-return";
+import { humanActor } from "@/lib/cli/types";
 
 export type FormState = { error?: string; ok?: string } | null;
 
@@ -36,9 +33,6 @@ const createSchema = z.object({
   items: z.array(itemSchema).min(1, "请至少填写一行退货数量（不退货的行留空即可）"),
 });
 
-function round2(n: number): number {
-  return Math.round(n * 100) / 100;
-}
 
 export async function createSaleReturnAction(
   _prev: FormState,
@@ -46,161 +40,19 @@ export async function createSaleReturnAction(
 ): Promise<FormState> {
   const user = await getCurrentUser();
   if (!user) return { error: "未登录" };
-  if (user.role === "boss") return { error: "无退货开单权限" };
 
-  // 不退货的行（数量留空或填 0）整行跳过：不校验它的退货价，
-  // 这样"只退其中两样、其余留空"就能直接提交（见 lib/return-rows.ts）
+  // 薄壳：解析表单 → 调服务层 → 刷新与跳转（逻辑在 lib/services/orders/sale-return.ts，
+  // 与 CLI 共用同一份）
   const { items } = parseReturnRows(formData);
-  const parsed = createSchema.safeParse({
-    saleOrderId: formData.get("saleOrderId"),
-    items,
-  });
+  const parsed = createSchema.safeParse({ saleOrderId: formData.get("saleOrderId"), items });
   if (!parsed.success) return { error: firstIssueMessage(parsed.error) };
-  const { saleOrderId } = parsed.data;
 
-  const order = await prisma.saleOrder.findUnique({
-    where: { id: saleOrderId },
-    include: {
-      items: true,
-      returns: { where: { status: "confirmed" }, include: { items: true } },
-    },
-  });
-  if (!order) return { error: "售卖单不存在" };
-  if (order.status !== "confirmed") return { error: "仅已开单的售卖单可退货" };
-  if (user.role === "sales" && order.operatorId !== user.id) {
-    return { error: "只能对自己开的售卖单退货" };
-  }
+  const result = await createSaleReturn(humanActor(user), parsed.data, { dryRun: false });
+  if (!result.ok) return { error: result.error.message };
 
-  const returnedByItem = new Map<number, number>();
-  for (const r of order.returns) {
-    for (const rItem of r.items) {
-      returnedByItem.set(
-        rItem.saleOrderItemId,
-        (returnedByItem.get(rItem.saleOrderItemId) ?? 0) + Number(rItem.quantity)
-      );
-    }
-  }
-
-  interface Row {
-    orderItemId: number;
-    quantity: number;
-    unitPrice: number;
-    productId: number;
-    unitId: number;
-    costSnapshotPrice: number; // 按原单成本快照回补
-    /** 估价行：开单时**没有从库存出过货**（不占库存），所以退货也不再入库 */
-    estimated: boolean;
-  }
-  const rows: Row[] = [];
-  for (const it of parsed.data.items) {
-    const row = order.items.find((oi) => oi.id === Number(it.orderItemId));
-    if (!row) return { error: "退货行与原单不匹配" };
-    const remaining = Number(row.quantity) - (returnedByItem.get(row.id) ?? 0);
-    const qty = Number(it.quantity);
-    if (qty > remaining) return { error: `该商品可退数量 ${remaining}，本次 ${qty} 超限` };
-    rows.push({
-      orderItemId: row.id,
-      quantity: qty,
-      unitPrice: round2(Number(it.unitPrice)),
-      productId: row.productId,
-      unitId: row.unitId,
-      costSnapshotPrice: Number(row.costAmount) / Number(row.quantity), // 快照均价
-      estimated: row.estimated,
-    });
-  }
-
-  for (let attempt = 0; attempt < 3; attempt++) {
-    try {
-      const result = await prisma.$transaction(async (tx) => {
-        const srRows = await tx.saleReturn.findMany({
-          where: { orderNo: { startsWith: `${ORDER_NO_PREFIXES.PRS}${todayCompact()}-` } },
-          select: { orderNo: true },
-        });
-        let maxSeq = 0;
-        for (const r of srRows) {
-          const seq = Number(/-(\d{4})$/.exec(r.orderNo)?.[1] ?? 0);
-          if (seq > maxSeq) maxSeq = seq;
-        }
-        const orderNo = buildOrderNo(ORDER_NO_PREFIXES.PRS, maxSeq + 1);
-
-        const ret = await tx.saleReturn.create({
-          data: {
-            orderNo,
-            saleOrderId,
-            customerId: order.customerId,
-            totalAmount: 0,
-            operatorId: user.id,
-          },
-          select: { id: true },
-        });
-        let total = 0;
-        for (const row of rows) {
-          // 估价行跳过全部库存写入：它的货**从没出过库**（开单时不占库存），
-          // 退回来自然也不该入库。否则会凭空多出库存并按 0 成本把移动加权均价拉低；
-          // 已补单的估价行更糟——货是进货单进来的，退货会再计一遍，同一批货算两次。
-          // 应收与毛利照常冲减（下面 saleReturnItem 的 amount / costAmount 不受影响）。
-          if (!row.estimated) {
-            const product = await tx.product.findUnique({
-              where: { id: row.productId },
-              select: { stockQty: true, stockAmount: true, avgCost: true },
-            });
-            if (!product) throw new Error(`商品 #${row.productId} 不存在`);
-            const before = { qty: Number(product.stockQty), amount: Number(product.stockAmount), avgCost: Number(product.avgCost) };
-            // 退货入库：成本按原单成本快照均价回补（文档 3.5）
-            const next = applyStockChange(before, row.quantity, row.costSnapshotPrice);
-            await tx.product.update({
-              where: { id: row.productId },
-              data: { stockQty: next.qty, stockAmount: next.amount, avgCost: next.avgCost },
-            });
-            await tx.stockMovement.create({
-              data: {
-                productId: row.productId,
-                changeQty: row.quantity,
-                beforeQty: before.qty,
-                afterQty: next.qty,
-                unitCost: row.costSnapshotPrice,
-                bizType: "sale_return_in",
-                bizOrderNo: orderNo,
-                operatorId: user.id,
-              },
-            });
-          }
-          const amount = round2(row.quantity * row.unitPrice);
-          total += amount;
-          await tx.saleReturnItem.create({
-            data: {
-              saleReturnId: ret.id,
-              saleOrderItemId: row.orderItemId,
-              productId: row.productId,
-              quantity: row.quantity,
-              unitId: row.unitId,
-              unitPrice: row.unitPrice,
-              amount,
-              costAmount: round2(row.quantity * row.costSnapshotPrice),
-            },
-          });
-        }
-        await tx.saleReturn.update({ where: { id: ret.id }, data: { totalAmount: round2(total) } });
-        return { id: ret.id, orderNo, totalAmount: round2(total) };
-      });
-      await writeAudit({
-        userId: user.id,
-        action: "create",
-        entityType: "sale_return",
-        entityId: result.id,
-        after: { orderNo: result.orderNo, saleOrderId, totalAmount: result.totalAmount },
-      });
-      revalidatePath("/sale-returns");
-      revalidatePath(`/sale-orders/${saleOrderId}`);
-      redirect(`/sale-returns?created=${result.orderNo}`);
-    } catch (err) {
-      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") continue;
-      if (err instanceof Error && err.message.startsWith("NEXT_REDIRECT")) throw err;
-      console.error("[sale-return] 创建失败:", err);
-      return { error: err instanceof Error ? err.message : "退货开单失败，请重试" };
-    }
-  }
-  return { error: "单据号生成失败，请重试" };
+  revalidatePath("/sale-returns");
+  revalidatePath(`/sale-orders/${parsed.data.saleOrderId}`);
+  redirect(`/sale-returns?created=${encodeURIComponent(String((result.data.plan as { 退货单: string }).退货单))}`);
 }
 
 /** 作废销售退货单：库存减回、应收恢复（概览口径动态计算） */
@@ -210,73 +62,13 @@ export async function voidSaleReturnAction(
 ): Promise<FormState> {
   const user = await getCurrentUser();
   if (!user) return { error: "未登录" };
-  if (user.role === "sales") return { error: "业务员无作废权限" };
 
   const id = Number(formData.get("id"));
   const reason = String(formData.get("reason") ?? "").trim().slice(0, 200);
-  if (!reason) return { error: "请填写作废原因" };
+  const result = await voidSaleReturn(humanActor(user), { id, reason }, { dryRun: false });
+  if (!result.ok) return { error: result.error.message };
 
-  const ret = await prisma.saleReturn.findUnique({ where: { id }, include: { items: true } });
-  if (!ret) return { error: "退货单不存在" };
-  if (ret.status === "voided") return { error: "退货单已作废" };
-
-  let stockReversed = false;
-  try {
-    await prisma.$transaction(async (tx) => {
-      // 哪些原单行是估价行——它们的退货当初没有入库，作废时也不能减库存（与创建时对称）
-      const originItems = await tx.saleOrderItem.findMany({
-        where: { id: { in: ret.items.map((i) => i.saleOrderItemId) } },
-        select: { id: true, estimated: true },
-      });
-      const estimatedItemIds = new Set(originItems.filter((i) => i.estimated).map((i) => i.id));
-
-      for (const item of ret.items) {
-        if (estimatedItemIds.has(item.saleOrderItemId)) continue;
-        const product = await tx.product.findUnique({
-          where: { id: item.productId },
-          select: { stockQty: true, stockAmount: true, avgCost: true },
-        });
-        if (!product) throw new Error(`商品 #${item.productId} 不存在`);
-        const before = { qty: Number(product.stockQty), amount: Number(product.stockAmount), avgCost: Number(product.avgCost) };
-        if (before.qty < Number(item.quantity)) {
-          throw new Error(`商品 #${item.productId} 库存不足（${before.qty} < ${Number(item.quantity)}），无法撤销退货`);
-        }
-        const next = applyStockChange(before, -Number(item.quantity), before.avgCost);
-        stockReversed = true;
-        await tx.product.update({
-          where: { id: item.productId },
-          data: { stockQty: next.qty, stockAmount: next.amount, avgCost: next.avgCost },
-        });
-        await tx.stockMovement.create({
-          data: {
-            productId: item.productId,
-            changeQty: -Number(item.quantity),
-            beforeQty: before.qty,
-            afterQty: next.qty,
-            unitCost: before.avgCost,
-            bizType: "void_reverse",
-            bizOrderNo: ret.orderNo,
-            operatorId: user.id,
-          },
-        });
-      }
-      await tx.saleReturn.update({
-        where: { id },
-        data: { status: "voided", voidedBy: user.id, voidedAt: new Date(), voidReason: reason },
-      });
-    });
-    await writeAudit({
-      userId: user.id,
-      action: "void",
-      entityType: "sale_return",
-      entityId: id,
-      before: { orderNo: ret.orderNo, status: ret.status },
-      after: { orderNo: ret.orderNo, status: "voided", voidReason: reason },
-    });
-    revalidatePath("/sale-returns");
-    return { ok: stockReversed ? "已作废，库存已减回" : "已作废（估价行退货本就不涉及库存）" };
-  } catch (err) {
-    console.error("[sale-return] 作废失败:", err);
-    return { error: err instanceof Error ? err.message : "作废失败，请重试" };
-  }
+  revalidatePath("/sale-returns");
+  const plan = result.data.plan as { 说明: string };
+  return { ok: plan.说明 };
 }
