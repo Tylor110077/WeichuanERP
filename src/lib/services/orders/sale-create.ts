@@ -89,6 +89,10 @@ export async function createSaleOrder(
   rawInput: CreateSaleOrderInput,
   opts: { dryRun: boolean }
 ): Promise<CliResult<Record<string, unknown>>> {
+  // 与网页的 requireSaleWrite 同一句话：老板/财务只能看，不能开单。
+  // 这道判定必须在服务层，否则 boss 的令牌可以走 CLI 开单（网页是拦住的）。
+  if (actor.role === "boss") return fail("FORBIDDEN", "老板/财务无销售开单权限");
+
   const parsed = createSchema.safeParse(rawInput);
   if (!parsed.success) return fail("INVALID", parsed.error.issues[0]?.message ?? "输入有误");
   const { customerId, remark, items } = parsed.data;

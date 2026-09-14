@@ -88,6 +88,28 @@ export type CliResult<T> =
   | { ok: true; data: T }
   | { ok: false; error: { code: CliErrorCode; message: string } };
 
+/**
+ * 网页侧：cookie 会话用户 → Actor（人类）。
+ * 人类不带 scopes 限制（scope 是 CLI 令牌的概念），权限由服务层按 role 判定——
+ * 与网页原有的 guard 是同一套判定。
+ */
+export function humanActor(user: {
+  id: number;
+  username: string;
+  displayName: string;
+  role: Actor["role"];
+}): Actor {
+  return {
+    kind: "human",
+    userId: user.id,
+    username: user.username,
+    displayName: user.displayName,
+    role: user.role,
+    scopes: ALL_SCOPES,
+    runId: null,
+  };
+}
+
 export function ok<T>(data: T): CliResult<T> {
   return { ok: true, data };
 }
