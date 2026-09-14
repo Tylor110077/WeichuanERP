@@ -5,14 +5,15 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { btnDanger, btnDangerSolid, btnSecondary, btnWarn, inputBase } from "@/lib/ui";
 import { voidSaleOrderAction, type FormState } from "../actions";
-import { FormStateAlert } from "@/components/form-alert";
+import { FormAlert } from "@/components/form-alert";
 
 /**
  * 售卖单详情页右上角的操作区。
  *
  * 排序按"破坏性递增"：打印（只输出）→ 改单（作废重开）→ 退货（部分冲减）→ 作废（整单冲回），
  * 「← 返回列表」不参与操作、只是导航，单独放在最右且用弱样式，不跟操作抢视线。
- * 确认表单与提示都用 basis-full 独占一行：点开时只在下方展开，不会把上面一排按钮挤走。
+ * 确认表单用 basis-full 独占一行：点开时只在下方展开，不会把上面一排按钮挤走。
+ * 反馈提示则**就地放在这一排末尾**（compact）：它出现时不会新增一行、也不会把下面的内容推下去。
  */
 export function DetailActions({
   orderId,
@@ -78,6 +79,9 @@ export function DetailActions({
         <Link href={returnHref} className="ml-2 text-xs text-gray-500 hover:underline">
           ← 返回列表
         </Link>
+        {/* 只显示错误，不显示成功：成功时页面自己会变（状态角标改成「已作废/已入库」、按钮消失），
+            再补一条绿字只是噪音，而且它一出现就占地方。错误必须留——里面常带下一步该怎么做 */}
+        {voidState?.error && <FormAlert kind="error" text={voidState.error} compact className="ml-1" />}
       </div>
 
       {form === "reopen" && (
@@ -123,7 +127,6 @@ export function DetailActions({
           </button>
         </form>
       )}
-      <FormStateAlert state={voidState} className="basis-full" />
     </>
   );
 }

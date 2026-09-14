@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { Fragment, useState, useTransition } from "react";
 import Link from "next/link";
 import { badgeDanger, badgeMuted, badgeOk } from "@/lib/ui";
 import { ROLE_LABELS } from "@/lib/auth/roles";
@@ -107,8 +107,10 @@ export function SaleOrderTable({ rows, children }: { rows: SaleOrderRow[]; child
             const open = expanded.has(o.id);
             const outstanding = o.totalAmount - o.receivedAmount - o.returned;
             return (
-              <>
-                <tr key={o.id}>
+              /* key 必须在 map 返回的最外层元素上：这里最外层是 Fragment（里面含"主行 + 展开行"两行），
+                 加在里面那个 <tr> 上 React 看不到，会报 "Each child in a list should have a unique key" */
+              <Fragment key={o.id}>
+                <tr>
                   <td className="whitespace-nowrap px-4 py-2.5">
                     <span className="inline-flex items-center gap-1.5">
                       <button
@@ -198,7 +200,7 @@ export function SaleOrderTable({ rows, children }: { rows: SaleOrderRow[]; child
                     </td>
                   </tr>
                 )}
-              </>
+              </Fragment>
             );
           })}
         </tbody>

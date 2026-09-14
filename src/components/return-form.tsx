@@ -61,19 +61,19 @@ export function ReturnForm({
   orderId: number;
   rows: ReturnRowOption[];
 }) {
-  // 默认把原单里「还有可退数量」的行全部带出来（数量留空＝不退，避免误提交）：
+  // 原单的每一行都带出来（数量留空＝不退，避免误提交）：
   // 用户是从那张单点「退货」进来的，不该再让他从下拉里挑一次商品。
+  // 可退为 0 的行**保留显示但禁用输入**，而不是整行藏掉——
+  // 藏掉会让人看到一张空表格，以为是"退货坏了"，而不是"这行已经退完了"。
   const [lines, setLines] = useState<Row[]>(() =>
-    rows
-      .filter((r) => r.remaining > 0)
-      .map((r) => ({
-        orderItemId: String(r.orderItemId),
-        label: `${r.code} ${r.name}`,
-        unitName: r.unitName,
-        max: r.remaining,
-        quantity: "",
-        unitPrice: String(r.unitPrice),
-      }))
+    rows.map((r) => ({
+      orderItemId: String(r.orderItemId),
+      label: `${r.code} ${r.name}`,
+      unitName: r.unitName,
+      max: r.remaining,
+      quantity: "",
+      unitPrice: String(r.unitPrice),
+    }))
   );
   const [state, formAction, pending] = useActionState<FormState, FormData>(
     direction === "sale" ? createSaleReturnAction : createPurchaseReturnAction,
@@ -114,10 +114,22 @@ export function ReturnForm({
   const total = lines.reduce((s, l) => s + lineAmount(l), 0);
   const offsetLabel = direction === "sale" ? "冲减应收" : "冲减应付";
   const idField = direction === "sale" ? "saleOrderId" : "purchaseOrderId";
+  /** 整单已无可退（常见于"已经全部退完了"）：在表格上方直接说明，别让人对着灰按钮猜 */
+  const allReturned = lines.length > 0 && lines.every((l) => l.max <= 0);
+  /** 还能退、但本次没填的行数（可退为 0 的行不算"未退"——它本来就没得退） */
+  const returnableUnfilled = lines.filter((l) => l.max > 0 && rowQty(l.quantity) === 0).length;
 
   return (
     <form action={formAction} className="space-y-4">
       <input type="hidden" name={idField} value={orderId} />
+      {allReturned && (
+        <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-xs text-gray-600">
+          本单已经全部退完了，没有可退的商品。
+          <span className="text-gray-400">
+            （可退数量 = 原单数量 − 已退数量；退过哪些、多少、什么价，看原单详情页下方的「本单退货记录」）
+          </span>
+        </div>
+      )}
       <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
         <table className="min-w-full divide-y divide-gray-200 text-sm">
           <thead className="bg-gray-50 text-left text-xs text-gray-500">
@@ -143,7 +155,10 @@ export function ReturnForm({
                     <input type="hidden" name={`item_${i}_orderItemId`} value={line.orderItemId} />
                     <span className="block py-1.5 text-sm text-gray-900">{line.label}</span>
                   </td>
-                  <td className="px-4 py-2 text-gray-600">{line.max ? fmt(line.max) : "—"}</td>
+                  <td className="px-4 py-2 text-gray-600">
+                    {fmt(line.max)}
+                    {line.max <= 0 && <span className="ml-1.5 text-xs text-gray-400">已退完</span>}
+                  </td>
                   <td className="px-4 py-2">
                     <input
                       name={`item_${i}_quantity`}
@@ -152,11 +167,12 @@ export function ReturnForm({
                       max={line.max || undefined}
                       step="0.001"
                       inputMode="decimal"
-                      placeholder="不填＝不退"
+                      placeholder={line.max <= 0 ? "已退完" : "不填＝不退"}
                       value={line.quantity}
+                      disabled={line.max <= 0}
                       onChange={(e) => onQtyChange(i, e.target.value)}
                       onBlur={() => onQtyBlur(i)}
-                      className={cellInput}
+                      className={`${cellInput} disabled:bg-gray-50 disabled:text-gray-400`}
                     />
                     {over && (
                       <p className="mt-1 text-xs text-red-600">
@@ -205,7 +221,7 @@ export function ReturnForm({
           <span className="text-base font-semibold text-gray-900">¥{total.toFixed(2)}</span>
           <span className="ml-2 text-xs text-gray-400">
             本次退 {activeCount} 行
-            {lines.length > activeCount && `，其余 ${lines.length - activeCount} 行未退`}
+            {returnableUnfilled > 0 && `，其余 ${returnableUnfilled} 行未退`}
           </span>
         </span>
         <div className="flex flex-wrap items-center gap-3">

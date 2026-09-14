@@ -5,14 +5,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { btnDanger, btnDangerSolid, btnSecondary, btnSuccess, btnWarn, inputBase } from "@/lib/ui";
 import { receivePurchaseOrderAction, voidPurchaseOrderAction, type FormState } from "../actions";
-import { FormStateAlert } from "@/components/form-alert";
+import { FormAlert } from "@/components/form-alert";
 
 /**
  * 进货单详情页右上角的操作区。
  *
  * 排序：确认入库（本单最常做的下一步）→ 改单 → 退货 → 作废（破坏性递增）；
- * 「← 返回列表」只是导航，弱化成文字链接放最右。确认表单与提示 basis-full 独占一行，
- * 点开时只在下方展开，不会挤动上面那排按钮。
+ * 「← 返回列表」只是导航，弱化成文字链接放最右。确认表单 basis-full 独占一行（点开只在下方展开），
+ * 反馈提示则就地放在这一排末尾，出现时不新增一行、也不推挤下面的内容。
  */
 export function DetailActions({
   orderId,
@@ -52,6 +52,8 @@ export function DetailActions({
   }, [reopenIntent, voidState, router, orderId]);
 
   const voided = status === "voided";
+  /** 只取错误：成功反馈由页面自身变化表达（见下方按钮排末尾的说明） */
+  const actionError = receiveState?.error ?? voidState?.error;
 
   return (
     <>
@@ -86,6 +88,9 @@ export function DetailActions({
         <Link href={returnHref} className="ml-2 text-xs text-gray-500 hover:underline">
           ← 返回列表
         </Link>
+        {/* 只显示错误，不显示成功：成功时页面自己会变（状态角标改成「已入库」、按钮消失），
+            再补一条绿字只是噪音，而且它一出现就占地方。错误必须留——里面常带下一步该怎么做 */}
+        {actionError && <FormAlert kind="error" text={actionError} compact className="ml-1" />}
       </div>
 
       {form === "reopen" && (
@@ -131,7 +136,6 @@ export function DetailActions({
           </button>
         </form>
       )}
-      <FormStateAlert state={receiveState ?? voidState} className="basis-full" />
     </>
   );
 }
