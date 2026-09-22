@@ -16,6 +16,11 @@ permissions:
   contents: read
   packages: write
 
+# 镜像名必须全小写（ghcr 的硬要求）：${{ github.repository }} 会带上仓库的大小写
+# （Tylor110077/WeichuanERP），直接拿来当镜像名会被拒。
+env:
+  IMAGE: ghcr.io/tylor110077/weichuanerp
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -41,7 +46,7 @@ jobs:
           build-args: |
             NODE_BUILD_MEM=2048
           tags: |
-            ghcr.io/${{ github.repository }}:sha-${{ github.sha }}
-            ghcr.io/${{ github.repository }}:latest
+            ${{ env.IMAGE }}:sha-${{ github.sha }}
+            ${{ env.IMAGE }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
