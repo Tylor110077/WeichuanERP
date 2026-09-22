@@ -5,7 +5,7 @@ name: 构建生产镜像
 # 这里用 GitHub 的机器（4 核 7G+）编译成 linux/amd64 镜像推到 ghcr，
 # 服务器只做 `docker compose pull && up -d`——零编译。
 #
-# 镜像按 commit sha 打标签：回滚 = 把 compose 指回上一个 sha 标签再 up -d。
+# 镜像按 commit sha 打标签：回滚 = 用 scripts/deploy.sh --rollback（它记着上一个成功版本）。
 
 on:
   push:
@@ -50,3 +50,17 @@ jobs:
             ${{ env.IMAGE }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: 输出部署命令（复制到服务器执行）
+        run: |
+          {
+            echo "### 镜像已构建"
+            echo
+            echo '```'
+            echo "提交：${{ github.sha }}"
+            echo "镜像：${{ env.IMAGE }}:sha-${{ github.sha }}"
+            echo
+            echo "在服务器上执行："
+            echo "  sudo bash scripts/deploy.sh sha-${{ github.sha }}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

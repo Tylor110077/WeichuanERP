@@ -21,7 +21,10 @@ services:
       retries: 10
 
   app:
-    build: .
+    # 生产用 CI 预构建镜像（GitHub Actions 构建后推 ghcr.io，服务器只 pull、不编译——
+    # 生产机内存小，原地构建会打满内存拖垮线上）。换版本改 APP_IMAGE 或跑 scripts/deploy.sh。
+    # 要在这台机器上自建镜像（不推荐）：把下面这行换成 `build: .` 即可，见 docs/部署指南.md §6。
+    image: ${APP_IMAGE:-ghcr.io/tylor110077/weichuanerp:latest}
     restart: unless-stopped
     depends_on:
       mysql:
