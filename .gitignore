@@ -46,3 +46,7 @@ next-env.d.ts
 
 # 备份文件含全部业务数据，绝不入库（生产由 docker-compose 挂到 ./backups）
 /backups/
+
+# 一次性验证脚本（我的排查/验收用）：绝不该进版本库。
+# 曾经用 `git add -A` 误提交过三个，所以这里加一道防线。
+/.wc-*
