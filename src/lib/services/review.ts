@@ -65,6 +65,40 @@ async function loadDoc(docType: DocType, docId: number): Promise<ReviewSummary |
   return { docType, docId, docNo: d.orderNo, amount: Number(d.amount).toFixed(2), createdAt: day(d.createdAt), actorKind: d.actorKind, agentRunId: d.agentRunId, apiTokenId: d.apiTokenId, reviewStatus: d.reviewStatus, reviewedBy: d.reviewedBy, reviewedAt: d.reviewedAt ? day(d.reviewedAt) : null, version: d.version, revisionOf: d.revisionOf, needsVoid: d.reviewStatus === "rejected" };
 }
 
+/**
+ * Agent 代做统计（工作台 / CLI 共用）：Agent 建的单有多少，其中待审/已通过/已驳回各多少。
+ * 一次 UNION ALL 查完 5 张表——统计是给看板用的，不该变成 5 次往返。
+ */
+export interface AgentContribution {
+  total: number;
+  pending: number;
+  approved: number;
+  rejected: number;
+}
+
+export async function agentContribution(): Promise<AgentContribution> {
+  const rows = await prisma.$queryRaw<{ review_status: string; n: bigint }[]>`
+    SELECT review_status, COUNT(*) AS n FROM sale_orders      WHERE actor_kind = 'agent' GROUP BY review_status
+    UNION ALL
+    SELECT review_status, COUNT(*) AS n FROM purchase_orders  WHERE actor_kind = 'agent' GROUP BY review_status
+    UNION ALL
+    SELECT review_status, COUNT(*) AS n FROM sale_returns     WHERE actor_kind = 'agent' GROUP BY review_status
+    UNION ALL
+    SELECT review_status, COUNT(*) AS n FROM purchase_returns WHERE actor_kind = 'agent' GROUP BY review_status
+    UNION ALL
+    SELECT review_status, COUNT(*) AS n FROM payments         WHERE actor_kind = 'agent' GROUP BY review_status
+  `;
+  const out: AgentContribution = { total: 0, pending: 0, approved: 0, rejected: 0 };
+  for (const r of rows) {
+    const n = Number(r.n);
+    out.total += n;
+    if (r.review_status === "pending_review") out.pending += n;
+    else if (r.review_status === "approved") out.approved += n;
+    else if (r.review_status === "rejected") out.rejected += n;
+  }
+  return out;
+}
+
 const listSchema = z.object({
   docType: z.string().optional(),
   status: z.enum(["pending_review", "approved", "rejected", "not_required"]).optional(),

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
+import { agentContribution } from "@/lib/services/review";
 import { ShortcutBoard } from "./shortcut-board";
 import {
   catalogForRole,
@@ -66,6 +67,9 @@ export default async function DashboardPage() {
   const payableTotal = Number(payableRows[0]?.total ?? 0);
 
   const canViewFinance = user?.role === "admin" || user?.role === "boss";
+
+  // Agent 代做统计：只有能进审核台的人（管理员/老板）才看得见，也才点得进去
+  const contribution = canViewFinance ? await agentContribution() : null;
 
   // 快捷入口：库里存 id 数组。null = 从没自定义过（用角色默认）；[] = 用户主动清空了（就显示空）
   const role = user?.role ?? "sales";
@@ -183,6 +187,30 @@ export default async function DashboardPage() {
           );
         })}
       </div>
+
+      {/* Agent 代做：有待审就是橙色（要人去处理），没有待审只是灰底说明 */}
+      {contribution && contribution.total > 0 && (
+        <Link
+          href="/reviews"
+          className={`group flex flex-wrap items-center justify-between gap-2 rounded-xl border px-5 py-3 text-sm transition ${
+            contribution.pending > 0
+              ? "border-amber-300 bg-amber-50 text-amber-900 hover:border-amber-400"
+              : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
+          }`}
+        >
+          <span>
+            🤖 Agent 代做：
+            <span className="font-semibold">{contribution.total}</span> 单
+            <span className="ml-2 text-xs opacity-80">
+              （待审 {contribution.pending} / 已通过 {contribution.approved} / 已驳回{" "}
+              {contribution.rejected}）
+            </span>
+          </span>
+          <span className="text-xs text-blue-600 group-hover:underline">
+            {contribution.pending > 0 ? "去审核 →" : "查看审核记录 →"}
+          </span>
+        </Link>
+      )}
 
       <ShortcutBoard shortcuts={shortcuts} catalog={catalog} />
     </div>

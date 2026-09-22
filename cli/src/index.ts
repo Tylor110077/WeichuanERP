@@ -391,6 +391,14 @@ const COMMANDS: Record<string, Command> = {
     usage: ["wc-cli review show --doc-type sale_order --doc-id N [--table]"],
     examples: ["wc-cli review show --doc-type sale_order --doc-id 20028 --table"],
   },
+  "review.stats": {
+    op: "review.stats",
+    summary: "Agent 代做统计（总数 / 待审 / 已通过 / 已驳回），与工作台同一口径",
+    usage: ["wc-cli review stats [--table]"],
+    examples: [
+      "wc-cli review stats --table    # 这批 Agent 单子审到哪一步了",
+    ],
+  },
   "review.approve": {
     op: "review.approve",
     summary: "审核通过（**仅人类**；Agent 令牌会被拒）",

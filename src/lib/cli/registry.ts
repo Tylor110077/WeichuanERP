@@ -16,7 +16,7 @@ import { createSaleReturn, voidSaleReturn, type CreateSaleReturnInput } from "@/
 import { createPurchaseReturn, voidPurchaseReturn, type CreatePurchaseReturnInput } from "@/lib/services/orders/purchase-return";
 import { reopenOrder, voidPurchaseOrder, voidSaleOrder } from "@/lib/services/orders/void-and-reopen";
 import { fillEstimate, type FillEstimateInput } from "@/lib/services/orders/estimate-fill";
-import { approveReview, commentReview, listReviews, rejectReview, showReview, type ReviewListInput } from "@/lib/services/review";
+import { agentContribution, approveReview, commentReview, listReviews, rejectReview, showReview, type ReviewListInput } from "@/lib/services/review";
 import { saveCategory, saveUnit, setTaxonomyStatus, type SaveTaxonomyInput } from "@/lib/services/master/taxonomy";
 import {
   listCategories,
@@ -357,6 +357,11 @@ export const OPS: Record<string, OpDef> = {
     requiredScope: SCOPES.read,
     summary: "看一张单的审核状态与历轮意见",
     handler: async (actor, input) => showReview(actor, input as { docType: string; docId: number }),
+  },
+  "review.stats": {
+    requiredScope: SCOPES.read,
+    summary: "Agent 代做统计（总数 / 待审 / 已通过 / 已驳回），与工作台同一口径",
+    handler: async () => ok(await agentContribution()),
   },
   "review.approve": {
     requiredScope: SCOPES.review,
