@@ -23,6 +23,9 @@ COPY --from=build /app/.next/standalone ./
 COPY --from=build /app/.next/static ./.next/static
 COPY --from=build /app/public ./public
 COPY --from=build /app/prisma ./prisma
+# 运维脚本（备份/恢复/重置密码/铸令牌）也要进镜像：部署指南里那几条
+# `docker compose exec app npx tsx scripts/backup.ts ...` 靠它才跑得起来
+COPY --from=build /app/scripts ./scripts
 # 全量 node_modules：standalone 裁剪版不含 prisma/tsx CLI，
 # 部署指南要求 `docker compose exec app npx prisma migrate deploy` / `npx tsx prisma/seed.ts`
 COPY --from=build /app/node_modules ./node_modules
